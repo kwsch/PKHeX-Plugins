@@ -64,7 +64,7 @@ namespace AutoModPlugins
                     {
                         if (error.InvokeRequired)
                         {
-                            error.Invoke(() => ShowAlmErrorDialog(error, menu));
+                            await error.InvokeAsync(() => ShowAlmErrorDialog(error, menu));
                         }
                         else
                         {

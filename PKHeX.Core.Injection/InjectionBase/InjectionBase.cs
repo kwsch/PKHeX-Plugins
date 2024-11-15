@@ -177,7 +177,7 @@ namespace PKHeX.Core.Injection
             var sanitized = gameVersion.Replace(".", "");
             foreach (var version in versions)
             {
-                var name = Enum.GetName(typeof(LiveHeXVersion), version);
+                var name = Enum.GetName(version);
                 if (name is null)
                     continue;
 

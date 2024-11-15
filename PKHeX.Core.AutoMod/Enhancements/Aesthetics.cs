@@ -1062,14 +1062,14 @@ namespace PKHeX.Core.AutoMod
             ApplyFirstLegalBall(pk, BallColors[color]);
         }
 
-        private static readonly Ball[] BallList = (Ball[])Enum.GetValues(typeof(Ball));
+        private static readonly Ball[] BallList = Enum.GetValues<Ball>();
 
         static Aesthetics()
         {
             var exclude = new[] { Ball.None, LAPoke, Poke };
             var end = new[] { LAPoke, Poke };
             var allBalls = BallList.Except(exclude).ToArray();
-            var colors = (PersonalColor[])Enum.GetValues(typeof(PersonalColor));
+            var colors = Enum.GetValues<PersonalColor>();
             foreach (var c in colors)
             {
                 var vals = BallColors[c];

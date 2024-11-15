@@ -61,7 +61,7 @@ namespace PKHeX.Core.Injection
             var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
             try
             {
-                return Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T)) as T;
+                return Marshal.PtrToStructure<T>(handle.AddrOfPinnedObject()) as T;
             }
             finally
             {

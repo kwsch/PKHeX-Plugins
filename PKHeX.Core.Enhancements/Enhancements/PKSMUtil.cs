@@ -14,7 +14,7 @@ namespace PKHeX.Core.Enhancements
         public static int CreateBank(string dir)
         {
             var files = Directory.GetFiles(dir, "*.p??", SearchOption.TopDirectoryOnly);
-            var ver = Enum.GetValues(typeof(PKSMBankVersion)).Cast<int>().Max();
+            var ver = Enum.GetValues<PKSMBankVersion>().Cast<int>().Max();
             var version = BitConverter.GetBytes(ver + 1); // Latest bank version
             var pksmsize = GetBankSize((PKSMBankVersion)ver);
             var boxcount = (files.Length / 30) + 1;
