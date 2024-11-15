@@ -11,7 +11,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace AutoModPlugins
 {
@@ -80,15 +79,15 @@ namespace AutoModPlugins
         {
             SystemSounds.Hand.Play();
             var res = error.ShowDialog(menu);
-            if (res == DialogResult.Retry)
+            if (res != DialogResult.Retry)
+                return;
+
+            var info = new ProcessStartInfo
             {
-                Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/Installing-PKHeX-Plugins",
-                        UseShellExecute = true
-                    }
-                );
-            }
+                FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/Installing-PKHeX-Plugins",
+                UseShellExecute = true,
+            };
+            Process.Start(info);
         }
 
         private async Task<(bool, ALMError?)> SetUpEnvironment(CancellationToken token)
@@ -111,7 +110,7 @@ namespace AutoModPlugins
 
             if (form.InvokeRequired)
             {
-                form.Invoke(() => form.TranslateInterface(WinFormsTranslator.CurrentLanguage));
+                await form.InvokeAsync(() => form.TranslateInterface(WinFormsTranslator.CurrentLanguage), token);
             }
             else
             {
@@ -173,10 +172,9 @@ namespace AutoModPlugins
         }
         public virtual void NotifyDisplayLanguageChanged(string language)
         {
+            // ReSharper disable once SuspiciousTypeConversion.Global
             var form = ((ContainerControl)SaveFileEditor).ParentForm;
-            if (form is null)
-                return;
-            WinFormsTranslator.TranslateInterface(form, language);
+            form?.TranslateInterface(language);
         }
     }
 }
