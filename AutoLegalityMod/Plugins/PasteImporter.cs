@@ -1,14 +1,10 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 using AutoModPlugins.Properties;
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
 using PKHeX.Core.Enhancements;
-using PKHeX.Core.Injection;
-using Microsoft.VisualBasic.Devices;
-using System.Windows.Input;
 
 namespace AutoModPlugins
 {
@@ -45,7 +41,7 @@ namespace AutoModPlugins
 
         private void Downkey(object? sender, KeyEventArgs e)
         {
-            if ((e.KeyCode == Keys.NumPad6 || e.KeyCode == Keys.D6) && e.Control)
+            if (e.KeyCode is Keys.NumPad6 or Keys.D6 && e.Control)
             {
                 if (WinFormsUtil.Prompt(MessageBoxButtons.OKCancel, "Generate 6 Random Pokemon?") != DialogResult.OK)
                     return;

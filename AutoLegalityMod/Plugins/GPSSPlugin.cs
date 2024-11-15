@@ -55,7 +55,7 @@ namespace AutoModPlugins
                 // TODO set proper status codes on FlagBrew side - Allen;
                 if (response.IsSuccessStatusCode)
                 {
-                    if (error != null && error != "no errors")
+                    if (error is { } and not "no errors")
                     {
                         switch (error)
                         {

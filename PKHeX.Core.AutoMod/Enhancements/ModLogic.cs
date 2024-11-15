@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
-using System.Runtime;
 using System.Diagnostics;
 namespace PKHeX.Core.AutoMod
 {
@@ -75,11 +74,11 @@ namespace PKHeX.Core.AutoMod
                  var str = GameInfo.Strings;
                  if (num_forms == 1 && cfg.IncludeForms) // Validate through form lists
                       num_forms = (byte)FormConverter.GetFormList(s, str.types, str.forms, GameInfo.GenderSymbolUnicode, sav.Context).Length;
-                if (s == (ushort)Species.Alcremie)
-                    num_forms = (byte)(num_forms * 6);
-                uint formarg = 0;
-                byte acform = 0;
-                for (byte f = 0; f < num_forms; f++)
+                 if (s == (ushort)Species.Alcremie)
+                     num_forms = (byte)(num_forms * 6);
+                 uint formarg = 0;
+                 byte acform = 0;
+                 for (byte f = 0; f < num_forms; f++)
                  {
                     var form = cfg.IncludeForms ? f : GetBaseForm(s, f, sav);
                     if (s == (ushort)Species.Alcremie)
@@ -229,7 +228,7 @@ namespace PKHeX.Core.AutoMod
             if (species is ((ushort)Species.Meowstic) or ((ushort)Species.Indeedee))
             {
                 blank.Gender = form;
-                blank.Form = (byte)blank.Gender;
+                blank.Form = blank.Gender;
             }
             else
             {
@@ -241,7 +240,7 @@ namespace PKHeX.Core.AutoMod
             if (item is not null)
                 blank.HeldItem = (int)item;
 
-            if (blank.Species == (ushort)Species.Keldeo && blank.Form == 1)
+            if (blank is { Species: (ushort)Species.Keldeo, Form: 1 })
                 blank.Move1 = (ushort)Move.SecretSword;
 
             if (blank.GetIsFormInvalid(tr, blank.Form))
@@ -439,14 +438,14 @@ namespace PKHeX.Core.AutoMod
                 if (rough.Species is ((ushort)Species.Meowstic) or ((ushort)Species.Indeedee))
                 {
                     rough.Gender = rough.Form;
-                    rough.Form = (byte)rough.Gender;
+                    rough.Form = rough.Gender;
                 }
 
                 var item = GetFormSpecificItem((int)sav.Version, rough.Species, rough.Form);
                 if (item is not null)
                     rough.HeldItem = (int)item;
 
-                if (rough.Species == (ushort)Species.Keldeo && rough.Form == 1)
+                if (rough is { Species: (ushort)Species.Keldeo, Form: 1 })
                     rough.Move1 = (ushort)Move.SecretSword;
 
                 if (GetIsFormInvalid(rough, sav, rough.Form))
@@ -455,7 +454,7 @@ namespace PKHeX.Core.AutoMod
                 try
                 {
                     var goodset = new SmogonSetGenerator(rough);
-                    if (goodset.Valid && goodset.Sets.Count != 0)
+                    if (goodset is { Valid: true, Sets.Count: not 0 })
                     {
                         var checknull = sav.GetLegalFromSet(goodset.Sets[rng.Next(goodset.Sets.Count)]);
                         if (checknull.Status != LegalizationResult.Regenerated)

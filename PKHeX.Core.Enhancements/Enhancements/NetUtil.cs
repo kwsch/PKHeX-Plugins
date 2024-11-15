@@ -61,7 +61,7 @@ namespace PKHeX.Core.Enhancements
         /// <param name="generation">The generation for the game the pokemon is being uploaded from.</param>
         /// <param name="Url">location to fetch from</param>
         /// <returns></returns>
-        public async static Task<HttpResponseMessage> GPSSPost(byte[] data, int generation, string Url = "flagbrew.org")
+        public static async Task<HttpResponseMessage> GPSSPost(byte[] data, int generation, string Url = "flagbrew.org")
         {
             using var client = new HttpClient();
 

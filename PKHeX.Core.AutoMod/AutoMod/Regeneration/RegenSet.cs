@@ -38,7 +38,7 @@ namespace PKHeX.Core.AutoMod
             modified.Add($".MetLocation={pk.MetLocation}");
             modified.Add($".MetDate={pk.MetDate}");
             modified.Add($".MetLevel={pk.MetLevel}");
-            if(pk is IFormArgument fa && fa.FormArgument != 0)
+            if(pk is IFormArgument { FormArgument: not 0 } fa)
                 modified.Add($".FormArgument={fa.FormArgument}");
             if(modified.Count > 0)
                 Batch = new StringInstructionSet(modified.ToArray().AsSpan());

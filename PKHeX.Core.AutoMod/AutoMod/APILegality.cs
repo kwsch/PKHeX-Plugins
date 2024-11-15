@@ -76,7 +76,7 @@ namespace PKHeX.Core.AutoMod
             var gamelist = FilteredGameList(template, destVer, AllowBatchCommands, set, native);
             if (dest.Generation <= 2)
                 template.EXP = 0; // no relearn moves in gen 1/2 so pass level 1 to generator
-            if (gamelist.Length == 1 && gamelist[0] == GameVersion.DP)
+            if (gamelist is [GameVersion.DP])
                 gamelist = [GameVersion.D, GameVersion.P];
             var encounters = GetAllEncounters(pk: template, moves: new ReadOnlyMemory<ushort>(set.Moves), gamelist);
             var criteria = EncounterCriteria.GetCriteria(set, template.PersonalInfo);
@@ -180,9 +180,9 @@ namespace PKHeX.Core.AutoMod
 
         private static PKM GetPokemonFromEncounter(this IEncounterable enc, ITrainerInfo tr, EncounterCriteria criteria, IBattleTemplate set)
         {
-            if(enc is EncounterGift3 wc)
+            if(enc is EncounterGift3 { Species: (ushort)Species.Jirachi })
             {
-                if (wc.Species == (ushort)Species.Jirachi && tr.Language == (byte)LanguageID.Japanese)
+                if (tr.Language == (byte)LanguageID.Japanese)
                     tr = tr.MutateLanguage(LanguageID.English,tr.Version);
             }
             var basepkm = enc.ConvertToPKM(tr, criteria);
@@ -254,7 +254,7 @@ namespace PKHeX.Core.AutoMod
         {
             var valid = new LegalityAnalysis(pk1).Valid;
             if (!valid)
-                pk1.CatchRate = (byte)pk1.Gen2Item;
+                pk1.CatchRate = pk1.Gen2Item;
 
             return valid;
         }
@@ -372,7 +372,7 @@ namespace PKHeX.Core.AutoMod
             if (idx > 0)
                 mutate = (LanguageID)idx;
 
-            if (AllowTrainerOverride && regen.HasTrainerSettings && regen.Trainer != null)
+            if (AllowTrainerOverride && regen is { HasTrainerSettings: true, Trainer: not null })
                 return regen.Trainer.MutateLanguage(mutate, ver);
 
             return UseTrainerData ? TrainerSettings.GetSavedTrainerData(ver, gen).MutateLanguage(mutate, ver) : TrainerSettings.DefaultFallback(ver, regen.Extra.Language??(LanguageID)dest.Language);
@@ -449,7 +449,7 @@ namespace PKHeX.Core.AutoMod
                         return false;
                 }
             }
-            if (enc.Generation > 2 && set.EVs.Sum() > 510 && destVer != GameVersion.GP && destVer != GameVersion.GE)
+            if (enc.Generation > 2 && set.EVs.Sum() > 510 && destVer is not GameVersion.GP and not GameVersion.GE)
                 return false;
 
             return destVer.ExistsInGame(set.Species, set.Form);
@@ -507,7 +507,7 @@ namespace PKHeX.Core.AutoMod
 
         public static bool IsRequestedShinyValid(IBattleTemplate set, IEncounterable enc)
         {
-            if (enc is MysteryGift mg && mg.CardID >= 9000)
+            if (enc is MysteryGift { CardID: >= 9000 })
                 return true;
 
             // Don't process if shiny value doesnt match
@@ -518,7 +518,7 @@ namespace PKHeX.Core.AutoMod
                 return false;
 
             // Further shiny filtering if set is regentemplate
-            if (set is RegenTemplate regent && regent.Regen.HasExtraSettings && enc.Generation != 9)
+            if (set is RegenTemplate { Regen.HasExtraSettings: true } regent && enc.Generation != 9)
             {
                 var shinytype = regent.Regen.Extra.ShinyType;
                 if (shinytype == Shiny.AlwaysStar && enc.Shiny == Shiny.AlwaysSquare)
@@ -539,10 +539,7 @@ namespace PKHeX.Core.AutoMod
         public static bool IsPIDIVSet(PKM pk, IEncounterable enc)
         {
             // If PID and IV is handled in PreSetPIDIV, don't set it here again and return out
-            if (enc is ITeraRaid9)
-                return true;
-
-            if (enc is EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND or EncounterStatic8U)
+            if (enc is ITeraRaid9 or EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND or EncounterStatic8U)
                 return true;
 
             if (enc is IOverworldCorrelation8 o && o.GetRequirement(pk) == OverworldCorrelation8Requirement.MustHave)
@@ -633,14 +630,14 @@ namespace PKHeX.Core.AutoMod
             bool genderValid = pk.IsGenderValid();
             if (!genderValid)
             {
-                if (pk.Format == 4 && pk.Species == (ushort)Species.Shedinja) // Shedinja glitch
+                if (pk is { Format: 4, Species: (ushort)Species.Shedinja }) // Shedinja glitch
                 {
                     // should match original gender
                     var gender = EntityGender.GetFromPIDAndRatio(pk.PID, 0x7F); // 50-50
                     if (gender == pk.Gender)
                         genderValid = true;
                 }
-                else if (pk.Format > 5 && pk.Species is (ushort)Species.Marill or (ushort)Species.Azumarill)
+                else if (pk is { Format: > 5, Species: (ushort)Species.Marill or (ushort)Species.Azumarill })
                 {
                     var gv = pk.PID & 0xFF;
                     if (gv > 63 && pk.Gender == 1) // evolved from azurill after transferring to keep gender
@@ -810,7 +807,7 @@ namespace PKHeX.Core.AutoMod
                 pk.Language = tr.Language;
                 pk.SetTrainerData(tr);
             }
-            pk.EggLocation = Locations.TradedEggLocation(pk.Generation, (GameVersion)pk.Version);
+            pk.EggLocation = Locations.TradedEggLocation(pk.Generation, pk.Version);
         }
 
         /// <summary>
@@ -1111,11 +1108,11 @@ namespace PKHeX.Core.AutoMod
                 pk.IV_SPD = ivs[4];
                 pk.IV_SPE = ivs[5];
 
-                int abil = ((IFixedAbilityNumber) enc).Ability switch
+                int abil = enc.Ability switch
                 {
                     AbilityPermission.Any12H => (int)rand.NextInt(3) << 1,
                     AbilityPermission.Any12 => (int)rand.NextInt(2) << 1,
-                    _ => (int)((IFixedAbilityNumber)enc).Ability,
+                    _ => (int)enc.Ability,
                 };
                 pk.RefreshAbility(abil >> 1);
 
@@ -1280,11 +1277,11 @@ namespace PKHeX.Core.AutoMod
                         continue;
                 }
 
-                if (ratio != PersonalInfo.RatioMagicMale && ratio != PersonalInfo.RatioMagicFemale && ratio != PersonalInfo.RatioMagicGenderless)
+                if (ratio is not PersonalInfo.RatioMagicMale and not PersonalInfo.RatioMagicFemale and not PersonalInfo.RatioMagicGenderless)
                 {
                     var gender_roll = rng.NextUInt(252) + 1;
                     var fin_gender = gender_roll < ratio ? 1 : 0;
-                    if (gender is not null && gender != (byte)Gender.Genderless && gender != fin_gender)
+                    if (gender is not null and not (byte)Gender.Genderless && gender != fin_gender)
                         continue;
                 }
 
@@ -1354,7 +1351,7 @@ namespace PKHeX.Core.AutoMod
         private static bool IsMatchCriteria9(PK9 pk, IBattleTemplate template, EncounterCriteria criteria, bool compromise = false)
         {
             // compromise on nature since they can be minted
-            if (criteria.Nature != Nature.Random && criteria.Nature != (Nature)pk.Nature && !compromise) // match nature
+            if (criteria.Nature != Nature.Random && criteria.Nature != pk.Nature && !compromise) // match nature
                 return false;
 
             if (template.Gender is not null && (uint)template.Gender < 2 && template.Gender != pk.Gender) // match gender
@@ -1459,7 +1456,7 @@ namespace PKHeX.Core.AutoMod
                         continue;
 
                     var la = new LegalityAnalysis(pk);
-                    if ((la.Info.PIDIV.Type != PIDType.CXD && la.Info.PIDIV.Type != PIDType.CXD_ColoStarter) || !la.Info.PIDIVMatches || !pk.IsValidGenderPID(enc))
+                    if (la.Info.PIDIV.Type is not PIDType.CXD and not PIDType.CXD_ColoStarter || !la.Info.PIDIVMatches || !pk.IsValidGenderPID(enc))
                         continue;
                 }
                 if (pk.Species == (ushort)Species.Unown)
@@ -1518,7 +1515,7 @@ namespace PKHeX.Core.AutoMod
                     return false;
 
                 var la = new LegalityAnalysis(pk);
-                if ((la.Info.PIDIV.Type != PIDType.CXD && la.Info.PIDIV.Type != PIDType.CXD_ColoStarter) || !la.Info.PIDIVMatches || !pk.IsValidGenderPID(enc))
+                if (la.Info.PIDIV.Type is not PIDType.CXD and not PIDType.CXD_ColoStarter || !la.Info.PIDIVMatches || !pk.IsValidGenderPID(enc))
                     return false;
             }
             if (pk.Species == (ushort)Species.Unown)
@@ -1581,7 +1578,7 @@ namespace PKHeX.Core.AutoMod
         /// <returns>PIDType that is likely used</returns>
         private static PIDType FindLikelyPIDType(PKM pk)
         {
-            if (pk.Species == (int)Species.Manaphy && pk.Gen4)
+            if (pk is { Species: (int)Species.Manaphy, Gen4: true })
             {
                 pk.EggLocation = Locations.LinkTrade4; // todo: really shouldn't be doing this, don't modify pkm
                 return PIDType.Method_1;
@@ -1669,7 +1666,7 @@ namespace PKHeX.Core.AutoMod
             }
 
             // CXD only has a male trainer
-            if (pk.Version == GameVersion.CXD && pk.OriginalTrainerGender == (int)Gender.Female) // Colosseum and XD are sexist games.
+            if (pk is { Version: GameVersion.CXD, OriginalTrainerGender: (int)Gender.Female }) // Colosseum and XD are sexist games.
                 pk.OriginalTrainerGender = (int)Gender.Male;
 
             // VC Games are locked to console region (modify based on language)

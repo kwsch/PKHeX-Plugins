@@ -1143,7 +1143,7 @@ namespace PKHeX.Core.AutoMod
         public static bool GetRandomValidMark(this PKM pk, IBattleTemplate set, IEncounterable enc, out RibbonIndex mark)
         {
             mark = 0; // throwaway value
-            var markinstruction = set is RegenTemplate rt && rt.Regen.HasBatchSettings && rt.Regen.Batch.Instructions.Any(z => z.PropertyName.StartsWith("RibbonMark"));
+            var markinstruction = set is RegenTemplate { Regen.HasBatchSettings: true } rt && rt.Regen.Batch.Instructions.Any(z => z.PropertyName.StartsWith("RibbonMark"));
             if (markinstruction)
                 return false;
 

@@ -75,7 +75,7 @@ namespace PKHeX.Core.AutoMod
 
             var encounters = EncounterMovesetGenerator.GenerateEncounters(pk: failed, moves: original_moves, gamelist).ToList();
             var initialcount = encounters.Count;
-            if (set is RegenTemplate rt && rt.Regen.EncounterFilters is { } x)
+            if (set is RegenTemplate { Regen.EncounterFilters: { } x })
                 encounters.RemoveAll(enc => !BatchEditing.IsFilterMatch(x, enc));
 
             // No available encounters
@@ -90,7 +90,7 @@ namespace PKHeX.Core.AutoMod
 
             // Shiny checks, check if shiny is impossible to achieve
             Shiny shinytype = set.Shiny ? Shiny.Always : Shiny.Never;
-            if (set is RegenTemplate ret && ret.Regen.HasExtraSettings)
+            if (set is RegenTemplate { Regen.HasExtraSettings: true } ret)
                 shinytype = ret.Regen.Extra.ShinyType;
 
             if (encounters.All(z => !APILegality.IsRequestedShinyValid(set, z)))
@@ -122,7 +122,7 @@ namespace PKHeX.Core.AutoMod
             }
 
             // Ball checks
-            if (set is RegenTemplate regt && regt.Regen.HasExtraSettings)
+            if (set is RegenTemplate { Regen.HasExtraSettings: true } regt)
             {
                 var ball = regt.Regen.Extra.Ball;
                 if (encounters.All(z => !APILegality.IsRequestedBallValid(set, z)))
@@ -152,7 +152,7 @@ namespace PKHeX.Core.AutoMod
                     blank.EXP = 0; // no relearn moves in gen 1/2 so pass level 1 to generator
 
                 var encounters = EncounterMovesetGenerator.GenerateEncounters(pk: blank, moves: new_moves, gamelist);
-                if (set is RegenTemplate r && r.Regen.EncounterFilters is { } x)
+                if (set is RegenTemplate { Regen.EncounterFilters: { } x })
                     encounters = encounters.Where(enc => BatchEditing.IsFilterMatch(x, enc));
 
                 if (encounters.Any())

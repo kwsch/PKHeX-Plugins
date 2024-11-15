@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using AutoModPlugins.Properties;
 using PKHeX.Core;
 
 namespace AutoModPlugins

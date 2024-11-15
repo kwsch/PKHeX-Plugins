@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Linq;
 using static PKHeX.Core.Species;
 
@@ -200,7 +201,7 @@ namespace PKHeX.Core.AutoMod
                 return;
             }
 
-            if (enc is not ITeraRaid9 && ((pk.Species == (ushort)Maushold && pk.Form == 0) || (pk.Species == (ushort)Dudunsparce && pk.Form == 1)))
+            if (enc is not ITeraRaid9 && pk is { Species: (ushort)Maushold, Form: 0 } or { Species: (ushort)Dudunsparce, Form: 1 })
             {
                 pk.EncryptionConstant = pk.EncryptionConstant / 100 * 100;
                 return;
@@ -365,13 +366,16 @@ namespace PKHeX.Core.AutoMod
                 return;
 
             // fixed height and weight
-            if (enc is EncounterStatic9 { Size: not 0 })
-                return;
-
-            if (enc is EncounterTrade8b or EncounterTrade9)
-                return;
-
-            if (enc is EncounterStatic8a { HasFixedHeight: true } or EncounterStatic8a { HasFixedWeight: true })
+            bool isFixedScale = enc switch
+            {
+                EncounterStatic9 { Size: not 0 } => true,
+                EncounterTrade8b => true,
+                EncounterTrade9 => true,
+                EncounterStatic8a { HasFixedHeight: true } => true,
+                EncounterStatic8a { HasFixedWeight: true } => true,
+                _ => false,
+            };
+            if (isFixedScale)
                 return;
 
             if (enc is WC8 w8)
@@ -388,10 +392,9 @@ namespace PKHeX.Core.AutoMod
                 return;
             }
 
-            if (APILegality.IsPIDIVSet(pk, enc) && enc is not (EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND) && !(enc is EncounterEgg && GameVersion.BDSP.Contains(enc.Version)))
-                return;
-
             if (enc is EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND)
+                return;
+            if (APILegality.IsPIDIVSet(pk, enc) && !(enc is EncounterEgg && GameVersion.BDSP.Contains(enc.Version)))
                 return;
 
             var height = 0x12;
@@ -434,7 +437,7 @@ namespace PKHeX.Core.AutoMod
 
         public static string? GetBatchValue(this IBattleTemplate set, string key)
         {
-            var batchexists = set is RegenTemplate rt && rt.Regen.HasBatchSettings;
+            var batchexists = set is RegenTemplate { Regen.HasBatchSettings: true } rt;
             if (!batchexists)
                 return null;
 
@@ -491,7 +494,7 @@ namespace PKHeX.Core.AutoMod
         public static void SetHTLanguage(this PKM pk, byte prefer)
         {
             var pref_lang = (LanguageID)prefer;
-            if (pref_lang == LanguageID.Hacked || pref_lang == LanguageID.UNUSED_6)
+            if (pref_lang is LanguageID.Hacked or LanguageID.UNUSED_6)
                 prefer = 2; // prefer english
 
             if (pk is IHandlerLanguage pkm)

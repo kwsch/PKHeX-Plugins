@@ -63,7 +63,7 @@ namespace PKHeX.Core.AutoMod
             if (force || la.Valid)
                 return;
 
-            if (pk.Generation == 5 && pk.MetLocation == 75)
+            if (pk is { Generation: 5, MetLocation: 75 })
             {
                 if (pk.Species == (ushort)Species.Shedinja)
                     pk.Ball = (int)Ball.Poke;
@@ -97,11 +97,11 @@ namespace PKHeX.Core.AutoMod
                 return;
 
             RibbonApplicator.SetAllValidRibbons(pk);
-            if (pk is PK8 pk8 && pk8.Species != (int)Species.Shedinja && pk8.GetRandomValidMark(set, enc, out var mark))
+            if (pk is PK8 { Species: not (int)Species.Shedinja } pk8 && pk8.GetRandomValidMark(set, enc, out var mark))
             {
                 pk8.SetRibbonIndex(mark);
             }
-            if (pk is PK9 pk9 && pk9.Species != (int)Species.Shedinja && pk9.GetRandomValidMark(set, enc, out var mark9))
+            if (pk is PK9 { Species: not (int)Species.Shedinja } pk9 && pk9.GetRandomValidMark(set, enc, out var mark9))
             {
                 pk9.SetRibbonIndex(mark9);
             }

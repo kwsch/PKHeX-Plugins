@@ -257,7 +257,8 @@ namespace AutoModPlugins
                 Remote.Bot = new PokeSysBotMini(version, com, _settings.UseCachedPointers);
                 var data = Remote.Bot.ReadSlot(0, 0);
                 var pkm = SAV.SAV.GetDecryptedPKM(data);
-                bool valid = pkm.Species <= pkm.MaxSpeciesID && pkm.ChecksumValid && ( (pkm.Species == 0 && pkm.EncryptionConstant == 0) || ( pkm.Species > 0 && pkm.Language != (int)LanguageID.Hacked && pkm.Language != (int)LanguageID.UNUSED_6));
+                bool valid = pkm.Species <= pkm.MaxSpeciesID && pkm.ChecksumValid &&
+                             pkm is { Species: 0, EncryptionConstant: 0 } or { Species: not 0, Language: not (int)LanguageID.Hacked and not (int)LanguageID.UNUSED_6 };
                 if (valid)
                     return (LiveHeXValidation.None, "", version);
             }
@@ -321,8 +322,10 @@ namespace AutoModPlugins
             }
             catch { }
 
-            bool valid = pkm is not null && pkm.Species <= pkm.MaxSpeciesID && pkm.ChecksumValid && ((pkm.Species == 0 && pkm.EncryptionConstant == 0) || (pkm.Species > 0 && pkm.Language != (int)LanguageID.Hacked && pkm.Language != (int)LanguageID.UNUSED_6));
-            return !_settings.EnableDevMode && !valid && InjectionBase.CheckRAMShift(Remote.Bot, out string err) ? ((LiveHeXValidation, string, LiveHeXVersion))(LiveHeXValidation.RAMShift, err, lv) : ((LiveHeXValidation, string, LiveHeXVersion))(LiveHeXValidation.None, "", lv);
+            bool valid = pkm is not null && pkm.Species <= pkm.MaxSpeciesID && pkm.ChecksumValid &&
+                         pkm is { Species: 0, EncryptionConstant: 0 }
+                             or { Species: > 0, Language: not (int)LanguageID.Hacked and not (int)LanguageID.UNUSED_6 };
+            return !_settings.EnableDevMode && !valid && InjectionBase.CheckRAMShift(Remote.Bot, out string err) ? (LiveHeXValidation.RAMShift, err, lv) : (LiveHeXValidation.None, "", lv);
         }
 
         private void B_Disconnect_Click(object sender, EventArgs e)
@@ -784,11 +787,11 @@ namespace AutoModPlugins
                     }
                 }
             }
-            else if (sb is SCBlock || sb is IDataIndirect || sb is ICustomBlock)
+            else if (sb is SCBlock or IDataIndirect or ICustomBlock)
             {
                 // Must be single block output
                 using var form = new SimpleHexEditor(data[0]);
-                if (sb is IDataIndirect || sb is ICustomBlock)
+                if (sb is IDataIndirect or ICustomBlock)
                 {
                     var props = ReflectUtil.GetPropertiesCanWritePublicDeclared(sb.GetType());
                     if (props.Count() > 1 && ModifierKeys != Keys.Control)

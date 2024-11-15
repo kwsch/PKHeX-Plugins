@@ -58,7 +58,7 @@ namespace PKHeX.Core.AutoMod
             var la2 = new LegalityAnalysis(pk);
             var enc1 = la.EncounterMatch;
             var enc2 = la2.EncounterMatch;
-            if (((!ReferenceEquals(enc1, enc2) && enc1 is not EncounterEgg) || la2.Results.Any(z => (z.Identifier == CheckIdentifier.Nature || z.Identifier == CheckIdentifier.Encounter) && !z.Valid)) && enc is not EncounterEgg)
+            if (enc is not EncounterEgg && ((!ReferenceEquals(enc1, enc2) && enc1 is not EncounterEgg) || la2.Results.Any(z => z.Identifier is CheckIdentifier.Nature or CheckIdentifier.Encounter && !z.Valid)))
                 pk.Nature = orig;
 
             if (pk.Format >= 8 && pk.StatNature != pk.Nature && pk.StatNature is 0 or Nature.Docile or Nature.Bashful or >= Nature.Quirky) // Only Serious Mint for Neutral Natures
@@ -86,7 +86,7 @@ namespace PKHeX.Core.AutoMod
             if (pref == 2 && pi is IPersonalAbility12H h && h.AbilityH == set.Ability)
                 pk.AbilityNumber = (int)preference;
             // 3/4/5 transferred to 6+ will have ability 1 if both abilitynum 1 and 2 are the same. Capsule cant convert 1 -> 2 if the abilities arnt unique
-            if (pk.Format >= 6 && pk.Generation is 3 or 4 or 5 && pk.AbilityNumber != 4 && pi is IPersonalAbility12 a && a.Ability1 == a.Ability2)
+            if (pk is { Format: >= 6, Generation: 3 or 4 or 5, AbilityNumber: not 4 } && pi is IPersonalAbility12 a && a.Ability1 == a.Ability2)
                 pk.AbilityNumber = 1;
             if (pk is G3PKM && pi is IPersonalAbility12 b && b.Ability1 == b.Ability2)
                 pk.AbilityNumber = 1;
@@ -108,13 +108,13 @@ namespace PKHeX.Core.AutoMod
 
             var evolutionRequired = enc.Species != set.Species;
             var formchange = Form != pk.Form;
-            var UnownFormSet = pk.Species == (ushort)Species.Unown && (enc.Generation == 3 || enc.Generation == 4);
+            var UnownFormSet = pk.Species == (ushort)Species.Unown && enc.Generation is 3 or 4;
             if (evolutionRequired)
                 pk.Species = set.Species;
 
             if (formchange && !UnownFormSet)
                 pk.Form = Form;
-            if ((enc.Version == GameVersion.BD || enc.Version == GameVersion.SP) && pk.Species == (ushort)Species.Unown)
+            if (enc.Version is GameVersion.BD or GameVersion.SP && pk.Species == (ushort)Species.Unown)
                 pk.MetLocation = GetBDSPUnownMetLocation(Form);
             if ((evolutionRequired || formchange) && pk is IScaledSizeValue sv)
             {
@@ -182,7 +182,7 @@ namespace PKHeX.Core.AutoMod
 
             var gen = enc.Generation;
             var maxlen = Legal.GetMaxLengthNickname(gen, finallang);
-            var newnick = RegenUtil.MutateNickname(set.Nickname, finallang, (GameVersion)pk.Version);
+            var newnick = RegenUtil.MutateNickname(set.Nickname, finallang, pk.Version);
             if (pk.Format < 3 && newnick.Length == 0)
                 newnick = SpeciesName.GetSpeciesName(pk.Species, (int)finallang);
             var nickname = newnick.Length > maxlen ? newnick[..maxlen] : newnick;
@@ -351,7 +351,7 @@ namespace PKHeX.Core.AutoMod
                     pk.Form = pk.Form != pkform ? (byte)0 : pkform;
                     break;
                 case Species.Giratina
-                    when pk.Form == 1 && pk.HeldItem != 112 && pk.HeldItem != 1779:
+                    when pk is { Form: 1, HeldItem: not 112 and not 1779 }:
                     if (pk.Context >= EntityContext.Gen9)
                     {
                         pk.HeldItem = 1779;
@@ -362,10 +362,10 @@ namespace PKHeX.Core.AutoMod
                     }
 
                     break;
-                case Species.Dialga when pk.Form == 1 && pk.HeldItem != 1777:
+                case Species.Dialga when pk is { Form: 1, HeldItem: not 1777 }:
                     pk.HeldItem = 1777;
                     break;
-                case Species.Palkia when pk.Form == 1 && pk.HeldItem != 1778:
+                case Species.Palkia when pk is { Form: 1, HeldItem: not 1778 }:
                     pk.HeldItem = 1778;
                     break;
                 case Species.Ogerpon:
