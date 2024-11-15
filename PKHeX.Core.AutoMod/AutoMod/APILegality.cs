@@ -354,7 +354,7 @@ namespace PKHeX.Core.AutoMod
             var mutate = regen.Extra.Language;
 
             // Edge case override for Meister Magikarp
-            var nicknames = new string[]
+            var nicknames = new[]
             {
                 "",
                 "ポッちゃん",
@@ -550,7 +550,7 @@ namespace PKHeX.Core.AutoMod
 
             if (enc is IStaticCorrelation8b s && s.GetRequirement(pk) == StaticCorrelation8bRequirement.MustHave)
                 return true;
-           // if (enc is EncounterSlot4 && pk.Species == (ushort)Species.Unown)
+            // if (enc is EncounterSlot4 && pk.Species == (ushort)Species.Unown)
                // return true;
             if (enc is EncounterSlot3 && pk.Species == (ushort)Species.Unown)
                 return true;
@@ -1052,14 +1052,14 @@ namespace PKHeX.Core.AutoMod
                     bool isShiny;
                     uint xor;
                     while (true)
-                {
+                    {
                         xor = ShinyUtil.GetShinyXor(pid, fakeTID);
                         isShiny = xor < 16;
                         if (isShiny)
                         {
                             if (xor != 0)
                                 xor = 1;
-                    break;
+                            break;
                         }
                         if (i >= 1)
                             break;
@@ -1483,7 +1483,7 @@ namespace PKHeX.Core.AutoMod
                 if (pk.TID16 == 06930 && !MystryMew.IsValidSeed(seed))
                     continue;
 
-                    break;
+                break;
             } while (++count < 5_000_000);
         }
         private static bool IsMatchFromPKHeX(PKM pk, PKM iterPKM, int HPType, bool shiny, byte gr, IEncounterable enc, uint seed, PIDType Method)

@@ -51,23 +51,23 @@ namespace PKHeX.Core.AutoMod
         ];
 
         internal static readonly HashSet<int> AlolanOriginForms =
-            [
-                019, // Rattata
-                020, // Raticate
-                027, // Sandshrew
-                028, // Sandslash
-                037, // Vulpix
-                038, // Ninetales
-                050, // Diglett
-                051, // Dugtrio
-                052, // Meowth
-                053, // Persian
-                074, // Geodude
-                075, // Graveler
-                076, // Golem
-                088, // Grimer
-                089, // Muk
-            ];
+        [
+            019, // Rattata
+            020, // Raticate
+            027, // Sandshrew
+            028, // Sandslash
+            037, // Vulpix
+            038, // Ninetales
+            050, // Diglett
+            051, // Dugtrio
+            052, // Meowth
+            053, // Persian
+            074, // Geodude
+            075, // Graveler
+            076, // Golem
+            088, // Grimer
+            089, // Muk
+        ];
 
         public static bool IsShinyLockedSpeciesForm(int species, int form)
         {
@@ -76,84 +76,82 @@ namespace PKHeX.Core.AutoMod
         }
 
         private static readonly HashSet<(Species, int)> ShinyLockedSpeciesForm =
-            [
-                // Cap Pikachus
-                (Pikachu, 1),
-                (Pikachu, 2),
-                (Pikachu, 3),
-                (Pikachu, 4),
-                (Pikachu, 5),
-                (Pikachu, 6),
-                (Pikachu, 7),
-                (Pikachu, 9),
-                (Pichu, 1),
-                (Victini, 0),
-                (Keldeo, 0),
-                (Keldeo, 1),
-                (Meloetta, 0),
-                // Vivillons
-                (Scatterbug, 19),
-                (Spewpa, 19),
-                (Vivillon, 19),
-                // Hoopa
-                (Hoopa, 0),
-                (Hoopa, 1),
-                (Volcanion, 0),
-                (Cosmog, 0),
-                (Cosmoem, 0),
-                (Magearna, 0),
-                (Magearna, 1),
-                (Marshadow, 0),
-                (Kubfu, 0),
-                (Urshifu, 0),
-                (Urshifu, 1),
-                (Zarude, 0),
-                (Zarude, 1),
-                (Glastrier, 0),
-                (Spectrier, 0),
-                (Calyrex, 0),
-                (Calyrex, 1),
-                (Calyrex, 2),
-                (Enamorus, 0),
-                (Enamorus, 1),
-                (Gimmighoul, 1),
-                (WoChien, 0),
-                (ChienPao, 0),
-                (TingLu, 0),
-                (ChiYu, 0),
-                (Koraidon, 0),
-                (Koraidon, 1),
-                (Koraidon, 2),
-                (Koraidon, 3),
-                (Koraidon, 4),
-                (Miraidon, 0),
-                (Miraidon, 1),
-                (Miraidon, 2),
-                (Miraidon, 3),
-                (Miraidon, 4),
-                (WalkingWake, 0),
-                (IronLeaves, 0),
-                (Okidogi,0),
-                (Munkidori,0),
-                (Fezandipiti,0),
-                (Ogerpon,0),
-                (Ogerpon,1),
-                (Ogerpon,2),
-                (Ogerpon,3),
-                (Ogerpon,4),
-                (Ogerpon,5),
-                (Ogerpon,6),
-                (Ogerpon,7),
-                (GougingFire, 0),
-                (RagingBolt,0),
-                (IronBoulder,0),
-                (IronCrown,0),
-                (Terapagos,0),
-                (Terapagos,1),
-                (Terapagos,2),
-            ];
-
-        public static readonly HashSet<int> Gen1TradeEvos = [(int)Kadabra, (int)Machoke, (int)Graveler, (int)Haunter];
+        [
+            // Cap Pikachus
+            (Pikachu, 1),
+            (Pikachu, 2),
+            (Pikachu, 3),
+            (Pikachu, 4),
+            (Pikachu, 5),
+            (Pikachu, 6),
+            (Pikachu, 7),
+            (Pikachu, 9),
+            (Pichu, 1),
+            (Victini, 0),
+            (Keldeo, 0),
+            (Keldeo, 1),
+            (Meloetta, 0),
+            // Vivillons
+            (Scatterbug, 19),
+            (Spewpa, 19),
+            (Vivillon, 19),
+            // Hoopa
+            (Hoopa, 0),
+            (Hoopa, 1),
+            (Volcanion, 0),
+            (Cosmog, 0),
+            (Cosmoem, 0),
+            (Magearna, 0),
+            (Magearna, 1),
+            (Marshadow, 0),
+            (Kubfu, 0),
+            (Urshifu, 0),
+            (Urshifu, 1),
+            (Zarude, 0),
+            (Zarude, 1),
+            (Glastrier, 0),
+            (Spectrier, 0),
+            (Calyrex, 0),
+            (Calyrex, 1),
+            (Calyrex, 2),
+            (Enamorus, 0),
+            (Enamorus, 1),
+            (Gimmighoul, 1),
+            (WoChien, 0),
+            (ChienPao, 0),
+            (TingLu, 0),
+            (ChiYu, 0),
+            (Koraidon, 0),
+            (Koraidon, 1),
+            (Koraidon, 2),
+            (Koraidon, 3),
+            (Koraidon, 4),
+            (Miraidon, 0),
+            (Miraidon, 1),
+            (Miraidon, 2),
+            (Miraidon, 3),
+            (Miraidon, 4),
+            (WalkingWake, 0),
+            (IronLeaves, 0),
+            (Okidogi, 0),
+            (Munkidori, 0),
+            (Fezandipiti, 0),
+            (Ogerpon, 0),
+            (Ogerpon, 1),
+            (Ogerpon, 2),
+            (Ogerpon, 3),
+            (Ogerpon, 4),
+            (Ogerpon, 5),
+            (Ogerpon, 6),
+            (Ogerpon, 7),
+            (GougingFire, 0),
+            (RagingBolt, 0),
+            (IronBoulder, 0),
+            (IronCrown, 0),
+            (Terapagos, 0),
+            (Terapagos, 1),
+            (Terapagos, 2),
+        ];
 
         private static Func<int, int, int> FlagIVsAutoMod(PKM pk)
         {
@@ -183,7 +181,7 @@ namespace PKHeX.Core.AutoMod
             if (pk.Format < 6)
                 return;
 
-            if ((pk.Species == 658 && pk.Form == 1) || APILegality.IsPIDIVSet(pk, enc)) // Ash-Greninja or raids
+            if (enc is { Species: 658, Form: 1 } || APILegality.IsPIDIVSet(pk, enc)) // Ash-Greninja or raids
                 return;
 
             int gen = pk.Generation;
@@ -223,7 +221,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="shiny">Set is shiny</param>
         public static void SetShinyBoolean(this PKM pk, bool isShiny, IEncounterable enc, Shiny shiny)
         {
-            if (SimpleEdits.IsShinyLockedSpeciesForm(pk.Species, pk.Form))
+            if (IsShinyLockedSpeciesForm(pk.Species, pk.Form))
                 return;
 
             if (pk.IsShiny == isShiny)
@@ -256,9 +254,7 @@ namespace PKHeX.Core.AutoMod
             if (pk.Generation > 5 || pk.VC)
             {
                 if (enc.Shiny is Shiny.FixedValue or Shiny.Never)
-                {
                     return;
-                }
 
                 while (true)
                 {
@@ -266,7 +262,6 @@ namespace PKHeX.Core.AutoMod
                     switch (shiny)
                     {
                         case Shiny.AlwaysSquare when pk.ShinyXor != 0:
-                            continue;
                         case Shiny.AlwaysStar when pk.ShinyXor == 0:
                             continue;
                     }
@@ -296,7 +291,7 @@ namespace PKHeX.Core.AutoMod
             }
 
             pk.SetShinySID(); // no mg = no lock
-            if (isShiny && (pk.Generation == 1 || pk.Generation == 2))
+            if (isShiny && enc.Generation is (1 or 2))
                 pk.SetShiny();
             if (pk.Generation != 5)
                 return;
@@ -354,7 +349,7 @@ namespace PKHeX.Core.AutoMod
 
         public static void ApplyHeightWeight(this PKM pk, IEncounterable enc, bool signed = true)
         {
-            if (pk.Generation < 8 && pk.Format >= 8 && !pk.GG) // height and weight don't apply prior to GG
+            if (enc is { Generation: < 8, Context: not EntityContext.Gen7b } && pk.Format >= 8) // height and weight don't apply prior to GG
                 return;
 
             if (pk is IScaledSizeValue obj) // Deal with this later -- restrictions on starters/statics/alphas, for now roll with whatever encounter DB provides
@@ -376,7 +371,7 @@ namespace PKHeX.Core.AutoMod
             if (enc is EncounterTrade8b or EncounterTrade9)
                 return;
 
-            if (enc is EncounterStatic8a { HasFixedHeight: true } || enc is EncounterStatic8a { HasFixedWeight: true })
+            if (enc is EncounterStatic8a { HasFixedHeight: true } or EncounterStatic8a { HasFixedWeight: true })
                 return;
 
             if (enc is WC8 w8)
@@ -393,7 +388,7 @@ namespace PKHeX.Core.AutoMod
                 return;
             }
 
-            if (APILegality.IsPIDIVSet(pk, enc) && !(enc is EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND) && !(enc is EncounterEgg && GameVersion.BDSP.Contains(enc.Version)))
+            if (APILegality.IsPIDIVSet(pk, enc) && enc is not (EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND) && !(enc is EncounterEgg && GameVersion.BDSP.Contains(enc.Version)))
                 return;
 
             if (enc is EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND)

@@ -17,10 +17,8 @@ namespace PKHeX.Core.AutoMod
         {
             var split = RegenUtil.Split(lines);
             bool any = false;
-            foreach (var s in split)
+            foreach (var (key, value) in split)
             {
-                var key = s.Key;
-                var value = s.Value;
                 switch (key)
                 {
                     case nameof(Ball):

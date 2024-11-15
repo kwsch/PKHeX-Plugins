@@ -14,10 +14,8 @@ namespace PKHeX.Core.AutoMod
             bool any = false;
             int TID7 = -1;
             int SID7 = -1;
-            foreach (var s in split)
+            foreach (var (key, value) in split)
             {
-                var key = s.Key;
-                var value = s.Value;
                 switch (key)
                 {
                     case "OT":

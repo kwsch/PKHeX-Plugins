@@ -47,31 +47,15 @@ namespace AutoModTests
 
         public static IEnumerable<object[]> GetLivingDexTestData()
         {
-            var cfgs = new LivingDexConfig[]
-            {
-                CFG_TFFF,
-                CFG_TTFF,
-                CFG_TTTF,
-                CFG_TTTT,
-                CFG_TFTF,
-                CFG_TFFT,
-                CFG_TFTT,
-                CFG_TTFT,
-                CFG_FTTT,
-                CFG_FFTT,
-                CFG_FFFT,
-                CFG_FFFF,
-                CFG_FTFT,
-                CFG_FTTF,
-                CFG_FTFF,
-                CFG_FFTF,
-            };
+            var cfgs = new LivingDexConfig[16];
+            for (int i = 0; i < 16; i++)
+                cfgs[i] = new LivingDexConfig((byte)i);
             foreach (var ver in GetGameVersionsToTest)
             {
                 for (int i = Array.IndexOf(GetGameVersionsToTest, ver)+1; i < GetGameVersionsToTest.Length; i++)
                 {
                     foreach (var cf in cfgs)
-                        yield return new object[] { ver, cf, GetGameVersionsToTest[i] };
+                        yield return [ver, cf, GetGameVersionsToTest[i]];
                 }
             }
         }
@@ -84,7 +68,7 @@ namespace AutoModTests
             Legalizer.EnableEasterEggs = false;
             APILegality.SetAllLegalRibbons = false;
             APILegality.EnableDevMode = true;
-            cfg.TransferVersion = dest;
+            cfg = cfg with { TransferVersion = dest };
             var res = game.SingleSaveTest(cfg);
             res.Success.Should().BeTrue($"GameVersion: {game}\n{cfg}\nExpected: {res.Expected}\nGenerated: {res.Generated}");
         }
@@ -129,138 +113,5 @@ namespace AutoModTests
 
             return cfg.IncludeForms ? speciesDict.Values.Sum(x => x.Count) : speciesDict.Count;
         }
-
-        // const configs
-        private static readonly LivingDexConfig CFG_TFFF =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = false,
-                SetAlpha = false,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_TTFF =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = true,
-                SetAlpha = false,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_TTTF =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = true,
-                SetAlpha = true,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_TTTT =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = true,
-                SetAlpha = true,
-                NativeOnly = true
-            };
-
-        private readonly static LivingDexConfig CFG_TFTF =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = false,
-                SetAlpha = true,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_TFFT =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = false,
-                SetAlpha = false,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_TFTT =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = false,
-                SetAlpha = true,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_TTFT =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = true,
-                SetAlpha = false,
-                NativeOnly = true
-            };
-
-        private readonly static LivingDexConfig CFG_FTTT =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = true,
-                SetAlpha = true,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_FFTT =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = false,
-                SetAlpha = true,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_FFFT =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = false,
-                SetAlpha = false,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_FFFF =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = false,
-                SetAlpha = false,
-                NativeOnly = false
-            };
-
-        private readonly static LivingDexConfig CFG_FTFT =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = true,
-                SetAlpha = false,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_FTTF =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = true,
-                SetAlpha = true,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_FTFF =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = true,
-                SetAlpha = false,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_FFTF =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = false,
-                SetAlpha = true,
-                NativeOnly = false
-            };
     }
 }

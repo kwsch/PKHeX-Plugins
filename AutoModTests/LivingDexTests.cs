@@ -46,31 +46,14 @@ namespace AutoModTests
 
         public static IEnumerable<object[]> GetLivingDexTestData()
         {
-            var cfgs = new LivingDexConfig[]
-            {
-                CFG_TFFF,
-                CFG_TTFF,
-                CFG_TTTF,
-                CFG_TTTT,
-                CFG_TFTF,
-                CFG_TFFT,
-                CFG_TFTT,
-                CFG_TTFT,
-                CFG_FTTT,
-                CFG_FFTT,
-                CFG_FFFT,
-                CFG_FFFF,
-                CFG_FTFT,
-                CFG_FTTF,
-                CFG_FTFF,
-                CFG_FFTF,
-            };
+            var cfgs = new LivingDexConfig[16];
+            for (int i = 0; i < 16; i++)
+                cfgs[i] = new LivingDexConfig((byte)i);
+
             foreach (var ver in GetGameVersionsToTest)
             {
                 foreach (var cf in cfgs)
-                {
-                    yield return new object[] { ver, cf };
-                }
+                    yield return [ver, cf];
             }
         }
 
@@ -120,160 +103,27 @@ namespace AutoModTests
                             formarg = 0;
                         }
                         else
+                        {
                             formarg++;
+                        }
                     }
                     if (!personal.IsPresentInGame(s, form) || FormInfo.IsFusedForm(s, form, sav.Generation) || FormInfo.IsBattleOnlyForm(s, form, sav.Generation) || (FormInfo.IsTotemForm(s, form) && sav.Context is not EntityContext.Gen7) || FormInfo.IsLordForm(s, form, sav.Context))
                         continue;
 
                     var valid = sav.GetRandomEncounter(s, form, cfg.SetShiny, cfg.SetAlpha, cfg.NativeOnly, out PKM? pk);
-                    if (pk is not null && valid && pk.Form == form )
-                    {
-                        forms.Add(form);
-                        if (!cfg.IncludeForms)
-                            break;
-                    }
+                    if (pk is null || !valid || pk.Form != form)
+                        continue;
+
+                    forms.Add(form);
+                    if (!cfg.IncludeForms)
+                        break;
                 }
 
                 if (forms.Count > 0)
-                {
                     speciesDict.TryAdd(s, forms);
-                }
             }
 
             return cfg.IncludeForms ? speciesDict.Values.Sum(x => x.Count) : speciesDict.Count;
         }
-
-        // const configs
-        private static readonly LivingDexConfig CFG_TFFF =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = false,
-                SetAlpha = false,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_TTFF =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = true,
-                SetAlpha = false,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_TTTF =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = true,
-                SetAlpha = true,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_TTTT =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = true,
-                SetAlpha = true,
-                NativeOnly = true
-            };
-
-        private readonly static LivingDexConfig CFG_TFTF =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = false,
-                SetAlpha = true,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_TFFT =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = false,
-                SetAlpha = false,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_TFTT =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = false,
-                SetAlpha = true,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_TTFT =
-            new()
-            {
-                IncludeForms = true,
-                SetShiny = true,
-                SetAlpha = false,
-                NativeOnly = true
-            };
-
-        private readonly static LivingDexConfig CFG_FTTT =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = true,
-                SetAlpha = true,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_FFTT =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = false,
-                SetAlpha = true,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_FFFT =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = false,
-                SetAlpha = false,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_FFFF =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = false,
-                SetAlpha = false,
-                NativeOnly = false
-            };
-
-        private readonly static LivingDexConfig CFG_FTFT =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = true,
-                SetAlpha = false,
-                NativeOnly = true
-            };
-        private readonly static LivingDexConfig CFG_FTTF =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = true,
-                SetAlpha = true,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_FTFF =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = true,
-                SetAlpha = false,
-                NativeOnly = false
-            };
-        private readonly static LivingDexConfig CFG_FFTF =
-            new()
-            {
-                IncludeForms = false,
-                SetShiny = false,
-                SetAlpha = true,
-                NativeOnly = false
-            };
     }
 }

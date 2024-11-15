@@ -1,12 +1,21 @@
 ﻿namespace PKHeX.Core.AutoMod
 {
-    public class LivingDexConfig
+    public readonly record struct LivingDexConfig
     {
         public bool IncludeForms { get; init; }
         public bool SetShiny { get; init; }
         public bool SetAlpha { get; init; }
         public bool NativeOnly { get; init; }
-        public GameVersion TransferVersion { get; set; }
+
+        public LivingDexConfig(byte bitValue)
+        {
+            IncludeForms = (bitValue & 1) != 0;
+            SetShiny = (bitValue & 2) != 0;
+            SetAlpha = (bitValue & 4) != 0;
+            NativeOnly = (bitValue & 8) != 0;
+        }
+
+        public GameVersion TransferVersion { get; init; }
 
         public override string ToString()
         {
