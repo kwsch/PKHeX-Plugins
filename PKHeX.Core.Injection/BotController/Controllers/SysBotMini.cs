@@ -24,7 +24,7 @@ namespace PKHeX.Core.Injection
 
         public bool Connected;
 
-        private readonly object _sync = new();
+        private readonly Lock _sync = new();
 
         InjectorCommunicationType ICommunicatorNX.Protocol
         {

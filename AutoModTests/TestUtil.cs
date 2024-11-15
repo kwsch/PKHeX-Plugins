@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
+using System.Threading;
 
 namespace AutoModTests
 {
@@ -10,7 +11,7 @@ namespace AutoModTests
 
         private static bool Initialized;
 
-        private static readonly object _lock = new();
+        private static readonly Lock _lock = new();
 
         public static void InitializePKHeXEnvironment()
         {

@@ -12,7 +12,7 @@ namespace PKHeX.Core.Injection
         private const int timeout = 10;
         private bool Connected;
 
-        private readonly object _sync = new();
+        private readonly Lock _sync = new();
         private byte[]? _lastMemoryRead;
 
         public void Connect()

@@ -47,7 +47,7 @@ namespace PKHeX.Core.Injection
         private Thread? _heartbeatThread;
 
         private int _heartbeatSendable;
-        private readonly object _syncLock = new();
+        private readonly Lock _syncLock = new();
 
         public event EventHandler<DataReadyEventArgs> DataReady = null!;
         public event EventHandler Connected = null!;
