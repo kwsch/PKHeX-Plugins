@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.Linq;
 using static PKHeX.Core.Species;
 
@@ -14,44 +13,14 @@ namespace PKHeX.Core.AutoMod
             MarkingApplicator.MarkingMethod = FlagIVsAutoMod;
         }
 
-        internal static readonly int[] RoamingMetLocationBDSP =
+        internal static ReadOnlySpan<ushort> RoamingMetLocationBDSP =>
         [
-            197,
-            201,
-            354,
-            355,
-            356,
-            357,
-            358,
-            359,
-            361,
-            362,
-            364,
-            365,
-            367,
-            373,
-            375,
-            377,
-            378,
-            379,
-            383,
-            385,
-            392,
-            394,
-            395,
-            397,
-            400,
-            403,
-            404,
-            407,
-            411,
-            412,
-            414,
-            416,
-            420,
+            197, 201,
+            354, 355, 356, 357, 358, 359, 361, 362, 364, 365, 367, 373, 375, 377, 378, 379,
+            383, 385, 392, 394, 395, 397, 400, 403, 404, 407, 411, 412, 414, 416, 420,
         ];
 
-        internal static readonly HashSet<int> AlolanOriginForms =
+        internal static ReadOnlySpan<ushort> AlolanOriginForms =>
         [
             019, // Rattata
             020, // Raticate
@@ -240,16 +209,12 @@ namespace PKHeX.Core.AutoMod
                 return;
             }
 
-            if (enc is WC8 w8)
+            if (enc is WC8 { IsHOMEGift: true })
             {
-                var isHOMEGift = w8.Location == 30018 || w8.GetOT(2) == "HOME";
-                if (isHOMEGift)
-                {
-                    // Set XOR as 0 so SID comes out as 8 or less, Set TID based on that (kinda like a setshinytid)
-                    pk.TID16 = (ushort)(0 ^ (pk.PID & 0xFFFF) ^ (pk.PID >> 16));
-                    pk.SID16 = (ushort)Util.Rand.Next(8);
-                    return;
-                }
+                // Set XOR as 0 so SID comes out as 8 or less, Set TID based on that (kinda like a setshinytid)
+                pk.TID16 = (ushort)(0 ^ (pk.PID & 0xFFFF) ^ (pk.PID >> 16));
+                pk.SID16 = (ushort)Util.Rand.Next(8);
+                return;
             }
 
             if (pk.Generation > 5 || pk.VC)
@@ -306,11 +271,11 @@ namespace PKHeX.Core.AutoMod
                 if (shiny == Shiny.AlwaysStar && pk.ShinyXor == 0)
                     continue;
 
-                var validg5sid = pk.SID16 & 1;
+                var isValidGen5SID = pk.SID16 & 1;
                 pk.SetShinySID();
                 pk.EncryptionConstant = pk.PID;
                 var result = (pk.PID & 1) ^ (pk.PID >> 31) ^ (pk.TID16 & 1) ^ (pk.SID16 & 1);
-                if ((validg5sid == (pk.SID16 & 1)) && result == 0)
+                if ((isValidGen5SID == (pk.SID16 & 1)) && result == 0)
                     break;
             }
         }
@@ -378,12 +343,8 @@ namespace PKHeX.Core.AutoMod
             if (isFixedScale)
                 return;
 
-            if (enc is WC8 w8)
-            {
-                var isHOMEGift = w8.Location == 30018 || w8.GetOT(2) == "HOME";
-                if (isHOMEGift)
-                    return;
-            }
+            if (enc is WC8 { IsHOMEGift: true })
+                return; // HOME gift. No need to set height and weight
 
             if (enc is WC9 wc9)
             {
@@ -426,23 +387,15 @@ namespace PKHeX.Core.AutoMod
             size.HeightScalar = (byte)height;
             size.WeightScalar = (byte)weight;
             if (pk is IScaledSize3 sz3 && enc is not EncounterFixed9 && sz3.Scale != 128)
-                    sz3.Scale = (byte)scale;
-        }
-
-        public static void ClearHyperTraining(this PKM pk)
-        {
-            if (pk is IHyperTrain h)
-                h.HyperTrainClear();
+                sz3.Scale = (byte)scale;
         }
 
         public static string? GetBatchValue(this IBattleTemplate set, string key)
         {
-            var batchexists = set is RegenTemplate { Regen.HasBatchSettings: true } rt;
-            if (!batchexists)
+            if (set is not RegenTemplate { Regen: { HasBatchSettings: true } regen})
                 return null;
 
-            rt = (RegenTemplate)set;
-            foreach (var instruction in rt.Regen.Batch.Instructions)
+            foreach (var instruction in regen.Batch.Instructions)
             {
                 if (instruction.PropertyName != key)
                     continue;
@@ -454,14 +407,17 @@ namespace PKHeX.Core.AutoMod
 
         public static void SetFriendship(this PKM pk, IEncounterable enc)
         {
-            bool neverOT = !HistoryVerifier.GetCanOTHandle(enc, pk, enc.Generation);
             if (enc.Generation <= 2)
             {
                 pk.OriginalTrainerFriendship = (byte)GetBaseFriendship(EntityContext.Gen7, pk.Species, pk.Form); // VC transfers use SM personal info
+                return;
             }
-            else if (neverOT)
+
+            bool wasNeverOriginalTrainer = !HistoryVerifier.GetCanOTHandle(enc, pk, enc.Generation);
+            if (wasNeverOriginalTrainer)
             {
                 pk.OriginalTrainerFriendship = (byte)GetBaseFriendship(enc);
+                pk.HandlingTrainerFriendship = pk.HasMove(218) ? (byte)0 : (byte)255;
             }
             else
             {
@@ -477,28 +433,30 @@ namespace PKHeX.Core.AutoMod
 
         public static void SetAwakenedValues(this PKM pk, IBattleTemplate set)
         {
-            if (pk is not IAwakened pb7)
+            if (pk is not PB7 pb7)
                 return;
 
             Span<byte> result = stackalloc byte[6];
-            AwakeningUtil.SetExpectedMinimumAVs(result, (PB7)pb7);
-            var EVs = set.EVs.Select(z => (byte)Math.Min(z, 200)).ToArray();
-            pb7.AV_HP = Math.Max(result[0], EVs[0]);
-            pb7.AV_ATK = Math.Max(result[1], EVs[1]);
-            pb7.AV_DEF = Math.Max(result[2], EVs[2]);
-            pb7.AV_SPA = Math.Max(result[3], EVs[4]);
-            pb7.AV_SPD = Math.Max(result[4], EVs[5]);
-            pb7.AV_SPE = Math.Max(result[5], EVs[3]);
+            AwakeningUtil.SetExpectedMinimumAVs(result, pb7);
+
+            const byte max = AwakeningUtil.AwakeningMax;
+            ReadOnlySpan<int> evs = set.EVs;
+            pb7.AV_HP  = (byte)Math.Min(max, Math.Max(result[0], evs[0]));
+            pb7.AV_ATK = (byte)Math.Min(max, Math.Max(result[1], evs[1]));
+            pb7.AV_DEF = (byte)Math.Min(max, Math.Max(result[2], evs[2]));
+            pb7.AV_SPA = (byte)Math.Min(max, Math.Max(result[3], evs[4]));
+            pb7.AV_SPD = (byte)Math.Min(max, Math.Max(result[4], evs[5]));
+            pb7.AV_SPE = (byte)Math.Min(max, Math.Max(result[5], evs[3]));
         }
 
         public static void SetHTLanguage(this PKM pk, byte prefer)
         {
-            var pref_lang = (LanguageID)prefer;
-            if (pref_lang is LanguageID.Hacked or LanguageID.UNUSED_6)
+            var preferID = (LanguageID)prefer;
+            if (preferID is LanguageID.Hacked or LanguageID.UNUSED_6)
                 prefer = 2; // prefer english
 
-            if (pk is IHandlerLanguage pkm)
-                pkm.HandlingTrainerLanguage = prefer;
+            if (pk is IHandlerLanguage h)
+                h.HandlingTrainerLanguage = prefer;
         }
 
         public static void SetGigantamaxFactor(this PKM pk, IBattleTemplate set, IEncounterable enc)
@@ -519,24 +477,17 @@ namespace PKHeX.Core.AutoMod
                 t.SetTeraType(set.TeraType);
         }
 
-        public static void RestoreIVs(this PKM pk, int[] IVs)
-        {
-            pk.IVs = IVs;
-            pk.ClearHyperTraining();
-        }
-
-        public static void HyperTrain(this PKM pk, int[]? IVs = null)
+        public static void HyperTrain(this PKM pk, ReadOnlySpan<int> ivs)
         {
             if (pk is not IHyperTrain t || pk.CurrentLevel != 100)
                 return;
 
-            IVs ??= pk.IVs;
-            t.HT_HP = pk.IV_HP != 31;
-            t.HT_ATK = pk.IV_ATK != 31 && IVs[1] > 2;
+            t.HT_HP  = pk.IV_HP  != 31;
+            t.HT_ATK = pk.IV_ATK != 31 && ivs[1] > 2;
             t.HT_DEF = pk.IV_DEF != 31;
-            t.HT_SPA = pk.IV_SPA != 31 && IVs[4] > 2;
+            t.HT_SPA = pk.IV_SPA != 31 && ivs[4] > 2;
             t.HT_SPD = pk.IV_SPD != 31;
-            t.HT_SPE = pk.IV_SPE != 31 && IVs[3] > 2;
+            t.HT_SPE = pk.IV_SPE != 31 && ivs[3] > 2;
 
             if (pk is PB7 pb)
                 pb.ResetCP();
@@ -568,28 +519,25 @@ namespace PKHeX.Core.AutoMod
         }
 
         private static int GetBaseFriendship(IEncounterTemplate enc) => enc switch
-            {
-                IFixedOTFriendship f => f.OriginalTrainerFriendship,
-                { Version: GameVersion.BD or GameVersion.SP } => PersonalTable.SWSH.GetFormEntry(enc.Species, enc.Form).BaseFriendship,
-                _ => GetBaseFriendship(enc.Context, enc.Species, enc.Form),
-            };
-
-        private static int GetBaseFriendship(EntityContext context, ushort species, byte form)
         {
-            return context switch
-            {
-                EntityContext.Gen1 => PersonalTable.USUM[species].BaseFriendship,
-                EntityContext.Gen2 => PersonalTable.USUM[species].BaseFriendship,
-                EntityContext.Gen6 => PersonalTable.AO[species].BaseFriendship,
-                EntityContext.Gen7 => PersonalTable.USUM[species].BaseFriendship,
-                EntityContext.Gen7b => PersonalTable.GG[species].BaseFriendship,
-                EntityContext.Gen8 => PersonalTable.SWSH.GetFormEntry(species, form).BaseFriendship,
-                EntityContext.Gen8a => PersonalTable.LA.GetFormEntry(species, form).BaseFriendship,
-                EntityContext.Gen8b => PersonalTable.BDSP.GetFormEntry(species, form).BaseFriendship,
-                EntityContext.Gen9 => PersonalTable.SV.GetFormEntry(species, form).BaseFriendship,
-                _ => throw new IndexOutOfRangeException(),
-            };
-        }
+            IFixedOTFriendship f => f.OriginalTrainerFriendship,
+            { Version: GameVersion.BD or GameVersion.SP } => PersonalTable.SWSH.GetFormEntry(enc.Species, enc.Form).BaseFriendship,
+            _ => GetBaseFriendship(enc.Context, enc.Species, enc.Form),
+        };
+
+        private static int GetBaseFriendship(EntityContext context, ushort species, byte form) => context switch
+        {
+            EntityContext.Gen1 => PersonalTable.USUM[species].BaseFriendship,
+            EntityContext.Gen2 => PersonalTable.USUM[species].BaseFriendship,
+            EntityContext.Gen6 => PersonalTable.AO[species].BaseFriendship,
+            EntityContext.Gen7 => PersonalTable.USUM[species].BaseFriendship,
+            EntityContext.Gen7b => PersonalTable.GG[species].BaseFriendship,
+            EntityContext.Gen8 => PersonalTable.SWSH.GetFormEntry(species, form).BaseFriendship,
+            EntityContext.Gen8a => PersonalTable.LA.GetFormEntry(species, form).BaseFriendship,
+            EntityContext.Gen8b => PersonalTable.BDSP.GetFormEntry(species, form).BaseFriendship,
+            EntityContext.Gen9 => PersonalTable.SV.GetFormEntry(species, form).BaseFriendship,
+            _ => throw new IndexOutOfRangeException(),
+        };
 
         /// <summary>
         /// Set TID, SID and OT
@@ -608,7 +556,8 @@ namespace PKHeX.Core.AutoMod
         /// </summary>
         /// <param name="pk">PKM to modify</param>
         /// <param name="trainer">Trainer to handle the <see cref="pk"/></param>
-        public static void SetHandlerandMemory(this PKM pk, ITrainerInfo trainer, IEncounterable enc)
+        /// <param name="enc">Encounter template originated from</param>
+        public static void SetHandlerAndMemory(this PKM pk, ITrainerInfo trainer, IEncounterable enc)
         {
             if (IsUntradeableEncounter(enc))
                 return;
@@ -629,7 +578,7 @@ namespace PKHeX.Core.AutoMod
         /// </summary>
         /// <param name="pk">Legal PKM for setting the data</param>
         /// <param name="trainer"></param>
-        /// <returns>PKM with the necessary values modified to reflect trainerdata changes</returns>
+        /// <returns>PKM with the necessary values modified to reflect trainer data changes</returns>
         public static void SetAllTrainerData(this PKM pk, ITrainerInfo trainer)
         {
             pk.SetBelugaValues(); // trainer details changed?
@@ -676,10 +625,10 @@ namespace PKHeX.Core.AutoMod
         }
 
         /// <summary>
-        /// Set Dates for datelocked pokemon
+        /// Set Dates for date-locked Pokémon
         /// </summary>
-        /// <param name="pk">pokemon file to modify</param>
-        /// <param name="enc">encounter used to generate pokemon file</param>
+        /// <param name="pk">Pokémon file to modify</param>
+        /// <param name="enc">encounter used to generate Pokémon file</param>
         public static void SetDateLocks(this PKM pk, IEncounterable enc)
         {
             if (enc is WC8 { IsHOMEGift: true } wc8)
@@ -731,32 +680,25 @@ namespace PKHeX.Core.AutoMod
             return GameVersion.SV.Contains(destVer) ? PersonalTable.SV.IsPresentInGame(species, form) : (uint)species <= destVer.GetMaxSpeciesID();
         }
 
-        public static GameVersion GetIsland(this GameVersion ver)
+        public static GameVersion GetIsland(this GameVersion ver) => ver switch
         {
-            return ver switch
-            {
-                GameVersion.BD or GameVersion.SP => GameVersion.BDSP,
-                GameVersion.SW or GameVersion.SH => GameVersion.SWSH,
-                GameVersion.GP or GameVersion.GE => GameVersion.GG,
-                GameVersion.SN or GameVersion.MN => GameVersion.SM,
-                GameVersion.US or GameVersion.UM => GameVersion.USUM,
-                GameVersion.X or GameVersion.Y => GameVersion.XY,
-                GameVersion.OR or GameVersion.AS => GameVersion.ORAS,
-                GameVersion.B or GameVersion.W => GameVersion.BW,
-                GameVersion.B2 or GameVersion.W2 => GameVersion.B2W2,
-                GameVersion.HG or GameVersion.SS => GameVersion.HGSS,
-                GameVersion.FR or GameVersion.LG => GameVersion.FRLG,
-                GameVersion.D or GameVersion.P or GameVersion.Pt => GameVersion.DPPt,
-                GameVersion.R or GameVersion.S or GameVersion.E => GameVersion.RSE,
-                GameVersion.GD or GameVersion.SI or GameVersion.C => GameVersion.GSC,
-                GameVersion.RD
-                or GameVersion.BU
-                or GameVersion.YW
-                or GameVersion.GN
-                    => GameVersion.Gen1,
-                _ => ver
-            };
-        }
+            GameVersion.BD or GameVersion.SP => GameVersion.BDSP,
+            GameVersion.SW or GameVersion.SH => GameVersion.SWSH,
+            GameVersion.GP or GameVersion.GE => GameVersion.GG,
+            GameVersion.SN or GameVersion.MN => GameVersion.SM,
+            GameVersion.US or GameVersion.UM => GameVersion.USUM,
+            GameVersion.X or GameVersion.Y => GameVersion.XY,
+            GameVersion.OR or GameVersion.AS => GameVersion.ORAS,
+            GameVersion.B or GameVersion.W => GameVersion.BW,
+            GameVersion.B2 or GameVersion.W2 => GameVersion.B2W2,
+            GameVersion.HG or GameVersion.SS => GameVersion.HGSS,
+            GameVersion.FR or GameVersion.LG => GameVersion.FRLG,
+            GameVersion.D or GameVersion.P or GameVersion.Pt => GameVersion.DPPt,
+            GameVersion.R or GameVersion.S or GameVersion.E => GameVersion.RSE,
+            GameVersion.GD or GameVersion.SI or GameVersion.C => GameVersion.GSC,
+            GameVersion.RD or GameVersion.BU or GameVersion.YW or GameVersion.GN => GameVersion.Gen1,
+            _ => ver,
+        };
 
         public static void ApplyPostBatchFixes(this PKM pk)
         {
@@ -767,21 +709,20 @@ namespace PKHeX.Core.AutoMod
             }
         }
 
-        public static bool IsUntradeableEncounter(IEncounterTemplate enc) =>
-            enc switch
-            {
-                EncounterStatic7b { Location: 28 } => true, // LGP/E Starter
-                _ => false,
-            };
+        public static bool IsUntradeableEncounter(IEncounterTemplate enc) => enc switch
+        {
+            EncounterStatic7b { Location: 28 } => true, // LGP/E Starter
+            _ => false,
+        };
 
         public static void SetRecordFlags(this PKM pk, ushort[] moves)
         {
             if (pk is ITechRecord tr and not PA8)
             {
-                if (pk.Species == (ushort)Species.Hydrapple)
+                if (pk.Species == (ushort)Hydrapple)
                 {
-                    ushort[] DC = [(ushort)Move.DragonCheer];
-                    tr.SetRecordFlags(DC);
+                    ReadOnlySpan<ushort> dc = [(ushort)Move.DragonCheer];
+                    tr.SetRecordFlags(dc);
                 }
                 if (moves.Length != 0)
                 {
@@ -809,28 +750,12 @@ namespace PKHeX.Core.AutoMod
             pk.SetSuggestedContestStats(enc, la.Info.EvoChainsAllGens);
         }
 
-        private static readonly ushort[] Arceus_PlateIDs =
+        private static ReadOnlySpan<ushort> ArceusPlateIDs =>
         [
-            303,
-            306,
-            304,
-            305,
-            309,
-            308,
-            310,
-            313,
-            298,
-            299,
-            301,
-            300,
-            307,
-            302,
-            311,
-            312,
-            644
+            303, 306, 304, 305, 309, 308, 310, 313, 298, 299, 301, 300, 307, 302, 311, 312, 644,
         ];
 
-        public static int? GetArceusHeldItemFromForm(int form) => form is >= 1 and <= 17 ? Arceus_PlateIDs[form - 1] : null;
+        public static ushort? GetArceusHeldItemFromForm(int form) => form is >= 1 and <= 17 ? ArceusPlateIDs[form - 1] : null;
 
         public static int? GetSilvallyHeldItemFromForm(int form) => form == 0 ? null : form + 903;
 

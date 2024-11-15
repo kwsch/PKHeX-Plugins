@@ -593,7 +593,7 @@ namespace PKHeX.Core.AutoMod
             pk.SetHeldItem(set);
 
             // Actions that do not affect set legality
-            pk.SetHandlerandMemory(handler, enc);
+            pk.SetHandlerAndMemory(handler, enc);
             pk.SetFriendship(enc);
             pk.SetRecordFlags(set.Moves);
 
@@ -1000,7 +1000,7 @@ namespace PKHeX.Core.AutoMod
                 }
 
                 Roaming8bRNG.ApplyDetails(pk, EncounterCriteria.Unrestricted, shiny, flawless);
-                pk.MetLocation = (ushort)SimpleEdits.RoamingMetLocationBDSP[0];
+                pk.MetLocation = SimpleEdits.RoamingMetLocationBDSP[0];
             }
             else if (enc is EncounterEgg && GameVersion.BDSP.Contains(enc.Version))
             {
