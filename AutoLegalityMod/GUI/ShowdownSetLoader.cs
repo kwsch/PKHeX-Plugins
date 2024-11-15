@@ -117,7 +117,7 @@ namespace AutoModPlugins
                     Process.Start(new ProcessStartInfo
                         {
                             FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/Installing-PKHeX-Plugins",
-                            UseShellExecute = true
+                            UseShellExecute = true,
                         });
                 }
 
@@ -147,7 +147,7 @@ namespace AutoModPlugins
                     Process.Start(new ProcessStartInfo
                         {
                             FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/Getting-Started-with-Auto-Legality-Mod",
-                            UseShellExecute = true
+                            UseShellExecute = true,
                         });
                 }
             }
@@ -189,7 +189,7 @@ namespace AutoModPlugins
                     Process.Start(new ProcessStartInfo
                         {
                             FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/Getting-Started-with-Auto-Legality-Mod",
-                            UseShellExecute = true
+                            UseShellExecute = true,
                         });
                 }
             }
@@ -209,7 +209,7 @@ namespace AutoModPlugins
                     Process.Start(new ProcessStartInfo
                         {
                             FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/Installing-PKHeX-Plugins",
-                            UseShellExecute = true
+                            UseShellExecute = true,
                         });
                 }
 

@@ -22,7 +22,7 @@ namespace PKHeX.Core.Injection
             LiveHeXVersion.LA_v100,
             LiveHeXVersion.LA_v101,
             LiveHeXVersion.LA_v102,
-            LiveHeXVersion.LA_v111
+            LiveHeXVersion.LA_v111,
         ];
 
         public static LiveHeXVersion[] GetVersions() => SupportedVersions;
@@ -36,36 +36,36 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xE3E89BD1,
-                Pointer = "[[[main+47350d8]+1C0]+0]+40 "
+                Pointer = "[[[main+47350d8]+1C0]+0]+40 ",
             },
             new()
             {
                 Name = "KItem",
                 Display = "Items",
                 SCBKey = 0x21C9BD44,
-                Pointer = "[[[main+47350d8]+1C0]+C8]+40"
+                Pointer = "[[[main+47350d8]+1C0]+C8]+40",
             },
             new()
             {
                 Name = "KTeraRaidPaldea",
                 Display = "Raid",
                 SCBKey = 0xCAAC8800,
-                Pointer = "[[[main+47350d8]+1C0]+88]+40"
+                Pointer = "[[[main+47350d8]+1C0]+88]+40",
             },
             new()
             {
                 Name = "KTeraRaidDLC",
                 Display = "RaidKitakami",
                 SCBKey = 0x100B93DA,
-                Pointer = "[[[main+47350d8]+1C0]+88]+CD8"
+                Pointer = "[[[main+47350d8]+1C0]+88]+CD8",
             },
             new()
             {
                 Name = "KTeraRaidDLC",
                 Display = "RaidBlueberry",
                 SCBKey = 0x100B93DA,
-                Pointer = "[[[main+47350d8]+1C0]+88]+CD8"
-            }
+                Pointer = "[[[main+47350d8]+1C0]+88]+CD8",
+            },
 
         ];
 
@@ -76,29 +76,29 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xE3E89BD1,
-                Pointer = "[[[main+4623A30]+198]]+40"
+                Pointer = "[[[main+4623A30]+198]]+40",
             },
             new()
             {
                 Name = "KItem",
                 Display = "Items",
                 SCBKey = 0x21C9BD44,
-                Pointer = "[[[main+4623A30]+198]+C8]+40"
+                Pointer = "[[[main+4623A30]+198]+C8]+40",
             },
             new()
             {
                 Name = "KTeraRaidPaldea",
                 Display = "Raid",
                 SCBKey = 0xCAAC8800,
-                Pointer = "[[[main+4623A30]+198]+88]+40"
+                Pointer = "[[[main+4623A30]+198]+88]+40",
             },
             new()
             {
                 Name = "KTeraRaidKitakami",
                 Display = "RaidKitakami",
                 SCBKey = 0x100B93DA,
-                Pointer = "[[[main+4623A30]+198]+88]+CD8"
-            }
+                Pointer = "[[[main+4623A30]+198]+88]+CD8",
+            },
         ];
 
         public static readonly BlockData[] Blocks_SV_v201 =
@@ -108,29 +108,29 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xE3E89BD1,
-                Pointer = "[[[main+4622A30]+198]]+40"
+                Pointer = "[[[main+4622A30]+198]]+40",
             },
             new()
             {
                 Name = "KItem",
                 Display = "Items",
                 SCBKey = 0x21C9BD44,
-                Pointer = "[[[main+4622A30]+198]+C8]+40"
+                Pointer = "[[[main+4622A30]+198]+C8]+40",
             },
             new()
             {
                 Name = "KTeraRaidPaldea",
                 Display = "Raid",
                 SCBKey = 0xCAAC8800,
-                Pointer = "[[[main+4622A30]+198]+88]+40"
+                Pointer = "[[[main+4622A30]+198]+88]+40",
             },
             new()
             {
                 Name = "KTeraRaidKitakami",
                 Display = "RaidKitakami",
                 SCBKey = 0x100B93DA,
-                Pointer = "[[[main+4622A30]+198]+88]+CD8"
-            }
+                Pointer = "[[[main+4622A30]+198]+88]+CD8",
+            },
         ];
 
         public static readonly BlockData[] Blocks_SV_v132 =
@@ -140,21 +140,21 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xE3E89BD1,
-                Pointer = "[[main+44C1C18]+100]+40"
+                Pointer = "[[main+44C1C18]+100]+40",
             },
             new()
             {
                 Name = "KItem",
                 Display = "Items",
                 SCBKey = 0x21C9BD44,
-                Pointer = "[[main+44C1C18]+1B0]+40"
+                Pointer = "[[main+44C1C18]+1B0]+40",
             },
             new()
             {
                 Name = "KTeraRaidPaldea",
                 Display = "Raid",
                 SCBKey = 0xCAAC8800,
-                Pointer = "[[main+44C1C18]+180]+40"
+                Pointer = "[[main+44C1C18]+180]+40",
             },
         ];
 
@@ -165,21 +165,21 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xE3E89BD1,
-                Pointer = "[[main+44BFBA8]+100]+40"
+                Pointer = "[[main+44BFBA8]+100]+40",
             },
             new()
             {
                 Name = "KItem",
                 Display = "Items",
                 SCBKey = 0x21C9BD44,
-                Pointer = "[[main+44BFBA8]+1B0]+40"
+                Pointer = "[[main+44BFBA8]+1B0]+40",
             },
             new()
             {
                 Name = "KTeraRaidPaldea",
                 Display = "Raid",
                 SCBKey = 0xCAAC8800,
-                Pointer = "[[main+44BFBA8]+180]+40"
+                Pointer = "[[main+44BFBA8]+180]+40",
             },
         ];
 
@@ -190,21 +190,21 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xE3E89BD1,
-                Pointer = "[[main+44A98C8]+100]+40"
+                Pointer = "[[main+44A98C8]+100]+40",
             },
             new()
             {
                 Name = "KItem",
                 Display = "Items",
                 SCBKey = 0x21C9BD44,
-                Pointer = "[[main+44A98C8]+1B0]+40"
+                Pointer = "[[main+44A98C8]+1B0]+40",
             },
             new()
             {
                 Name = "KTeraRaidPaldea",
                 Display = "Raid",
                 SCBKey = 0xCAAC8800,
-                Pointer = "[[main+44A98C8]+180]+40"
+                Pointer = "[[main+44A98C8]+180]+40",
             },
         ];
 
@@ -215,21 +215,21 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xE3E89BD1,
-                Pointer = "[[main+42DA8E8]+148]+40"
+                Pointer = "[[main+42DA8E8]+148]+40",
             },
             new()
             {
                 Name = "KItem",
                 Display = "Items",
                 SCBKey = 0x21C9BD44,
-                Pointer = "[[main+42DA8E8]+1B0]+40"
+                Pointer = "[[main+42DA8E8]+1B0]+40",
             },
             new()
             {
                 Name = "KTeraRaidPaldea",
                 Display = "Raid",
                 SCBKey = 0xCAAC8800,
-                Pointer = "[[main+42DA8E8]+180]+40"
+                Pointer = "[[main+42DA8E8]+180]+40",
             },
         ];
 
@@ -240,21 +240,21 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xE3E89BD1,
-                Pointer = "[[main+4384B18]+148]+40"
+                Pointer = "[[main+4384B18]+148]+40",
             },
             new()
             {
                 Name = "KItem",
                 Display = "Items",
                 SCBKey = 0x21C9BD44,
-                Pointer = "[[main+4384B18]+1B0]+40"
+                Pointer = "[[main+4384B18]+1B0]+40",
             },
             new()
             {
                 Name = "KTeraRaidPaldea",
                 Display = "Raid",
                 SCBKey = 0xCAAC8800,
-                Pointer = "[[main+4384B18]+180]+40"
+                Pointer = "[[main+4384B18]+180]+40",
             },
         ];
 
@@ -265,7 +265,7 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xF25C070E,
-                Pointer = "[[main+4275470]+218]+68"
+                Pointer = "[[main+4275470]+218]+68",
             },
             new()
             {
@@ -273,35 +273,35 @@ namespace PKHeX.Core.Injection
                 Display = "Money Data",
                 SCBKey = 0x3279D927,
                 Pointer = "[[main+4275470]+210]+6C",
-                Type = SCTypeCode.UInt32
+                Type = SCTypeCode.UInt32,
             },
             new()
             {
                 Name = "KItemRegular",
                 Display = "Items",
                 SCBKey = 0x9FE2790A,
-                Pointer = "[[main+4275470]+230]+68"
+                Pointer = "[[main+4275470]+230]+68",
             },
             new()
             {
                 Name = "KItemKey",
                 Display = "Items",
                 SCBKey = 0x59A4D0C3,
-                Pointer = "[[main+4275470]+230]+AF4"
+                Pointer = "[[main+4275470]+230]+AF4",
             },
             new()
             {
                 Name = "KItemStored",
                 Display = "Items",
                 SCBKey = 0x8E434F0D,
-                Pointer = "[[main+4275470]+1E8]+68"
+                Pointer = "[[main+4275470]+1E8]+68",
             },
             new()
             {
                 Name = "KItemRecipe",
                 Display = "Items",
                 SCBKey = 0xF5D9F4A5,
-                Pointer = "[[main+4275470]+230]+C84"
+                Pointer = "[[main+4275470]+230]+C84",
             },
             new()
             {
@@ -309,14 +309,14 @@ namespace PKHeX.Core.Injection
                 Display = "Items",
                 SCBKey = 0x75CE2CF6,
                 Pointer = "[[[[[main+4275470]+1D8]+1B8]+70]+270]+38",
-                Type = SCTypeCode.UInt32
+                Type = SCTypeCode.UInt32,
             },
             new()
             {
                 Name = "KZukan",
                 Display = "Pokedex",
                 SCBKey = 0x02168706,
-                Pointer = "[[[[main+4275470]+248]+58]+18]+1C"
+                Pointer = "[[[[main+4275470]+248]+58]+18]+1C",
             },
         ];
 
@@ -327,7 +327,7 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xF25C070E,
-                Pointer = "[[main+427B470]+218]+68"
+                Pointer = "[[main+427B470]+218]+68",
             },
             new()
             {
@@ -335,35 +335,35 @@ namespace PKHeX.Core.Injection
                 Display = "Money Data",
                 SCBKey = 0x3279D927,
                 Pointer = "[[main+427B470]+210]+6C",
-                Type = SCTypeCode.UInt32
+                Type = SCTypeCode.UInt32,
             },
             new()
             {
                 Name = "KItemRegular",
                 Display = "Items",
                 SCBKey = 0x9FE2790A,
-                Pointer = "[[main+427B470]+230]+68"
+                Pointer = "[[main+427B470]+230]+68",
             },
             new()
             {
                 Name = "KItemKey",
                 Display = "Items",
                 SCBKey = 0x59A4D0C3,
-                Pointer = "[[main+427B470]+230]+AF4"
+                Pointer = "[[main+427B470]+230]+AF4",
             },
             new()
             {
                 Name = "KItemStored",
                 Display = "Items",
                 SCBKey = 0x8E434F0D,
-                Pointer = "[[main+427B470]+1E8]+68"
+                Pointer = "[[main+427B470]+1E8]+68",
             },
             new()
             {
                 Name = "KItemRecipe",
                 Display = "Items",
                 SCBKey = 0xF5D9F4A5,
-                Pointer = "[[main+427B470]+230]+C84"
+                Pointer = "[[main+427B470]+230]+C84",
             },
             new()
             {
@@ -371,14 +371,14 @@ namespace PKHeX.Core.Injection
                 Display = "Items",
                 SCBKey = 0x75CE2CF6,
                 Pointer = "[[[[[main+427B470]+1D8]+1B8]+70]+270]+38",
-                Type = SCTypeCode.UInt32
+                Type = SCTypeCode.UInt32,
             },
             new()
             {
                 Name = "KZukan",
                 Display = "Pokedex",
                 SCBKey = 0x02168706,
-                Pointer = "[[[[main+427B470]+248]+58]+18]+1C"
+                Pointer = "[[[[main+427B470]+248]+58]+18]+1C",
             },
         ];
 
@@ -389,7 +389,7 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xF25C070E,
-                Pointer = "[[main+427C470]+218]+68"
+                Pointer = "[[main+427C470]+218]+68",
             },
             new()
             {
@@ -397,35 +397,35 @@ namespace PKHeX.Core.Injection
                 Display = "Money Data",
                 SCBKey = 0x3279D927,
                 Pointer = "[[main+427C470]+210]+6C",
-                Type = SCTypeCode.UInt32
+                Type = SCTypeCode.UInt32,
             },
             new()
             {
                 Name = "KItemRegular",
                 Display = "Items",
                 SCBKey = 0x9FE2790A,
-                Pointer = "[[main+427C470]+230]+68"
+                Pointer = "[[main+427C470]+230]+68",
             },
             new()
             {
                 Name = "KItemKey",
                 Display = "Items",
                 SCBKey = 0x59A4D0C3,
-                Pointer = "[[main+427C470]+230]+AF4"
+                Pointer = "[[main+427C470]+230]+AF4",
             },
             new()
             {
                 Name = "KItemStored",
                 Display = "Items",
                 SCBKey = 0x8E434F0D,
-                Pointer = "[[main+427C470]+1E8]+68"
+                Pointer = "[[main+427C470]+1E8]+68",
             },
             new()
             {
                 Name = "KItemRecipe",
                 Display = "Items",
                 SCBKey = 0xF5D9F4A5,
-                Pointer = "[[main+427C470]+230]+C84"
+                Pointer = "[[main+427C470]+230]+C84",
             },
             new()
             {
@@ -433,14 +433,14 @@ namespace PKHeX.Core.Injection
                 Display = "Items",
                 SCBKey = 0x75CE2CF6,
                 Pointer = "[[[[[main+427C470]+1D8]+1B8]+70]+270]+38",
-                Type = SCTypeCode.UInt32
+                Type = SCTypeCode.UInt32,
             },
             new()
             {
                 Name = "KZukan",
                 Display = "Pokedex",
                 SCBKey = 0x02168706,
-                Pointer = "[[[[main+427C470]+248]+58]+18]+1C"
+                Pointer = "[[[[main+427C470]+248]+58]+18]+1C",
             },
         ];
 
@@ -451,7 +451,7 @@ namespace PKHeX.Core.Injection
                 Name = "MyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xF25C070E,
-                Pointer = "[[main+42BA6B0]+218]+68"
+                Pointer = "[[main+42BA6B0]+218]+68",
             },
             new()
             {
@@ -459,7 +459,7 @@ namespace PKHeX.Core.Injection
                 Display = "Money Data",
                 SCBKey = 0x3279D927,
                 Pointer = "[[main+42BA6B0]+210]+6C",
-                Type = SCTypeCode.UInt32
+                Type = SCTypeCode.UInt32,
             },
             new()
             {
@@ -467,42 +467,42 @@ namespace PKHeX.Core.Injection
                 Display = "Items",
                 SCBKey = 0x75CE2CF6,
                 Pointer = "[[[[[main+42BA6B0]+1D8]+1D8]]+428]+18",
-                Type = SCTypeCode.UInt32
+                Type = SCTypeCode.UInt32,
             },
             new()
             {
                 Name = "KItemRegular",
                 Display = "Items",
                 SCBKey = 0x9FE2790A,
-                Pointer = "[[main+42BA6B0]+230]+68"
+                Pointer = "[[main+42BA6B0]+230]+68",
             },
             new()
             {
                 Name = "KItemKey",
                 Display = "Items",
                 SCBKey = 0x59A4D0C3,
-                Pointer = "[[main+42BA6B0]+230]+AF4"
+                Pointer = "[[main+42BA6B0]+230]+AF4",
             },
             new()
             {
                 Name = "KItemStored",
                 Display = "Items",
                 SCBKey = 0x8E434F0D,
-                Pointer = "[[main+42BA6B0]+1E8]+68"
+                Pointer = "[[main+42BA6B0]+1E8]+68",
             },
             new()
             {
                 Name = "KItemRecipe",
                 Display = "Items",
                 SCBKey = 0xF5D9F4A5,
-                Pointer = "[[main+42BA6B0]+230]+C84"
+                Pointer = "[[main+42BA6B0]+230]+C84",
             },
             new()
             {
                 Name = "KZukan",
                 Display = "Pokedex",
                 SCBKey = 0x02168706,
-                Pointer = "[[[[main+42BA6B0]+248]+58]+18]+1C"
+                Pointer = "[[[[main+42BA6B0]+248]+58]+18]+1C",
             },
         ];
 
@@ -533,7 +533,7 @@ namespace PKHeX.Core.Injection
                 { "Pokedex", "B_OpenPokedex_Click" },
                 { "Raid", "B_OpenRaids_Click" },
                 { "RaidKitakami", "B_OpenRaids_Click" },
-                { "RaidBlueberry", "B_OpenRaids_Click" }
+                { "RaidBlueberry", "B_OpenRaids_Click" },
                 //{ "Trainer Data", "B_OpenTrainerInfo_Click" },
             };
 
@@ -553,7 +553,7 @@ namespace PKHeX.Core.Injection
                 LiveHeXVersion.LA_v101 => "[[main+427B470]+1F0]+68",
                 LiveHeXVersion.LA_v102 => "[[main+427C470]+1F0]+68",
                 LiveHeXVersion.LA_v111 => "[[main+42BA6B0]+1F0]+68",
-                _ => string.Empty
+                _ => string.Empty,
             };
         }
 
@@ -567,7 +567,7 @@ namespace PKHeX.Core.Injection
                 LiveHeXVersion.SV_v132 => "[[[[[main+44B71A8]+D8]]]+30]",
                 LiveHeXVersion.SV_v130 or LiveHeXVersion.SV_v131 => "[[[[[main+44B5158]+D8]]]+30]",
                 LiveHeXVersion.SV_v120 => "[[[[[main+449EEE8]+D8]]]+30]",
-                _ => string.Empty
+                _ => string.Empty,
             };
         }
 

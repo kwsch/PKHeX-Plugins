@@ -19,7 +19,7 @@ namespace PKHeX.Core.AutoMod
             SetShiny = false,
             SetAlpha = false,
             NativeOnly = false,
-            TransferVersion = GameVersion.SL
+            TransferVersion = GameVersion.SL,
         };
         public static bool IncludeForms { get; set; }
         public static bool SetShiny { get; set; }
@@ -329,7 +329,7 @@ namespace PKHeX.Core.AutoMod
                 (ushort)Species.Giratina => form == 1 && generation < 9 ? 112 : form == 1 ? 1779 : null, // Griseous Orb
                 (ushort)Species.Zacian => form == 1 ? 1103 : null, // Rusted Sword
                 (ushort)Species.Zamazenta => form == 1 ? 1104 : null, // Rusted Shield
-                _ => null
+                _ => null,
             };
         }
 

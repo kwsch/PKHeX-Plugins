@@ -16,13 +16,13 @@ namespace AutoModPlugins
 
             var c1 = new ToolStripMenuItem("Merge PKM into PKSM Bank")
             {
-                Image = Resources.uploadgpss
+                Image = Resources.uploadgpss,
             };
             c1.Click += (_, _) => Import();
             c1.Name = "Menu_CreatePKSMBank";
             var c2 = new ToolStripMenuItem("Split PKSM Bank into PKM")
             {
-                Image = Resources.mgdbdownload
+                Image = Resources.mgdbdownload,
             };
             c2.Click += (_, _) => Export();
             c2.Name = "Menu_ExportPKSMBank";

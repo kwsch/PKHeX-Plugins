@@ -18,7 +18,7 @@ namespace PKHeX.Core.AutoMod
         [
             GameVersion.GG,
             GameVersion.BDSP,
-            GameVersion.PLA
+            GameVersion.PLA,
         ];
 
         public static string DefaultOT { get; set; } = "ALM";
@@ -93,7 +93,7 @@ namespace PKHeX.Core.AutoMod
                     GameVersion.SP => GameVersion.BD,
                     GameVersion.GE => GameVersion.GP,
                     GameVersion.GP => GameVersion.GE,
-                    _ => GameVersion.PLA
+                    _ => GameVersion.PLA,
                 };
                 trainer = Database.GetTrainer(super_special_version, lang);
             }

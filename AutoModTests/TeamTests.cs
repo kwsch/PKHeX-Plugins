@@ -82,7 +82,7 @@ namespace AutoModTests
                 results[s] = new Dictionary<string, RegenTemplate[]>
                 {
                     { "legal", legalsets.ToArray() },
-                    { "illegal", illegalsets.ToArray() }
+                    { "illegal", illegalsets.ToArray() },
                 };
             }
             return results;

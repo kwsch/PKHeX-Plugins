@@ -67,7 +67,7 @@ namespace PKHeX.Core.Enhancements
 
             var uploadData = new MultipartFormDataContent
             {
-                { new ByteArrayContent(data), "pkmn", "pkmn" }
+                { new ByteArrayContent(data), "pkmn", "pkmn" },
             };
 
             uploadData.Headers.Add("source", "PKHeX AutoMod Plugins");

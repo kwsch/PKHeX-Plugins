@@ -17,7 +17,7 @@ namespace PKHeX.Core.Injection
             LiveHeXVersion.XY_v150,
             LiveHeXVersion.US_v120,
             LiveHeXVersion.UM_v120,
-            LiveHeXVersion.SM_v120
+            LiveHeXVersion.SM_v120,
         ];
 
         public static LiveHeXVersion[] GetVersions() => SupportedVersions;
@@ -29,82 +29,82 @@ namespace PKHeX.Core.Injection
                 Name = "KMyStatus",
                 Display = "Trainer Data",
                 SCBKey = 0xF25C070E,
-                Offset = 0x45068F18
+                Offset = 0x45068F18,
             },
             new()
             {
                 Name = "KItem",
                 Display = "Items",
                 SCBKey = 0x1177C2C4,
-                Offset = 0x45067A98
+                Offset = 0x45067A98,
             },
             new()
             {
                 Name = "KMisc",
                 Display = "Miscellaneous",
                 SCBKey = 0x1B882B09,
-                Offset = 0x45072DF0
+                Offset = 0x45072DF0,
             },
             new()
             {
                 Name = "KTrainerCard",
                 Display = "Trainer Card",
                 SCBKey = 0x874DA6FA,
-                Offset = 0x45127098
+                Offset = 0x45127098,
             },
             new()
             {
                 Name = "KFashionUnlock",
                 Display = "Fashion",
                 SCBKey = 0xD224F9AC,
-                Offset = 0x450748E8
+                Offset = 0x450748E8,
             },
             new()
             {
                 Name = "Raid",
                 Display = "Raid",
                 SCBKey = 0x9033eb7b,
-                Offset = 0x450C8A70
+                Offset = 0x450C8A70,
             },
             new()
             {
                 Name = "RaidArmor",
                 Display = "RaidArmor",
                 SCBKey = 0x158DA896,
-                Offset = 0x450C94D8
+                Offset = 0x450C94D8,
             },
             new()
             {
                 Name = "RaidCrown",
                 Display = "RaidCrown",
                 SCBKey = 0x148DA703,
-                Offset = 0x450C9F40
+                Offset = 0x450C9F40,
             },
             new()
             {
                 Name = "KZukan",
                 Display = "Pokedex Base",
                 SCBKey = 0x4716C404,
-                Offset = 0x45069120
+                Offset = 0x45069120,
             },
             new()
             {
                 Name = "KZukanR1",
                 Display = "Pokedex Armor",
                 SCBKey = 0x3F936BA9,
-                Offset = 0x45069120
+                Offset = 0x45069120,
             },
             new()
             {
                 Name = "KZukanR2",
                 Display = "Pokedex Crown",
                 SCBKey = 0x3C9366F0,
-                Offset = 0x45069120
+                Offset = 0x45069120,
             },
         ];
 
         // LiveHexVersion -> Blockname -> List of <SCBlock Keys, OffsetValues>
-        public static readonly Dictionary<LiveHeXVersion, BlockData[]> SCBlocks = new() { { LiveHeXVersion.SWSH_v132, Blocks_Rigel2 }, };
+        public static readonly Dictionary<LiveHeXVersion, BlockData[]> SCBlocks = new() { { LiveHeXVersion.SWSH_v132, Blocks_Rigel2 } };
 
         public override Dictionary<string, string> SpecialBlocks { get; } =
             new()

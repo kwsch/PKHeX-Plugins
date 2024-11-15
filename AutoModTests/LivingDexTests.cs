@@ -27,7 +27,7 @@ namespace AutoModTests
             Pt,
             E,
             C,
-            RD
+            RD,
         ];
 
         private static GenerateResult SingleSaveTest(this GameVersion s, LivingDexConfig cfg)

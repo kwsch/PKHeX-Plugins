@@ -369,7 +369,7 @@ namespace PKHeX.Core.Injection
                 "niji_loc",
                 "niji_loc",
                 "momiji",
-                "momiji"
+                "momiji",
             };
             string? pname;
             string log = e.Info;

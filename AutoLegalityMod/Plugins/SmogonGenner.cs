@@ -17,7 +17,7 @@ namespace AutoModPlugins
             var ctrl = new ToolStripMenuItem(Name)
             {
                 Name = "Menu_SmogonGenner",
-                Image = Resources.smogongenner
+                Image = Resources.smogongenner,
             };
             modmenu.DropDownItems.Add(ctrl);
             ctrl.Click += SmogonGenning;

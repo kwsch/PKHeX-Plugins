@@ -97,7 +97,7 @@ namespace AutoModTests
                 {
                     OT = "Test",
                     TID16 = 123,
-                    SID16 = 432
+                    SID16 = 432,
                 };
                 TrainerSettings.Register(sti);
 
@@ -143,7 +143,7 @@ namespace AutoModTests
                 {
                     OT = "Test",
                     TID16 = 123,
-                    SID16 = 432
+                    SID16 = 432,
                 };
                 TrainerSettings.Register(sti);
 

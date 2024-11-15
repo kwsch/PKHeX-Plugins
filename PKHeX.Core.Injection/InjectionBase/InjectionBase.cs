@@ -36,7 +36,7 @@ namespace PKHeX.Core.Injection
                     {
                         LiveHeXVersion.SWSH_v111,
                         LiveHeXVersion.SWSH_v121,
-                        LiveHeXVersion.SWSH_v132
+                        LiveHeXVersion.SWSH_v132,
                     }
                 },
                 {
@@ -45,7 +45,7 @@ namespace PKHeX.Core.Injection
                     {
                         LiveHeXVersion.SWSH_v111,
                         LiveHeXVersion.SWSH_v121,
-                        LiveHeXVersion.SWSH_v132
+                        LiveHeXVersion.SWSH_v132,
                     }
                 },
                 {
@@ -57,7 +57,7 @@ namespace PKHeX.Core.Injection
                         LiveHeXVersion.BDSP_v112,
                         LiveHeXVersion.BDSP_v113,
                         LiveHeXVersion.BDSP_v120,
-                        LiveHeXVersion.SP_v130
+                        LiveHeXVersion.SP_v130,
                     }
                 },
                 {
@@ -69,7 +69,7 @@ namespace PKHeX.Core.Injection
                         LiveHeXVersion.BDSP_v112,
                         LiveHeXVersion.BDSP_v113,
                         LiveHeXVersion.BDSP_v120,
-                        LiveHeXVersion.BD_v130
+                        LiveHeXVersion.BD_v130,
                     }
                 },
                 {
@@ -79,7 +79,7 @@ namespace PKHeX.Core.Injection
                         LiveHeXVersion.LA_v100,
                         LiveHeXVersion.LA_v101,
                         LiveHeXVersion.LA_v102,
-                        LiveHeXVersion.LA_v111
+                        LiveHeXVersion.LA_v111,
                     }
                 },
                 {

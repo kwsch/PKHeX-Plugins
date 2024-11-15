@@ -103,7 +103,7 @@ namespace AutoModPlugins
                 EncounterTypeGroup.Static,
                 EncounterTypeGroup.Trade,
                 EncounterTypeGroup.Slot,
-                EncounterTypeGroup.Mystery
+                EncounterTypeGroup.Mystery,
             ];
 
       //  [Category(Legality)]

@@ -366,7 +366,7 @@ namespace PKHeX.Core.AutoMod
                 "",
                 "",
                 "",
-                ""
+                "",
             };
             var idx = Array.IndexOf(nicknames, set.Nickname);
             if (idx > 0)
@@ -1139,7 +1139,7 @@ namespace PKHeX.Core.AutoMod
                 {
                     EncounterMight9 m => m.ScaleType.GetSizeValue(m.Scale, ref rand),
                     EncounterDist9 d => d.ScaleType.GetSizeValue(d.Scale, ref rand),
-                    _ => SizeType9Extensions.GetSizeValue(0,0,ref rand)
+                    _ => SizeType9Extensions.GetSizeValue(0,0,ref rand),
                 };
                 finalseed = (uint)seed;
                 break;
@@ -1745,7 +1745,7 @@ namespace PKHeX.Core.AutoMod
                         IV_DEF = criteria.IV_DEF,
                         IV_SPA = -1,
                         IV_SPD = -1,
-                        IV_SPE = criteria.IV_SPE
+                        IV_SPE = criteria.IV_SPE,
                     };
 
                 case (int)Species.Pyukumuku when criteria is { IV_DEF: 0, IV_SPD: 0 } && set.Ability == (int)Ability.InnardsOut: // 0 Def / 0 Spd Pyukumuku with innards out
@@ -1756,7 +1756,7 @@ namespace PKHeX.Core.AutoMod
                         IV_DEF = criteria.IV_DEF,
                         IV_SPA = -1,
                         IV_SPD = criteria.IV_SPD,
-                        IV_SPE = -1
+                        IV_SPE = -1,
                     };
                 default:
                     break;
@@ -1770,7 +1770,7 @@ namespace PKHeX.Core.AutoMod
                     IV_DEF = criteria.IV_DEF,
                     IV_SPA = criteria.IV_SPA,
                     IV_SPD = criteria.IV_SPD,
-                    IV_SPE = criteria.IV_SPE
+                    IV_SPE = criteria.IV_SPE,
                 };
             }
             if(enc is EncounterSlot4 && enc.Species == (ushort)Species.Unown)
@@ -1782,7 +1782,7 @@ namespace PKHeX.Core.AutoMod
                     IV_DEF = criteria.IV_DEF,
                     IV_SPA = criteria.IV_SPA,
                     IV_SPD = criteria.IV_SPD,
-                    IV_SPE = criteria.IV_SPE
+                    IV_SPE = criteria.IV_SPE,
                 };
             }
             return criteria with
@@ -1792,7 +1792,7 @@ namespace PKHeX.Core.AutoMod
                 IV_HP = -1,
                 IV_SPA = -1,
                 IV_SPD = -1,
-                IV_SPE = criteria.IV_SPE == 0 ? (sbyte)0 : (sbyte)-1
+                IV_SPE = criteria.IV_SPE == 0 ? (sbyte)0 : (sbyte)-1,
             };
         }
 

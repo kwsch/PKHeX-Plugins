@@ -26,7 +26,7 @@
                         LiveHeXVersion.LA_v100,
                         LiveHeXVersion.LA_v101,
                         LiveHeXVersion.LA_v102,
-                        LiveHeXVersion.LA_v111
+                        LiveHeXVersion.LA_v111,
                     ],
                 SAV8BS
                     =>
@@ -41,14 +41,14 @@
                         LiveHeXVersion.BDSP_v113,
                         LiveHeXVersion.BDSP_v120,
                         LiveHeXVersion.BD_v130,
-                        LiveHeXVersion.SP_v130
+                        LiveHeXVersion.SP_v130,
                     ],
                 SAV8SWSH
                     =>
                     [
                         LiveHeXVersion.SWSH_v111,
                         LiveHeXVersion.SWSH_v121,
-                        LiveHeXVersion.SWSH_v132
+                        LiveHeXVersion.SWSH_v132,
                     ],
                 SAV7b => [LiveHeXVersion.LGPE_v102],
                 SAV7USUM => [LiveHeXVersion.UM_v120, LiveHeXVersion.US_v120],
@@ -221,7 +221,7 @@
                 LiveHeXVersion.SP_v111 => ("[[[[main+4E34DD0]+B8]+10]+A0]+20", 40),
                 LiveHeXVersion.SP_v110 => ("[[[main+4E27C50]+B8]+170]+20", 40), // untested
                 LiveHeXVersion.SP_v100 => ("[[[main+4C0ABD8]+520]+C0]+5E0", 40), // untested
-                _ => (string.Empty, 0)
+                _ => (string.Empty, 0),
             };
         }
 

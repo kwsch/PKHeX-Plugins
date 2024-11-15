@@ -156,7 +156,7 @@ namespace AutoModPlugins
             return modmenu;
         }
 
-        private static ToolStripMenuItem CreateBaseGroupItem() => new(ParentMenuText) { Image = Resources.menuautolegality, Name = ParentMenuName, };
+        private static ToolStripMenuItem CreateBaseGroupItem() => new(ParentMenuText) { Image = Resources.menuautolegality, Name = ParentMenuName };
 
         protected abstract void AddPluginControl(ToolStripDropDownItem modmenu);
 

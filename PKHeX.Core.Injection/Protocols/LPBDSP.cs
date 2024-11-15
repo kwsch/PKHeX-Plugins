@@ -16,7 +16,7 @@ namespace PKHeX.Core.Injection
             LiveHeXVersion.BDSP_v112,
             LiveHeXVersion.BDSP_v113,
             LiveHeXVersion.BDSP_v120,
-            LiveHeXVersion.BD_v130
+            LiveHeXVersion.BD_v130,
         ];
         private static readonly LiveHeXVersion[] ShiningPearl =
         [
@@ -26,7 +26,7 @@ namespace PKHeX.Core.Injection
             LiveHeXVersion.BDSP_v112,
             LiveHeXVersion.BDSP_v113,
             LiveHeXVersion.BDSP_v120,
-            LiveHeXVersion.SP_v130
+            LiveHeXVersion.SP_v130,
         ];
         private static readonly LiveHeXVersion[] SupportedVersions = ArrayUtil.ConcatAll(
             BrilliantDiamond,
@@ -58,7 +58,7 @@ namespace PKHeX.Core.Injection
         public override Dictionary<string, string> SpecialBlocks { get; } = new()
             {
                 { "Items", "B_OpenItemPouch_Click" },
-                { "Underground", "B_OpenUGSEditor_Click" }
+                { "Underground", "B_OpenUGSEditor_Click" },
             };
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -92,7 +92,7 @@ namespace PKHeX.Core.Injection
                 LiveHeXVersion.BDSP_v112 => "[[[main+4E34DD0]+B8]+10]+E0",
                 LiveHeXVersion.BD_v111 => "[[[main+4C1DCF8]+B8]+10]+E0",
                 LiveHeXVersion.SP_v111 => "[[[main+4E34DD0]+B8]+10]+E0",
-                _ => null
+                _ => null,
             };
         }
 
@@ -108,7 +108,7 @@ namespace PKHeX.Core.Injection
                 LiveHeXVersion.BDSP_v112 => "[[[[main+4E34DD0]+B8]+10]+48]+20",
                 LiveHeXVersion.BD_v111 => "[[[[main+4C1DCF8]+B8]+10]+48]+20",
                 LiveHeXVersion.SP_v111 => "[[[[main+4E34DD0]+B8]+10]+48]+20",
-                _ => null
+                _ => null,
             };
         }
 
@@ -124,7 +124,7 @@ namespace PKHeX.Core.Injection
                 LiveHeXVersion.BDSP_v112 => "[[[[main+4E34DD0]+B8]+10]+50]+20",
                 LiveHeXVersion.BD_v111 => "[[[[main+4C1DCF8]+B8]+10]+50]+20",
                 LiveHeXVersion.SP_v111 => "[[[[main+4E34DD0]+B8]+10]+50]+20",
-                _ => null
+                _ => null,
             };
         }
 
@@ -140,7 +140,7 @@ namespace PKHeX.Core.Injection
                 LiveHeXVersion.BDSP_v112 => "[[[main+4E34DD0]+B8]+10]+450",
                 LiveHeXVersion.BD_v111 => "[[[main+4C1DCF8]+B8]+10]+450",
                 LiveHeXVersion.SP_v111 => "[[[main+4E34DD0]+B8]+10]+450",
-                _ => null
+                _ => null,
             };
         }
 

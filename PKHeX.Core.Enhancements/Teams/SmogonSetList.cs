@@ -31,7 +31,7 @@ namespace PKHeX.Core.Enhancements
             "Mix and Mega", // Assumes pokemon can mega evolve that cannot
             "STABmons", // Generates illegal movesets
             "National Dex", // Adds Megas to Generation VIII
-            "National Dex AG" // Adds Megas to Generation VIII
+            "National Dex AG", // Adds Megas to Generation VIII
         ];
 
         public string Summary => AlertText(ShowdownSpeciesName, SetText.Count, GetTitles());

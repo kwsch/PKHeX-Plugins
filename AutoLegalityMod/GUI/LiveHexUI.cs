@@ -180,7 +180,7 @@ namespace AutoModPlugins
                                 new ProcessStartInfo
                                 {
                                     FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/Installing-LiveHeX",
-                                    UseShellExecute = true
+                                    UseShellExecute = true,
                                 });
                         }
 
@@ -239,7 +239,7 @@ namespace AutoModPlugins
                         new ProcessStartInfo
                         {
                             FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/FAQ-and-Troubleshooting#troubleshooting",
-                            UseShellExecute = true
+                            UseShellExecute = true,
                         });
                 }
 
@@ -924,7 +924,7 @@ namespace AutoModPlugins
                         Process.Start(new ProcessStartInfo
                             {
                                 FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/FAQ-and-Troubleshooting#troubleshooting",
-                                UseShellExecute = true
+                                UseShellExecute = true,
                             });
                     }
 

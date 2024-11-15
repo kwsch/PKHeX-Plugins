@@ -29,7 +29,7 @@ namespace PKHeX.Core.Enhancements
                 "Zen",
                 "Galar-Zen",
                 "Hangry",
-                "Complete"
+                "Complete",
             };
 
         private static readonly string[] separator = ["\n"];

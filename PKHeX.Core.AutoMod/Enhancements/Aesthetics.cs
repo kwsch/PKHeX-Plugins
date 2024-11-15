@@ -1155,7 +1155,7 @@ namespace PKHeX.Core.AutoMod
                 RibbonIndex.MarkSnowy,
                 RibbonIndex.MarkBlizzard,
                 RibbonIndex.MarkDry,
-                RibbonIndex.MarkSandstorm
+                RibbonIndex.MarkSandstorm,
             }; // exclude all weather marks
             var valid = Enumerable.Range((int)RibbonIndex.MarkLunchtime, (int)RibbonIndex.MarkSlump - (int)RibbonIndex.MarkLunchtime + 1).Where(z => !invalid.Contains((RibbonIndex)z) && MarkRules.IsEncounterMarkValid((RibbonIndex)z, pk, enc)).ToArray();
 

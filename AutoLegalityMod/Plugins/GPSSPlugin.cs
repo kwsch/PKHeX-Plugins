@@ -18,12 +18,12 @@ namespace AutoModPlugins
             var ctrl = new ToolStripMenuItem(Name)
             {
                 Name = "Menu_GPSSPlugin",
-                Image = Resources.flagbrew
+                Image = Resources.flagbrew,
             };
             var c1 = new ToolStripMenuItem("Upload to GPSS") { Image = Resources.uploadgpss };
             var c2 = new ToolStripMenuItem("Import from GPSS URL")
             {
-                Image = Resources.mgdbdownload
+                Image = Resources.mgdbdownload,
             };
             c1.Click += GPSSUpload;
             c1.Name = "Menu_UploadtoGPSS";

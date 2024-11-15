@@ -116,7 +116,7 @@ namespace AutoModPlugins
                 (ushort)Species.Giratina => form == 1 && generation < 9 ? 112 : form == 1 ? 1779 : null, // Griseous Orb
                 (ushort)Species.Zacian => form == 1 ? 1103 : null, // Rusted Sword
                 (ushort)Species.Zamazenta => form == 1 ? 1104 : null, // Rusted Shield
-                _ => null
+                _ => null,
             };
         }
         public static bool GetIsFormInvalid(PKM pk, ITrainerInfo tr, byte form)
