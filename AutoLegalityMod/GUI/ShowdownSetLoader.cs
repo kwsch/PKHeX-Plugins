@@ -251,7 +251,7 @@ public static class ShowdownSetLoader
         APILegality.RandTypes = settings.RandomTypes;
         Legalizer.EnableEasterEggs = settings.EnableEasterEggs;
         SmogonGenner.PromptForImport = settings.PromptForSmogonImport;
-        ModLogic.cfg = new LivingDexConfig
+        ModLogic.Config = new LivingDexConfig
         {
             IncludeForms = settings.IncludeForms,
             SetShiny = settings.SetShiny,

@@ -115,7 +115,7 @@ public static class Legalizer
 
     public static void Dump(RegenTemplate set, bool invalid = false)
     {
-        var msg = (invalid ? $"[Invalid] [DateTime: {DateTime.Now}]" : $"[Timeout : {APILegality.Timeout} seconds] [DateTime: {DateTime.Now}]") + Environment.NewLine + set.Text + Environment.NewLine;
+        var msg = (invalid ? $"[Invalid] [DateTime: {DateTime.Now}]" : $"[Timeout : {Timeout} seconds] [DateTime: {DateTime.Now}]") + Environment.NewLine + set.Text + Environment.NewLine;
         System.IO.File.AppendAllText("error_log.txt", msg);
     }
 

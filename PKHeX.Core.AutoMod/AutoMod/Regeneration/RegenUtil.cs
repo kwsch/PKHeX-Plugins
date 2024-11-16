@@ -205,7 +205,7 @@ public static class RegenUtil
         };
     }
 
-    public static int GetRegenAbility(int species, int gen, AbilityRequest ar)
+    public static int GetRegenAbility(ushort species, byte gen, AbilityRequest ar)
     {
         var pi = GameData.GetPersonal(GetGameVersionFromGen(gen))[species];
         var abils_ct = pi.AbilityCount;

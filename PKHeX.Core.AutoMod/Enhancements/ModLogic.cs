@@ -15,7 +15,7 @@ namespace PKHeX.Core.AutoMod;
 public static class ModLogic
 {
     // Living Dex Settings
-    public static LivingDexConfig cfg = new()
+    public static LivingDexConfig Config { get; set; } = new()
     {
         IncludeForms = false,
         SetShiny = false,
@@ -23,6 +23,7 @@ public static class ModLogic
         NativeOnly = false,
         TransferVersion = GameVersion.SL,
     };
+
     public static bool IncludeForms { get; set; }
     public static bool SetShiny { get; set; }
     public static bool SetAlpha { get; set; }
@@ -54,7 +55,7 @@ public static class ModLogic
     /// </summary>
     /// <param name="sav">Save File to receive the generated <see cref="PKM"/>.</param>
     /// <returns>Consumable list of newly generated <see cref="PKM"/> data.</returns>
-    public static IEnumerable<PKM> GenerateLivingDex(this SaveFile sav) => sav.GenerateLivingDex(cfg);
+    public static IEnumerable<PKM> GenerateLivingDex(this SaveFile sav) => sav.GenerateLivingDex(Config);
 
     /// <summary>
     /// Gets a living dex (one per species, not every form)
@@ -92,7 +93,9 @@ public static class ModLogic
                         formarg = 0;
                     }
                     else
+                    {
                         formarg++;
+                    }
                 }
 
                 if (!sav.Personal.IsPresentInGame(s, form) || FormInfo.IsLordForm(s, form, sav.Context) || FormInfo.IsBattleOnlyForm(s, form, sav.Generation) || FormInfo.IsFusedForm(s, form, sav.Generation) || (FormInfo.IsTotemForm(s, form) && sav.Context is not EntityContext.Gen7))
@@ -109,7 +112,7 @@ public static class ModLogic
         });
         return pklist.OrderBy(z=>z.Species);
     }
-    public static IEnumerable<PKM> GenerateTransferLivingDex(this SaveFile sav) => sav.GenerateTransferLivingDex(cfg);
+    public static IEnumerable<PKM> GenerateTransferLivingDex(this SaveFile sav) => sav.GenerateTransferLivingDex(Config);
     public static IEnumerable<PKM> GenerateTransferLivingDex(this SaveFile sav, LivingDexConfig cfg)
     {
         var resetevent = new ManualResetEvent(false);
@@ -241,7 +244,7 @@ public static class ModLogic
         }
 
         var template = EntityBlank.GetBlank(tr.Generation, tr.Version);
-        var item = GetFormSpecificItem((int)tr.Version, blank.Species, blank.Form);
+        var item = GetFormSpecificItem(tr.Version, blank.Species, blank.Form);
         if (item is not null)
             blank.HeldItem = (int)item;
 
@@ -318,12 +321,12 @@ public static class ModLogic
         return false;
     }
 
-    private static int? GetFormSpecificItem(int game, int species, int form)
+    private static int? GetFormSpecificItem(GameVersion game, ushort species, byte form)
     {
-        if (game == (int)GameVersion.PLA)
+        if (game == GameVersion.PLA)
             return null;
 
-        var generation = ((GameVersion)game).GetGeneration();
+        var generation = game.GetGeneration();
         return species switch
         {
             (ushort)Arceus => generation != 4 || form < 9 ? SimpleEdits.GetArceusHeldItemFromForm(form) : SimpleEdits.GetArceusHeldItemFromForm(form - 1),
@@ -444,7 +447,7 @@ public static class ModLogic
                 rough.Form = rough.Gender;
             }
 
-            var item = GetFormSpecificItem((int)sav.Version, rough.Species, rough.Form);
+            var item = GetFormSpecificItem(sav.Version, rough.Species, rough.Form);
             if (item is not null)
                 rough.HeldItem = (int)item;
 

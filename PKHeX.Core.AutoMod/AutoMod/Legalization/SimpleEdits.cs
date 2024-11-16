@@ -39,7 +39,7 @@ public static class SimpleEdits
         089, // Muk
     ];
 
-    public static bool IsShinyLockedSpeciesForm(int species, int form)
+    public static bool IsShinyLockedSpeciesForm(ushort species, byte form)
     {
         var tuple = ((Species)species, form);
         return ShinyLockedSpeciesForm.Contains(tuple);

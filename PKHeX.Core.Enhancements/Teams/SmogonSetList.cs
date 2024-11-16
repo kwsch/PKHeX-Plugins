@@ -284,15 +284,13 @@ public class SmogonSetList
         _ => form,
     };
 
-    private static string ConvertFormToShowdown(string form, int spec)
+    private static string ConvertFormToShowdown(string form, ushort spec)
     {
         if (form.Length == 0)
         {
-            return spec switch
-            {
-                (int)Core.Species.Minior => "Meteor",
-                _ => form,
-            };
+            if (spec == (int)Core.Species.Minior)
+                return "Meteor";
+            return form;
         }
 
         switch (spec)
@@ -306,10 +304,7 @@ public class SmogonSetList
                 return form.Replace("50%", string.Empty);
             case (int)Core.Species.Minior:
                 if (form.StartsWith("M-"))
-                {
                     return "Meteor";
-                }
-
                 return form.Replace("C-", string.Empty);
             case (int)Core.Species.Necrozma when form == "Dusk":
                 return $"{form}-Mane";
@@ -326,36 +321,17 @@ public class SmogonSetList
                 return form == "Antique" ? form : string.Empty;
 
             default:
-                if (Totem_USUM.Contains(spec) && form == "Large")
-                {
-                    return Totem_Alolan.Contains(spec) && spec != (int)Core.Species.Mimikyu ? "Alola-Totem": "Totem";
-                }
+                if (FormInfo.HasTotemForm(spec) && form == "Large")
+                    return IsTotemAlolan(spec) && spec != (int)Core.Species.Mimikyu ? "Alola-Totem": "Totem";
 
                 return form.Replace(' ', '-');
         }
     }
 
-    internal static readonly HashSet<int> Totem_Alolan =
-    [
-        020, // Raticate (Normal, Alolan, Totem)
-        105, // Marowak (Normal, Alolan, Totem)
-        778, // Mimikyu (Normal, Busted, Totem, Totem_Busted)
-    ];
-
-    internal static readonly HashSet<int> Totem_USUM =
-    [
-        020, // Raticate
-        735, // Gumshoos
-        758, // Salazzle
-        754, // Lurantis
-        738, // Vikavolt
-        778, // Mimikyu
-        784, // Kommo-o
-        105, // Marowak
-        752, // Araquanid
-        777, // Togedemaru
-        743, // Ribombee
-    ];
+    // Raticate (Normal, Alolan, Totem)
+    // Marowak (Normal, Alolan, Totem)
+    // Mimikyu (Normal, Busted, Totem, Totem_Busted)
+    private static bool IsTotemAlolan(ushort species) => species is 20 or 105 or 778; // 0, Alolan, Totem
 
     private static string GetURL(string speciesName, string form, string baseURL)
     {
