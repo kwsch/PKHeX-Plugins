@@ -1,25 +1,24 @@
-﻿namespace PKHeX.Core.AutoMod
+﻿namespace PKHeX.Core.AutoMod;
+
+public readonly record struct LivingDexConfig
 {
-    public readonly record struct LivingDexConfig
+    public bool IncludeForms { get; init; }
+    public bool SetShiny { get; init; }
+    public bool SetAlpha { get; init; }
+    public bool NativeOnly { get; init; }
+
+    public LivingDexConfig(byte bitValue)
     {
-        public bool IncludeForms { get; init; }
-        public bool SetShiny { get; init; }
-        public bool SetAlpha { get; init; }
-        public bool NativeOnly { get; init; }
+        IncludeForms = (bitValue & 1) != 0;
+        SetShiny = (bitValue & 2) != 0;
+        SetAlpha = (bitValue & 4) != 0;
+        NativeOnly = (bitValue & 8) != 0;
+    }
 
-        public LivingDexConfig(byte bitValue)
-        {
-            IncludeForms = (bitValue & 1) != 0;
-            SetShiny = (bitValue & 2) != 0;
-            SetAlpha = (bitValue & 4) != 0;
-            NativeOnly = (bitValue & 8) != 0;
-        }
+    public GameVersion TransferVersion { get; init; }
 
-        public GameVersion TransferVersion { get; init; }
-
-        public override string ToString()
-        {
-            return $"TransferVersion: {TransferVersion}\nIncludeForms: {IncludeForms}\nSetShiny: {SetShiny}\nSetAlpha: {SetAlpha}\nNativeOnly: {NativeOnly}";
-        }
+    public override string ToString()
+    {
+        return $"TransferVersion: {TransferVersion}\nIncludeForms: {IncludeForms}\nSetShiny: {SetShiny}\nSetAlpha: {SetAlpha}\nNativeOnly: {NativeOnly}";
     }
 }

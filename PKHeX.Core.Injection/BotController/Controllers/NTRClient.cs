@@ -1,106 +1,105 @@
 ﻿using System;
 using System.Threading;
 
-namespace PKHeX.Core.Injection
+namespace PKHeX.Core.Injection;
+
+public class NTRClient : ICommunicator
 {
-    public class NTRClient : ICommunicator
+    private string IP = "192.168.1.106";
+    private int Port = 8000;
+    private static readonly NTR clientNTR = new();
+
+    private const int timeout = 10;
+    private bool Connected;
+
+    private readonly Lock _sync = new();
+    private byte[]? _lastMemoryRead;
+
+    public void Connect()
     {
-        private string IP = "192.168.1.106";
-        private int Port = 8000;
-        private static readonly NTR clientNTR = new();
+        clientNTR.Connect(IP, Port);
+        if (clientNTR.IsConnected)
+            Connected = true;
+    }
 
-        private const int timeout = 10;
-        private bool Connected;
+    bool ICommunicator.Connected
+    {
+        get => Connected;
+        set => Connected = value;
+    }
+    int ICommunicator.Port
+    {
+        get => Port;
+        set => Port = value;
+    }
+    string ICommunicator.IP
+    {
+        get => IP;
+        set => IP = value;
+    }
 
-        private readonly Lock _sync = new();
-        private byte[]? _lastMemoryRead;
-
-        public void Connect()
+    public void Disconnect()
+    {
+        lock (_sync)
         {
-            clientNTR.Connect(IP, Port);
-            if (clientNTR.IsConnected)
-                Connected = true;
+            clientNTR.Disconnect();
+            Connected = false;
         }
+    }
 
-        bool ICommunicator.Connected
-        {
-            get => Connected;
-            set => Connected = value;
-        }
-        int ICommunicator.Port
-        {
-            get => Port;
-            set => Port = value;
-        }
-        string ICommunicator.IP
-        {
-            get => IP;
-            set => IP = value;
-        }
+    private void HandleMemoryRead(object argsObj)
+    {
+        DataReadyWaiting args = (DataReadyWaiting)argsObj;
+        _lastMemoryRead = args.Data;
+    }
 
-        public void Disconnect()
+    public byte[] ReadBytes(ulong offset, int length)
+    {
+        lock (_sync)
         {
-            lock (_sync)
+            if (!Connected)
+                Connect();
+
+            WriteLastLog("");
+            DataReadyWaiting myArgs = new(new byte[length], HandleMemoryRead, null);
+            while (clientNTR.PID == -1)
+                Thread.Sleep(10);
+            clientNTR.AddWaitingForData(clientNTR.Data((uint)offset, (uint)length, clientNTR.PID), myArgs);
+
+            for (int readcount = 0; readcount < timeout * 100; readcount++)
             {
-                clientNTR.Disconnect();
-                Connected = false;
+                Thread.Sleep(10);
+                if (CompareLastLog("finished"))
+                    break;
             }
-        }
 
-        private void HandleMemoryRead(object argsObj)
-        {
-            DataReadyWaiting args = (DataReadyWaiting)argsObj;
-            _lastMemoryRead = args.Data;
+            byte[] result = _lastMemoryRead ?? [];
+            _lastMemoryRead = null;
+            return result;
         }
+    }
 
-        public byte[] ReadBytes(ulong offset, int length)
+    private static void WriteLastLog(string str) => clientNTR.Lastlog = str;
+
+    private static bool CompareLastLog(string str) => clientNTR.Lastlog.Contains(str);
+
+    public void WriteBytes(ReadOnlySpan<byte> data, ulong offset)
+    {
+        lock (_sync)
         {
-            lock (_sync)
+            if (!Connected)
+                Connect();
+
+            while (clientNTR.PID == -1)
+                Thread.Sleep(10);
+            clientNTR.Write((uint)offset, data, clientNTR.PID);
+            int waittimeout;
+            for (waittimeout = 0; waittimeout < timeout * 100; waittimeout++)
             {
-                if (!Connected)
-                    Connect();
-
                 WriteLastLog("");
-                DataReadyWaiting myArgs = new(new byte[length], HandleMemoryRead, null);
-                while (clientNTR.PID == -1)
-                    Thread.Sleep(10);
-                clientNTR.AddWaitingForData(clientNTR.Data((uint)offset, (uint)length, clientNTR.PID), myArgs);
-
-                for (int readcount = 0; readcount < timeout * 100; readcount++)
-                {
-                    Thread.Sleep(10);
-                    if (CompareLastLog("finished"))
-                        break;
-                }
-
-                byte[] result = _lastMemoryRead ?? [];
-                _lastMemoryRead = null;
-                return result;
-            }
-        }
-
-        private static void WriteLastLog(string str) => clientNTR.Lastlog = str;
-
-        private static bool CompareLastLog(string str) => clientNTR.Lastlog.Contains(str);
-
-        public void WriteBytes(ReadOnlySpan<byte> data, ulong offset)
-        {
-            lock (_sync)
-            {
-                if (!Connected)
-                    Connect();
-
-                while (clientNTR.PID == -1)
-                    Thread.Sleep(10);
-                clientNTR.Write((uint)offset, data, clientNTR.PID);
-                int waittimeout;
-                for (waittimeout = 0; waittimeout < timeout * 100; waittimeout++)
-                {
-                    WriteLastLog("");
-                    Thread.Sleep(10);
-                    if (CompareLastLog("finished"))
-                        break;
-                }
+                Thread.Sleep(10);
+                if (CompareLastLog("finished"))
+                    break;
             }
         }
     }

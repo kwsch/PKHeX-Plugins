@@ -1,28 +1,27 @@
-﻿namespace PKHeX.Core.AutoMod
+﻿namespace PKHeX.Core.AutoMod;
+
+/// <summary>
+/// Indication for how a <see cref="PKM"/> is/was legalized.
+/// </summary>
+public enum LegalizationResult
 {
     /// <summary>
-    /// Indication for how a <see cref="PKM"/> is/was legalized.
+    /// Successfully regenerated from <see cref="IEncounterable"/> data.
     /// </summary>
-    public enum LegalizationResult
-    {
-        /// <summary>
-        /// Successfully regenerated from <see cref="IEncounterable"/> data.
-        /// </summary>
-        Regenerated,
+    Regenerated,
 
-        /// <summary>
-        /// Failed to generate.
-        /// </summary>
-        Failed,
+    /// <summary>
+    /// Failed to generate.
+    /// </summary>
+    Failed,
 
-        /// <summary>
-        /// Timed out while generating
-        /// </summary>
-        Timeout,
+    /// <summary>
+    /// Timed out while generating
+    /// </summary>
+    Timeout,
 
-        /// <summary>
-        /// Version mismatch with base PKHeX
-        /// </summary>
-        VersionMismatch,
-    }
+    /// <summary>
+    /// Version mismatch with base PKHeX
+    /// </summary>
+    VersionMismatch,
 }

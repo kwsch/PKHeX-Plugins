@@ -3,37 +3,37 @@ using PKHeX.Core;
 using PKHeX.Core.AutoMod;
 using Xunit;
 
-namespace AutoModTests
+namespace AutoModTests;
+
+public static class ShowdownSetGenningTests
 {
-    public static class ShowdownSetGenningTests
+    static ShowdownSetGenningTests() => TestUtil.InitializePKHeXEnvironment();
+
+    [Theory]
+    [InlineData(GameVersion.US, Meowstic)]
+    [InlineData(GameVersion.US, Darkrai)]
+    [InlineData(GameVersion.B2, Genesect)]
+    public static void VerifyManually(GameVersion game, string txt)
     {
-        static ShowdownSetGenningTests() => TestUtil.InitializePKHeXEnvironment();
+        var dev = APILegality.EnableDevMode;
+        APILegality.EnableDevMode = true;
 
-        [Theory]
-        [InlineData(GameVersion.US, Meowstic)]
-        [InlineData(GameVersion.US, Darkrai)]
-        [InlineData(GameVersion.B2, Genesect)]
-        public static void VerifyManually(GameVersion game, string txt)
-        {
-            var dev = APILegality.EnableDevMode;
-            APILegality.EnableDevMode = true;
+        var sav = SaveUtil.GetBlankSAV(game, "ALM");
+        TrainerSettings.Register(sav);
 
-            var sav = SaveUtil.GetBlankSAV(game, "ALM");
-            TrainerSettings.Register(sav);
+        var trainer = TrainerSettings.GetSavedTrainerData(game.GetGeneration(), game);
+        RecentTrainerCache.SetRecentTrainer(trainer);
 
-            var trainer = TrainerSettings.GetSavedTrainerData(game.GetGeneration(), game);
-            RecentTrainerCache.SetRecentTrainer(trainer);
+        var set = new ShowdownSet(txt);
+        var almres = sav.GetLegalFromSet(set);
+        APILegality.EnableDevMode = dev;
 
-            var set = new ShowdownSet(txt);
-            var almres = sav.GetLegalFromSet(set);
-            APILegality.EnableDevMode = dev;
+        var la = new LegalityAnalysis(almres.Created);
+        la.Valid.Should().BeTrue();
+    }
 
-            var la = new LegalityAnalysis(almres.Created);
-            la.Valid.Should().BeTrue();
-        }
-
-        private const string Darkrai =
-            @"Darkrai
+    private const string Darkrai =
+        @"Darkrai
 IVs: 7 Atk
 Ability: Bad Dreams
 Shiny: Yes
@@ -43,8 +43,8 @@ Timid Nature
 - Nightmare
 - Double Team";
 
-        private const string Genesect =
-            @"Genesect
+    private const string Genesect =
+        @"Genesect
 Ability: Download
 Shiny: Yes
 Hasty Nature
@@ -53,8 +53,8 @@ Hasty Nature
 - Blaze Kick
 - Shift Gear";
 
-        private const string Meowstic =
-            @"Meowstic-F @ Life Orb
+    private const string Meowstic =
+        @"Meowstic-F @ Life Orb
 Ability: Competitive
 EVs: 4 Def / 252 SpA / 252 Spe
 Timid Nature
@@ -62,5 +62,4 @@ Timid Nature
 - Signal Beam
 - Hidden Power Ground
 - Calm Mind";
-    }
 }

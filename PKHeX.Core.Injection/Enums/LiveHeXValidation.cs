@@ -1,11 +1,10 @@
-﻿namespace PKHeX.Core.Injection
+﻿namespace PKHeX.Core.Injection;
+
+public enum LiveHeXValidation
 {
-    public enum LiveHeXValidation
-    {
-        None = 0,
-        Botbase = 1,
-        BlankSAV = 2,
-        GameVersion = 3,
-        RAMShift = 4,
-    }
+    None = 0,
+    Botbase = 1,
+    BlankSAV = 2,
+    GameVersion = 3,
+    RAMShift = 4,
 }

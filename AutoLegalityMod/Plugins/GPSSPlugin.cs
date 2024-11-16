@@ -5,143 +5,142 @@ using System.Windows.Forms;
 using AutoModPlugins.Properties;
 using PKHeX.Core;
 
-namespace AutoModPlugins
+namespace AutoModPlugins;
+
+public class GPSSPlugin : AutoModPlugin
 {
-    public class GPSSPlugin : AutoModPlugin
+    public override string Name => "GPSS Tools";
+    public override int Priority => 2;
+    public static string Url => _settings.GPSSBaseURL;
+
+    protected override void AddPluginControl(ToolStripDropDownItem modmenu)
     {
-        public override string Name => "GPSS Tools";
-        public override int Priority => 2;
-        public static string Url => _settings.GPSSBaseURL;
-
-        protected override void AddPluginControl(ToolStripDropDownItem modmenu)
+        var ctrl = new ToolStripMenuItem(Name)
         {
-            var ctrl = new ToolStripMenuItem(Name)
-            {
-                Name = "Menu_GPSSPlugin",
-                Image = Resources.flagbrew,
-            };
-            var c1 = new ToolStripMenuItem("Upload to GPSS") { Image = Resources.uploadgpss };
-            var c2 = new ToolStripMenuItem("Import from GPSS URL")
-            {
-                Image = Resources.mgdbdownload,
-            };
-            c1.Click += GPSSUpload;
-            c1.Name = "Menu_UploadtoGPSS";
-            c2.Click += GPSSDownload;
-            c2.Name = "Menu_ImportfromGPSSURL";
-
-            ctrl.DropDownItems.Add(c1);
-            ctrl.DropDownItems.Add(c2);
-            modmenu.DropDownItems.Add(ctrl);
-        }
-
-        private async void GPSSUpload(object? sender, EventArgs e)
+            Name = "Menu_GPSSPlugin",
+            Image = Resources.flagbrew,
+        };
+        var c1 = new ToolStripMenuItem("Upload to GPSS") { Image = Resources.uploadgpss };
+        var c2 = new ToolStripMenuItem("Import from GPSS URL")
         {
-            var pk = PKMEditor.PreparePKM();
-            byte[] rawdata = pk.Data;
-            try
-            {
-                var response = await PKHeX.Core.Enhancements.NetUtil.GPSSPost(rawdata, SaveFileEditor.SAV.Generation, Url);
+            Image = Resources.mgdbdownload,
+        };
+        c1.Click += GPSSUpload;
+        c1.Name = "Menu_UploadtoGPSS";
+        c2.Click += GPSSDownload;
+        c2.Name = "Menu_ImportfromGPSSURL";
 
-                var content = await response.Content.ReadAsStringAsync();
-                var decoded = JsonSerializer.Deserialize<JsonNode>(content);
-                if (decoded == null)
-                    return;
+        ctrl.DropDownItems.Add(c1);
+        ctrl.DropDownItems.Add(c2);
+        modmenu.DropDownItems.Add(ctrl);
+    }
+
+    private async void GPSSUpload(object? sender, EventArgs e)
+    {
+        var pk = PKMEditor.PreparePKM();
+        byte[] rawdata = pk.Data;
+        try
+        {
+            var response = await PKHeX.Core.Enhancements.NetUtil.GPSSPost(rawdata, SaveFileEditor.SAV.Generation, Url);
+
+            var content = await response.Content.ReadAsStringAsync();
+            var decoded = JsonSerializer.Deserialize<JsonNode>(content);
+            if (decoded == null)
+                return;
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-                var error = decoded["error"] == null ? null : (string)decoded["error"];
+            var error = decoded["error"] == null ? null : (string)decoded["error"];
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-                var msg = "";
-                var copyToClipboard = false;
-                // TODO set proper status codes on FlagBrew side - Allen;
-                if (response.IsSuccessStatusCode)
+            var msg = "";
+            var copyToClipboard = false;
+            // TODO set proper status codes on FlagBrew side - Allen;
+            if (response.IsSuccessStatusCode)
+            {
+                if (error is { } and not "no errors")
                 {
-                    if (error is { } and not "no errors")
+                    switch (error)
                     {
-                        switch (error)
-                        {
-                            case "your pokemon is being held for manual review":
-                                msg = $"Your Pokémon was uploaded to GPSS, however it is being held for manual review. Once approved it will be available at https://{Url}/gpss/{decoded["code"]} (copied to clipboard)";
-                                copyToClipboard = true;
-                                break;
-                            case "Your Pokemon is already uploaded":
-                                msg = $"Your Pokémon was already uploaded to GPSS, and is available at https://{Url}/gpss/{decoded["code"]} (copied to clipboard)";
-                                copyToClipboard = true;
-                                break;
-                            default:
-                                msg = $"Could not upload your Pokemon to GPSS, please try again later or ask Allen if something seems wrong.\n Error details: {decoded["code"]}";
-                                break;
-                        }
+                        case "your pokemon is being held for manual review":
+                            msg = $"Your Pokémon was uploaded to GPSS, however it is being held for manual review. Once approved it will be available at https://{Url}/gpss/{decoded["code"]} (copied to clipboard)";
+                            copyToClipboard = true;
+                            break;
+                        case "Your Pokemon is already uploaded":
+                            msg = $"Your Pokémon was already uploaded to GPSS, and is available at https://{Url}/gpss/{decoded["code"]} (copied to clipboard)";
+                            copyToClipboard = true;
+                            break;
+                        default:
+                            msg = $"Could not upload your Pokemon to GPSS, please try again later or ask Allen if something seems wrong.\n Error details: {decoded["code"]}";
+                            break;
                     }
-                    else
-                    {
-                        msg = $"Pokemon added to the GPSS database. Here is your URL (has been copied to the clipboard):\n https://{Url}/gpss/{decoded["code"]}";
-                        copyToClipboard = true;
-                    }
-                }
-                else if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
-                {
-                    msg = "Uploading to GPSS is currently disabled, please try again later, or check the FlagBrew discord for more information.";
                 }
                 else
                 {
-                    msg = $"Uploading to GPSS returned an unexpected status code {response.StatusCode}\nError details (if any returned from server): {error}";
+                    msg = $"Pokemon added to the GPSS database. Here is your URL (has been copied to the clipboard):\n https://{Url}/gpss/{decoded["code"]}";
+                    copyToClipboard = true;
                 }
-
-                if (copyToClipboard)
-                {
-                    Clipboard.SetText($"https://{Url}/gpss/{decoded["code"]}");
-                }
-                WinFormsUtil.Alert(msg);
             }
-            catch (Exception ex)
+            else if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
             {
-                WinFormsUtil.Alert($"Something went wrong uploading to GPSS.\nError details: {ex.Message}");
+                msg = "Uploading to GPSS is currently disabled, please try again later, or check the FlagBrew discord for more information.";
             }
-        }
+            else
+            {
+                msg = $"Uploading to GPSS returned an unexpected status code {response.StatusCode}\nError details (if any returned from server): {error}";
+            }
 
-        private void GPSSDownload(object? sender, EventArgs e)
+            if (copyToClipboard)
+            {
+                Clipboard.SetText($"https://{Url}/gpss/{decoded["code"]}");
+            }
+            WinFormsUtil.Alert(msg);
+        }
+        catch (Exception ex)
         {
-            if (Clipboard.ContainsText())
-            {
-                var txt = Clipboard.GetText();
-                if (!txt.Contains("/gpss/"))
-                {
-                    WinFormsUtil.Error("Invalid URL or incorrect data in the clipboard");
-                    return;
-                }
-
-                if (!long.TryParse(txt.Split('/')[^1], out long code))
-                {
-                    WinFormsUtil.Error("Invalid URL (wrong code)");
-                    return;
-                }
-
-                var pkbytes = PKHeX.Core.Enhancements.NetUtil.GPSSDownload(code, Url);
-                if (pkbytes == null)
-                {
-                    WinFormsUtil.Error("GPSS Download failed");
-                    return;
-                }
-                var pkm = EntityFormat.GetFromBytes(pkbytes, EntityContext.None);
-                if (pkm == null || !LoadPKM(pkm))
-                {
-                    WinFormsUtil.Error("Error parsing PKM bytes. Make sure the Pokémon is valid and can exist in this generation.");
-                    return;
-                }
-                WinFormsUtil.Alert("GPSS Pokemon loaded to PKM Editor");
-            }
+            WinFormsUtil.Alert($"Something went wrong uploading to GPSS.\nError details: {ex.Message}");
         }
+    }
 
-        private bool LoadPKM(PKM pk)
+    private void GPSSDownload(object? sender, EventArgs e)
+    {
+        if (Clipboard.ContainsText())
         {
-            var result = EntityConverter.ConvertToType(pk, SaveFileEditor.SAV.PKMType, out _);
-            if (result == null)
+            var txt = Clipboard.GetText();
+            if (!txt.Contains("/gpss/"))
             {
-                return false;
+                WinFormsUtil.Error("Invalid URL or incorrect data in the clipboard");
+                return;
             }
 
-            PKMEditor.PopulateFields(result);
-            return true;
+            if (!long.TryParse(txt.Split('/')[^1], out long code))
+            {
+                WinFormsUtil.Error("Invalid URL (wrong code)");
+                return;
+            }
+
+            var pkbytes = PKHeX.Core.Enhancements.NetUtil.GPSSDownload(code, Url);
+            if (pkbytes == null)
+            {
+                WinFormsUtil.Error("GPSS Download failed");
+                return;
+            }
+            var pkm = EntityFormat.GetFromBytes(pkbytes, EntityContext.None);
+            if (pkm == null || !LoadPKM(pkm))
+            {
+                WinFormsUtil.Error("Error parsing PKM bytes. Make sure the Pokémon is valid and can exist in this generation.");
+                return;
+            }
+            WinFormsUtil.Alert("GPSS Pokemon loaded to PKM Editor");
         }
+    }
+
+    private bool LoadPKM(PKM pk)
+    {
+        var result = EntityConverter.ConvertToType(pk, SaveFileEditor.SAV.PKMType, out _);
+        if (result == null)
+        {
+            return false;
+        }
+
+        PKMEditor.PopulateFields(result);
+        return true;
     }
 }

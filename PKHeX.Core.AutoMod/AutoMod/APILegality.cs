@@ -6,1211 +6,1089 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace PKHeX.Core.AutoMod
+namespace PKHeX.Core.AutoMod;
+
+/// <summary>
+/// Leverages <see cref="Core"/>'s <see cref="EncounterMovesetGenerator"/> to create a <see cref="PKM"/> from a <see cref="IBattleTemplate"/>.
+/// </summary>
+public static class APILegality
 {
     /// <summary>
-    /// Leverages <see cref="Core"/>'s <see cref="EncounterMovesetGenerator"/> to create a <see cref="PKM"/> from a <see cref="IBattleTemplate"/>.
+    /// Settings
     /// </summary>
-    public static class APILegality
+    public static bool UseTrainerData { get; set; } = true;
+    public static bool SetMatchingBalls { get; set; } = true;
+    public static bool ForceSpecifiedBall { get; set; }
+    public static bool SetAllLegalRibbons { get; set; } = true;
+    public static bool UseCompetitiveMarkings { get; set; }
+    public static bool UseMarkings { get; set; } = true;
+    public static bool EnableDevMode { get; set; } = false;
+    public static string LatestAllowedVersion { get; set; } = "0.0.0.0";
+    public static bool PrioritizeGame { get; set; } = true;
+    public static GameVersion PrioritizeGameVersion { get; set; }
+    public static bool SetBattleVersion { get; set; }
+    public static bool AllowTrainerOverride { get; set; }
+    public static bool AllowBatchCommands { get; set; } = true;
+    public static bool ForceLevel100for50 { get; set; } = true;
+    public static bool AllowHOMETransferGeneration { get; set; } = true;
+    public static MoveType[] RandTypes { get; set; } = [];
+    public static int Timeout { get; set; } = 15;
+
+    /// <summary>
+    /// Main function that auto legalizes based on the legality
+    /// </summary>
+    /// <remarks>Leverages <see cref="Core"/>'s <see cref="EncounterMovesetGenerator"/> to create a <see cref="PKM"/> from a <see cref="IBattleTemplate"/>.</remarks>
+    /// <param name="dest">Destination for the generated pkm</param>
+    /// <param name="template">rough pkm that has all the <see cref="set"/> values entered</param>
+    /// <param name="set">Showdown set object</param>
+    /// <param name="satisfied">If the final result is legal or not</param>
+    /// <param name="nativeOnly"></param>
+    public static PKM GetLegalFromTemplate(this ITrainerInfo dest, PKM template, IBattleTemplate set, out LegalizationResult satisfied, bool nativeOnly = false)
     {
-        /// <summary>
-        /// Settings
-        /// </summary>
-        public static bool UseTrainerData { get; set; } = true;
-        public static bool SetMatchingBalls { get; set; } = true;
-        public static bool ForceSpecifiedBall { get; set; }
-        public static bool SetAllLegalRibbons { get; set; } = true;
-        public static bool UseCompetitiveMarkings { get; set; }
-        public static bool UseMarkings { get; set; } = true;
-        public static bool EnableDevMode { get; set; } = false;
-        public static string LatestAllowedVersion { get; set; } = "0.0.0.0";
-        public static bool PrioritizeGame { get; set; } = true;
-        public static GameVersion PrioritizeGameVersion { get; set; }
-        public static bool SetBattleVersion { get; set; }
-        public static bool AllowTrainerOverride { get; set; }
-        public static bool AllowBatchCommands { get; set; } = true;
-        public static bool ForceLevel100for50 { get; set; } = true;
-        public static bool AllowHOMETransferGeneration { get; set; } = true;
-        public static MoveType[] RandTypes { get; set; } = [];
-        public static int Timeout { get; set; } = 15;
-
-        /// <summary>
-        /// Main function that auto legalizes based on the legality
-        /// </summary>
-        /// <remarks>Leverages <see cref="Core"/>'s <see cref="EncounterMovesetGenerator"/> to create a <see cref="PKM"/> from a <see cref="IBattleTemplate"/>.</remarks>
-        /// <param name="dest">Destination for the generated pkm</param>
-        /// <param name="template">rough pkm that has all the <see cref="set"/> values entered</param>
-        /// <param name="set">Showdown set object</param>
-        /// <param name="satisfied">If the final result is legal or not</param>
-        /// <param name="nativeOnly"></param>
-        public static PKM GetLegalFromTemplate(this ITrainerInfo dest, PKM template, IBattleTemplate set, out LegalizationResult satisfied, bool nativeOnly = false)
+        RegenSet regen;
+        if (set is RegenTemplate t)
         {
-            RegenSet regen;
-            if (set is RegenTemplate t)
-            {
-                t.FixGender(template.PersonalInfo);
-                regen = t.Regen;
-            }
-            else
-            {
-                regen = RegenSet.Default;
-            }
-
-            if (template.Version == GameVersion.Any)
-                template.Version = dest.Version;
-
-            template.ApplySetDetails(set);
-            template.SetRecordFlags([]); // Validate TR/MS moves for the encounter
-
-            if (template.Species == (ushort)Species.Unown) // Force unown form on template
-                template.Form = set.Form;
-
-            var abilityreq = GetRequestedAbility(template, set);
-            var batchedit = AllowBatchCommands && regen.HasBatchSettings;
-            var native = ModLogic.cfg.NativeOnly && nativeOnly;
-            var destType = template.GetType();
-            var destVer = dest.Version;
-            if (destVer <= 0 && dest is SaveFile s)
-                destVer = s.Version;
-
-            var timer = Stopwatch.StartNew();
-            var gamelist = FilteredGameList(template, destVer, AllowBatchCommands, set, native);
-            if (dest.Generation <= 2)
-                template.EXP = 0; // no relearn moves in gen 1/2 so pass level 1 to generator
-            if (gamelist is [GameVersion.DP])
-                gamelist = [GameVersion.D, GameVersion.P];
-            var encounters = GetAllEncounters(pk: template, moves: new ReadOnlyMemory<ushort>(set.Moves), gamelist);
-            var criteria = EncounterCriteria.GetCriteria(set, template.PersonalInfo);
-            criteria.ForceMinLevelRange = true;
-            if (regen.EncounterFilters.Any())
-                encounters = encounters.Where(enc => BatchEditing.IsFilterMatch(regen.EncounterFilters, enc));
-            PKM? last = null;
-            var AllowHome = ParseSettings.Settings.HOMETransfer.HOMETransferTrackerNotPresent != Severity.Invalid;
-            foreach (var enc in encounters)
-            {
-                // Return out if set times out
-                if (timer.Elapsed.TotalSeconds >= Timeout)
-                {
-                    timer.Stop();
-                    satisfied = LegalizationResult.Timeout;
-                    return template;
-                }
-
-                // Look before we leap -- don't waste time generating invalid / incompatible junk.
-                if (!IsEncounterValid(set, enc, abilityreq, destVer))
-                    continue;
-
-                if (enc is IFixedNature { IsFixedNature: true } fixedNature)
-                    criteria = criteria with { Nature = Nature.Random };
-
-                criteria = SetSpecialCriteria(criteria, enc, set);
-
-                // Create the PKM from the template.
-                var tr = SimpleEdits.IsUntradeableEncounter(enc) ? dest : GetTrainer(regen, enc, set, dest);
-                var raw = enc.GetPokemonFromEncounter(tr, criteria, set);
-                if (raw.OriginalTrainerName.Length == 0)
-                {
-                    raw.Language = tr.Language;
-                    tr.ApplyTo(raw);
-                }
-                raw = raw.SanityCheckLocation(enc);
-                if (raw.IsEgg) // PGF events are sometimes eggs. Force hatch them before proceeding
-                    raw.HandleEggEncounters(enc, tr);
-                raw.PreSetPIDIV(enc, set, criteria);
-
-                // Transfer any VC1 via VC2, as there may be GSC exclusive moves requested.
-                if (dest.Generation >= 7 && raw is PK1 basepk1)
-                    raw = basepk1.ConvertToPK2();
-
-                // Bring to the target generation and filter
-                var pk = EntityConverter.ConvertToType(raw, destType, out _);
-                if (pk == null)
-                    continue;
-
-                if (!EntityConverter.IsCompatibleGB(pk, template.Japanese, pk.Japanese))
-                    continue;
-
-                if (dest.Generation >= 8 && HomeTrackerUtil.IsRequired(enc, pk) && !AllowHome)
-                    continue;
-
-                // Apply final details
-                ApplySetDetails(pk, set, dest, enc, regen, criteria);
-
-                // Apply final tweaks to the data.
-                if (pk is IGigantamax gmax && gmax.CanGigantamax != set.CanGigantamax)
-                {
-                    if (!Gigantamax.CanToggle(pk.Species, pk.Form, enc.Species, enc.Form))
-                        continue;
-
-                    gmax.CanGigantamax = set.CanGigantamax; // soup hax
-                }
-
-                // Try applying batch editor values.
-                if (batchedit)
-                {
-                    pk.RefreshChecksum();
-                    var b = regen.Batch;
-                    BatchEditing.ScreenStrings(b.Filters);
-                    BatchEditing.ScreenStrings(b.Instructions);
-                    var modified = BatchEditing.TryModify(pk, b.Filters, b.Instructions);
-                    if (!modified && b.Filters.Count > 0)
-                        continue;
-
-                    pk.ApplyPostBatchFixes();
-                }
-
-                if (pk is PK1 pk1 && pk1.TradebackValid())
-                {
-                    satisfied = LegalizationResult.Regenerated;
-                    return pk;
-                }
-                // Verify the Legality of what we generated, and exit if it is valid.
-                var la = new LegalityAnalysis(pk);
-                if (la.Valid && pk.Species == set.Species) // Encounter Trades that evolve may cause higher tahn expected species
-                {
-                    satisfied = LegalizationResult.Regenerated;
-                    return pk;
-                }
-
-                last = pk;
-                Debug.WriteLine($"{(Species)pk.Species}\n{la.Report()}\n");
-            }
-            satisfied = LegalizationResult.Failed;
-            return last ?? template;
+            t.FixGender(template.PersonalInfo);
+            regen = t.Regen;
+        }
+        else
+        {
+            regen = RegenSet.Default;
         }
 
-        private static PKM GetPokemonFromEncounter(this IEncounterable enc, ITrainerInfo tr, EncounterCriteria criteria, IBattleTemplate set)
+        if (template.Version == GameVersion.Any)
+            template.Version = dest.Version;
+
+        template.ApplySetDetails(set);
+        template.SetRecordFlags([]); // Validate TR/MS moves for the encounter
+
+        if (template.Species == (ushort)Species.Unown) // Force unown form on template
+            template.Form = set.Form;
+
+        var abilityreq = GetRequestedAbility(template, set);
+        var batchedit = AllowBatchCommands && regen.HasBatchSettings;
+        var native = ModLogic.cfg.NativeOnly && nativeOnly;
+        var destType = template.GetType();
+        var destVer = dest.Version;
+        if (destVer <= 0 && dest is SaveFile s)
+            destVer = s.Version;
+
+        var timer = Stopwatch.StartNew();
+        var gamelist = FilteredGameList(template, destVer, AllowBatchCommands, set, native);
+        if (dest.Generation <= 2)
+            template.EXP = 0; // no relearn moves in gen 1/2 so pass level 1 to generator
+        if (gamelist is [GameVersion.DP])
+            gamelist = [GameVersion.D, GameVersion.P];
+        var encounters = GetAllEncounters(pk: template, moves: new ReadOnlyMemory<ushort>(set.Moves), gamelist);
+        var criteria = EncounterCriteria.GetCriteria(set, template.PersonalInfo);
+        criteria.ForceMinLevelRange = true;
+        if (regen.EncounterFilters.Any())
+            encounters = encounters.Where(enc => BatchEditing.IsFilterMatch(regen.EncounterFilters, enc));
+        PKM? last = null;
+        var AllowHome = ParseSettings.Settings.HOMETransfer.HOMETransferTrackerNotPresent != Severity.Invalid;
+        foreach (var enc in encounters)
         {
-            if (enc is EncounterGift3 { Species: (ushort)Species.Jirachi })
+            // Return out if set times out
+            if (timer.Elapsed.TotalSeconds >= Timeout)
             {
-                if (tr.Language == (byte)LanguageID.Japanese)
-                    tr = tr.MutateLanguage(LanguageID.English, tr.Version);
-            }
-            var basepkm = enc.ConvertToPKM(tr, criteria);
-
-            // If the encounter is a Wurmple, we need to make sure the evolution is correct.
-            if (enc.Species == (int)Species.Wurmple && set.Species != (int)Species.Wurmple)
-            {
-                var wdest = WurmpleUtil.GetWurmpleEvoGroup(set.Species);
-                while (WurmpleUtil.GetWurmpleEvoVal(basepkm.PID) != wdest)
-                    basepkm = enc.ConvertToPKM(tr, criteria);
+                timer.Stop();
+                satisfied = LegalizationResult.Timeout;
+                return template;
             }
 
-            return basepkm;
+            // Look before we leap -- don't waste time generating invalid / incompatible junk.
+            if (!IsEncounterValid(set, enc, abilityreq, destVer))
+                continue;
+
+            if (enc is IFixedNature { IsFixedNature: true } fixedNature)
+                criteria = criteria with { Nature = Nature.Random };
+
+            criteria = SetSpecialCriteria(criteria, enc, set);
+
+            // Create the PKM from the template.
+            var tr = SimpleEdits.IsUntradeableEncounter(enc) ? dest : GetTrainer(regen, enc, set, dest);
+            var raw = enc.GetPokemonFromEncounter(tr, criteria, set);
+            if (raw.OriginalTrainerName.Length == 0)
+            {
+                raw.Language = tr.Language;
+                tr.ApplyTo(raw);
+            }
+            raw = raw.SanityCheckLocation(enc);
+            if (raw.IsEgg) // PGF events are sometimes eggs. Force hatch them before proceeding
+                raw.HandleEggEncounters(enc, tr);
+            raw.PreSetPIDIV(enc, set, criteria);
+
+            // Transfer any VC1 via VC2, as there may be GSC exclusive moves requested.
+            if (dest.Generation >= 7 && raw is PK1 basepk1)
+                raw = basepk1.ConvertToPK2();
+
+            // Bring to the target generation and filter
+            var pk = EntityConverter.ConvertToType(raw, destType, out _);
+            if (pk == null)
+                continue;
+
+            if (!EntityConverter.IsCompatibleGB(pk, template.Japanese, pk.Japanese))
+                continue;
+
+            if (dest.Generation >= 8 && HomeTrackerUtil.IsRequired(enc, pk) && !AllowHome)
+                continue;
+
+            // Apply final details
+            ApplySetDetails(pk, set, dest, enc, regen, criteria);
+
+            // Apply final tweaks to the data.
+            if (pk is IGigantamax gmax && gmax.CanGigantamax != set.CanGigantamax)
+            {
+                if (!Gigantamax.CanToggle(pk.Species, pk.Form, enc.Species, enc.Form))
+                    continue;
+
+                gmax.CanGigantamax = set.CanGigantamax; // soup hax
+            }
+
+            // Try applying batch editor values.
+            if (batchedit)
+            {
+                pk.RefreshChecksum();
+                var b = regen.Batch;
+                BatchEditing.ScreenStrings(b.Filters);
+                BatchEditing.ScreenStrings(b.Instructions);
+                var modified = BatchEditing.TryModify(pk, b.Filters, b.Instructions);
+                if (!modified && b.Filters.Count > 0)
+                    continue;
+
+                pk.ApplyPostBatchFixes();
+            }
+
+            if (pk is PK1 pk1 && pk1.TradebackValid())
+            {
+                satisfied = LegalizationResult.Regenerated;
+                return pk;
+            }
+            // Verify the Legality of what we generated, and exit if it is valid.
+            var la = new LegalityAnalysis(pk);
+            if (la.Valid && pk.Species == set.Species) // Encounter Trades that evolve may cause higher tahn expected species
+            {
+                satisfied = LegalizationResult.Regenerated;
+                return pk;
+            }
+
+            last = pk;
+            Debug.WriteLine($"{(Species)pk.Species}\n{la.Report()}\n");
+        }
+        satisfied = LegalizationResult.Failed;
+        return last ?? template;
+    }
+
+    private static PKM GetPokemonFromEncounter(this IEncounterable enc, ITrainerInfo tr, EncounterCriteria criteria, IBattleTemplate set)
+    {
+        if (enc is EncounterGift3 { Species: (ushort)Species.Jirachi })
+        {
+            if (tr.Language == (byte)LanguageID.Japanese)
+                tr = tr.MutateLanguage(LanguageID.English, tr.Version);
+        }
+        var basepkm = enc.ConvertToPKM(tr, criteria);
+
+        // If the encounter is a Wurmple, we need to make sure the evolution is correct.
+        if (enc.Species == (int)Species.Wurmple && set.Species != (int)Species.Wurmple)
+        {
+            var wdest = WurmpleUtil.GetWurmpleEvoGroup(set.Species);
+            while (WurmpleUtil.GetWurmpleEvoVal(basepkm.PID) != wdest)
+                basepkm = enc.ConvertToPKM(tr, criteria);
         }
 
-        private static IEnumerable<IEncounterable> GetAllEncounters(PKM pk, ReadOnlyMemory<ushort> moves, IReadOnlyList<GameVersion> vers)
+        return basepkm;
+    }
+
+    private static IEnumerable<IEncounterable> GetAllEncounters(PKM pk, ReadOnlyMemory<ushort> moves, IReadOnlyList<GameVersion> vers)
+    {
+        var orig_encs = EncounterMovesetGenerator.GenerateEncounters(pk, moves, vers);
+        foreach (var enc in orig_encs)
+            yield return enc;
+
+        var pi = pk.PersonalInfo;
+        var orig_form = pk.Form;
+        var fc = pi.FormCount;
+        if (fc == 0) // not present in game
         {
-            var orig_encs = EncounterMovesetGenerator.GenerateEncounters(pk, moves, vers);
-            foreach (var enc in orig_encs)
+            // try again using past-gen table
+            pi = PersonalTable.USUM.GetFormEntry(pk.Species, 0);
+            fc = pi.FormCount;
+        }
+        for (byte f = 0; f < fc; f++)
+        {
+            if (f == orig_form)
+                continue;
+
+            if (FormInfo.IsBattleOnlyForm(pk.Species, f, pk.Format))
+                continue;
+
+            pk.Form = f;
+            pk.SetGender(pk.GetSaneGender());
+            var encs = EncounterMovesetGenerator.GenerateEncounters(pk, moves, vers);
+            foreach (var enc in encs)
                 yield return enc;
+        }
+    }
 
-            var pi = pk.PersonalInfo;
-            var orig_form = pk.Form;
-            var fc = pi.FormCount;
-            if (fc == 0) // not present in game
+    public static AbilityRequest GetRequestedAbility(PKM template, IBattleTemplate set)
+    {
+        if (template.AbilityNumber == 4)
+            return AbilityRequest.Hidden;
+
+        var pi = template.PersonalInfo;
+        var abils_count = pi.AbilityCount;
+        if (abils_count <= 2 || pi is not IPersonalAbility12H h)
+            return AbilityRequest.NotHidden;
+
+        if (h.AbilityH == template.Ability)
+            return AbilityRequest.PossiblyHidden;
+
+        // if no set ability is specified, it is assumed as the first ability which can be the same as the HA
+        if (set.Ability == -1 && h.Ability1 == h.AbilityH)
+            return AbilityRequest.PossiblyHidden;
+
+        return set.Ability == -1 ? AbilityRequest.Any : AbilityRequest.NotHidden; // Will allow any ability if ability is unspecified
+    }
+
+    private static bool TradebackValid(this PK1 pk1)
+    {
+        var valid = new LegalityAnalysis(pk1).Valid;
+        if (!valid)
+            pk1.CatchRate = pk1.Gen2Item;
+
+        return valid;
+    }
+
+    /// <summary>
+    /// Filter down the game list to search based on requested sets
+    /// </summary>
+    /// <param name="template">Template Pokémon with basic details set</param>
+    /// <param name="destVer">Version in which the Pokémon needs to be imported</param>
+    /// <param name="batchEdit">Whether settings currently allow batch commands</param>
+    /// <param name="set">Set information to be used to filter the game list</param>
+    /// <param nativeOnly="set">Whether to only return encounters from the current version</param>
+    /// <param name="nativeOnly"></param>
+    /// <returns>List of filtered games to check encounters for</returns>
+    internal static GameVersion[] FilteredGameList(PKM template, GameVersion destVer, bool batchEdit, IBattleTemplate set, bool nativeOnly = false)
+    {
+        if (batchEdit && set is RegenTemplate { Regen.VersionFilters: { Count: not 0 } x } && TryGetSingleVersion(x, out var single))
+            return single;
+
+        var versionlist = GameUtil.GetVersionsWithinRange(template, template.Format);
+        var gamelist = !nativeOnly ? [.. versionlist.OrderByDescending(c => c.GetGeneration())] : GetPairedVersions(destVer, versionlist);
+        if (PrioritizeGame && !nativeOnly)
+            gamelist = PrioritizeGameVersion == GameVersion.Any ? PrioritizeVersion(gamelist, destVer.GetIsland()) : PrioritizeVersion(gamelist, PrioritizeGameVersion);
+
+        if (template.AbilityNumber == 4 && destVer.GetGeneration() < 8)
+            gamelist = gamelist.Where(z => z.GetGeneration() is not 3 and not 4).ToArray();
+        if (gamelist.Contains(GameVersion.HGSS))
+        {
+            gamelist = gamelist.Where(z => z != GameVersion.HGSS).ToArray();
+            gamelist = [.. gamelist, GameVersion.HG];
+            gamelist = [.. gamelist, GameVersion.SS];
+        }
+        if (gamelist.Contains(GameVersion.FRLG))
+        {
+            gamelist = gamelist.Where(z => z != GameVersion.FRLG).ToArray();
+            gamelist = [.. gamelist, GameVersion.FR];
+            gamelist = [.. gamelist, GameVersion.LG];
+        }
+        return gamelist;
+    }
+
+    private static bool TryGetSingleVersion(IReadOnlyList<StringInstruction> filters, [NotNullWhen(true)] out GameVersion[]? gamelist)
+    {
+        gamelist = null;
+        foreach (var filter in filters)
+        {
+            if (filter.PropertyName != nameof(IVersion.Version))
+                continue;
+
+            GameVersion value;
+            if (int.TryParse(filter.PropertyValue, out var i))
             {
-                // try again using past-gen table
-                pi = PersonalTable.USUM.GetFormEntry(pk.Species, 0);
-                fc = pi.FormCount;
+                value = (GameVersion)i;
             }
-            for (byte f = 0; f < fc; f++)
+            else if (Enum.TryParse<GameVersion>(filter.PropertyValue, out var g))
             {
-                if (f == orig_form)
-                    continue;
-
-                if (FormInfo.IsBattleOnlyForm(pk.Species, f, pk.Format))
-                    continue;
-
-                pk.Form = f;
-                pk.SetGender(pk.GetSaneGender());
-                var encs = EncounterMovesetGenerator.GenerateEncounters(pk, moves, vers);
-                foreach (var enc in encs)
-                    yield return enc;
-            }
-        }
-
-        public static AbilityRequest GetRequestedAbility(PKM template, IBattleTemplate set)
-        {
-            if (template.AbilityNumber == 4)
-                return AbilityRequest.Hidden;
-
-            var pi = template.PersonalInfo;
-            var abils_count = pi.AbilityCount;
-            if (abils_count <= 2 || pi is not IPersonalAbility12H h)
-                return AbilityRequest.NotHidden;
-
-            if (h.AbilityH == template.Ability)
-                return AbilityRequest.PossiblyHidden;
-
-            // if no set ability is specified, it is assumed as the first ability which can be the same as the HA
-            if (set.Ability == -1 && h.Ability1 == h.AbilityH)
-                return AbilityRequest.PossiblyHidden;
-
-            return set.Ability == -1 ? AbilityRequest.Any : AbilityRequest.NotHidden; // Will allow any ability if ability is unspecified
-        }
-
-        private static bool TradebackValid(this PK1 pk1)
-        {
-            var valid = new LegalityAnalysis(pk1).Valid;
-            if (!valid)
-                pk1.CatchRate = pk1.Gen2Item;
-
-            return valid;
-        }
-
-        /// <summary>
-        /// Filter down the game list to search based on requested sets
-        /// </summary>
-        /// <param name="template">Template Pokémon with basic details set</param>
-        /// <param name="destVer">Version in which the Pokémon needs to be imported</param>
-        /// <param name="batchEdit">Whether settings currently allow batch commands</param>
-        /// <param name="set">Set information to be used to filter the game list</param>
-        /// <param nativeOnly="set">Whether to only return encounters from the current version</param>
-        /// <param name="nativeOnly"></param>
-        /// <returns>List of filtered games to check encounters for</returns>
-        internal static GameVersion[] FilteredGameList(PKM template, GameVersion destVer, bool batchEdit, IBattleTemplate set, bool nativeOnly = false)
-        {
-            if (batchEdit && set is RegenTemplate { Regen.VersionFilters: { Count: not 0 } x } && TryGetSingleVersion(x, out var single))
-                return single;
-
-            var versionlist = GameUtil.GetVersionsWithinRange(template, template.Format);
-            var gamelist = !nativeOnly ? [.. versionlist.OrderByDescending(c => c.GetGeneration())] : GetPairedVersions(destVer, versionlist);
-            if (PrioritizeGame && !nativeOnly)
-                gamelist = PrioritizeGameVersion == GameVersion.Any ? PrioritizeVersion(gamelist, destVer.GetIsland()) : PrioritizeVersion(gamelist, PrioritizeGameVersion);
-
-            if (template.AbilityNumber == 4 && destVer.GetGeneration() < 8)
-                gamelist = gamelist.Where(z => z.GetGeneration() is not 3 and not 4).ToArray();
-            if (gamelist.Contains(GameVersion.HGSS))
-            {
-                gamelist = gamelist.Where(z => z != GameVersion.HGSS).ToArray();
-                gamelist = [.. gamelist, GameVersion.HG];
-                gamelist = [.. gamelist, GameVersion.SS];
-            }
-            if (gamelist.Contains(GameVersion.FRLG))
-            {
-                gamelist = gamelist.Where(z => z != GameVersion.FRLG).ToArray();
-                gamelist = [.. gamelist, GameVersion.FR];
-                gamelist = [.. gamelist, GameVersion.LG];
-            }
-            return gamelist;
-        }
-
-        private static bool TryGetSingleVersion(IReadOnlyList<StringInstruction> filters, [NotNullWhen(true)] out GameVersion[]? gamelist)
-        {
-            gamelist = null;
-            foreach (var filter in filters)
-            {
-                if (filter.PropertyName != nameof(IVersion.Version))
-                    continue;
-
-                GameVersion value;
-                if (int.TryParse(filter.PropertyValue, out var i))
-                {
-                    value = (GameVersion)i;
-                }
-                else if (Enum.TryParse<GameVersion>(filter.PropertyValue, out var g))
-                {
-                    value = g;
-                }
-                else
-                {
-                    return false;
-                }
-
-                GameVersion[] result;
-                if (value.IsValidSavedVersion())
-                {
-                    result = [value];
-                }
-                else
-                {
-                    result = GameUtil.GameVersions.Where(z => value.Contains(z)).ToArray();
-                }
-
-                gamelist = filter.Comparer switch
-                {
-                    InstructionComparer.IsEqual => result,
-                    InstructionComparer.IsNotEqual  => GameUtil.GameVersions.Where(z => !result.Contains(z)).ToArray(),
-                    InstructionComparer.IsGreaterThan => GameUtil.GameVersions.Where(z => result.Any(g => z > g)).ToArray(),
-                    InstructionComparer.IsGreaterThanOrEqual => GameUtil.GameVersions.Where(z => result.Any(g => z >= g)).ToArray(),
-                    InstructionComparer.IsLessThan => GameUtil.GameVersions.Where(z => result.Any(g => z < g)).ToArray(),
-                    InstructionComparer.IsLessThanOrEqual  => GameUtil.GameVersions.Where(z => result.Any(g => z <= g)).ToArray(),
-                    _ => result,
-                };
-                return gamelist.Length != 0;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Grab a trainer from trainer database with mutated language
-        /// </summary>
-        /// <returns>ITrainerInfo of the trainer details</returns>
-        private static ITrainerInfo GetTrainer(RegenSet regen, IEncounterable enc, IBattleTemplate set, ITrainerInfo dest)
-        {
-            var ver = enc.Version;
-            var gen = enc.Generation;
-            var mutate = regen.Extra.Language;
-
-            // Edge case override for Meister Magikarp
-            var nicknames = new[]
-            {
-                "",
-                "ポッちゃん",
-                "Foppa",
-                "Bloupi",
-                "Mossy",
-                "Pador",
-                "",
-                "",
-                "",
-                "",
-                "",
-            };
-            var idx = Array.IndexOf(nicknames, set.Nickname);
-            if (idx > 0)
-                mutate = (LanguageID)idx;
-
-            if (AllowTrainerOverride && regen is { HasTrainerSettings: true, Trainer: not null })
-                return regen.Trainer.MutateLanguage(mutate, ver);
-
-            return UseTrainerData ? TrainerSettings.GetSavedTrainerData(ver, gen).MutateLanguage(mutate, ver) : TrainerSettings.DefaultFallback(ver, regen.Extra.Language??(LanguageID)dest.Language);
-        }
-
-        /// <summary>
-        /// Gives the currently loaded save priority over other saves in the same generation. Otherwise, generational order is preserved
-        /// </summary>
-        /// <param name="gamelist">Array of GameVersion which needs to be prioritized</param>
-        /// <param name="game">GameVersion to prioritize</param>
-        /// <returns>A prioritized GameVersion list</returns>
-        private static GameVersion[] PrioritizeVersion(GameVersion[] gamelist, GameVersion game)
-        {
-            var matched = 0;
-            var retval = new List<GameVersion>();
-            foreach (GameVersion poss in gamelist)
-            {
-                if (poss == game || game.Contains(poss))
-                {
-                    retval.Insert(matched, poss);
-                    matched++;
-                }
-                else
-                {
-                    retval.Add(poss);
-                }
-            }
-            return [.. retval];
-        }
-
-        /// <summary>
-        /// Checks if the encounter is even valid before processing it
-        /// </summary>
-        /// <param name="set">showdown set</param>
-        /// <param name="enc">encounter object</param>
-        /// <param name="abilityreq">is HA requested</param>
-        /// <param name="destVer">version to generate in</param>
-        /// <returns>if the encounter is valid or not</returns>
-        private static bool IsEncounterValid(IBattleTemplate set, IEncounterable enc, AbilityRequest abilityreq, GameVersion destVer)
-        {
-            if (enc is EncounterSlot3 && enc.Species == (ushort)Species.Unown && enc.Form != set.Form)
-                return false;
-            // Don't process if encounter min level is higher than requested level
-            if (!IsRequestedLevelValid(set, enc))
-                return false;
-
-            // Don't process if the ball requested is invalid
-            if (!IsRequestedBallValid(set, enc))
-                return false;
-
-            // Don't process if encounter and set shinies dont match
-            if (!IsRequestedShinyValid(set, enc))
-                return false;
-
-            // Don't process if the requested set is Alpha and the Encounter is not
-            if (!IsRequestedAlphaValid(set, enc))
-                return false;
-
-            // Don't process if the gender does not match the set
-            if (set.Gender is not null && enc is IFixedGender { IsFixedGender: true } fg && fg.Gender != set.Gender)
-                return false;
-
-            // Don't process if PKM is definitely Hidden Ability and the PKM is from Gen 3 or Gen 4 and Hidden Capsule doesn't exist
-            var gen = enc.Generation;
-            if (abilityreq == AbilityRequest.Hidden && gen is 3 or 4 && destVer.GetGeneration() < 8)
-                return false;
-
-            if (set.Species == (ushort)Species.Pikachu)
-            {
-                switch (enc.Generation)
-                {
-                    case 6 when set.Form != (enc is EncounterStatic6 ? enc.Form : 0):
-                    case >= 7 when set.Form != (enc is EncounterInvalid or EncounterEgg ? 0 : enc.Form):
-                        return false;
-                }
-            }
-            if (enc.Generation > 2 && set.EVs.Sum() > 510 && destVer is not GameVersion.GP and not GameVersion.GE)
-                return false;
-
-            return destVer.ExistsInGame(set.Species, set.Form);
-        }
-
-        public static bool IsRequestedLevelValid(IBattleTemplate set, IEncounterable enc)
-        {
-            if (enc.Generation <= 4)
-                return true;
-
-            if (enc.LevelMin > enc.LevelMax)
-                return false;
-
-            if (enc.LevelMin > set.Level)
-            {
-                var isRaid = enc is EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND or EncounterStatic8U;
-                if (enc is EncounterSlot6AO s)
-                {
-                    if (s.LevelMin - 4 > set.Level)
-                        return false;
-                }
-                else if (!isRaid)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        public static bool IsRequestedBallValid(IBattleTemplate set, IEncounterable enc)
-        {
-            if (set is RegenTemplate rt && enc.FixedBall != Ball.None && ForceSpecifiedBall)
-            {
-                var reqball = rt.Regen.Extra.Ball;
-                if (reqball != enc.FixedBall && reqball != Ball.None)
-                    return false;
-            }
-            return true;
-        }
-
-        public static bool IsRequestedAlphaValid(IBattleTemplate set, IEncounterable enc)
-        {
-            // No Alpha setting in base showdown
-            if (set is not RegenTemplate rt)
-                return true;
-
-            // Check alpha request
-            var requested = false;
-            if (rt.Regen.HasExtraSettings)
-                requested = rt.Regen.Extra.Alpha;
-
-            // Requested alpha but encounter isn't an alpha
-            return enc is not IAlphaReadOnly a ? !requested : a.IsAlpha == requested;
-        }
-
-        public static bool IsRequestedShinyValid(IBattleTemplate set, IEncounterable enc)
-        {
-            if (enc is MysteryGift { CardID: >= 9000 })
-                return true;
-
-            // Don't process if shiny value doesn't match
-            if (set.Shiny && enc.Shiny == Shiny.Never)
-                return false;
-
-            if (!set.Shiny && enc.Shiny.IsShiny())
-                return false;
-
-            // Further shiny filtering if set is regen template
-            if (set is RegenTemplate { Regen: { HasExtraSettings: true } regen} && enc.Generation != 9)
-            {
-                var shinytype = regen.Extra.ShinyType;
-                if (shinytype == Shiny.AlwaysStar && enc.Shiny == Shiny.AlwaysSquare)
-                    return false;
-                if (shinytype == Shiny.AlwaysSquare && enc.Shiny == Shiny.AlwaysStar)
-                    return false;
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// Method to check if PID/IV has already set
-        /// </summary>
-        /// <param name="pk">pkm to check</param>
-        /// <param name="enc">enc to check</param>
-        /// <returns></returns>
-        public static bool IsPIDIVSet(PKM pk, IEncounterable enc) => enc switch
-        {
-            // If PID and IV is handled in PreSetPIDIV, don't set it here again and return out
-            ITeraRaid9 or EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND or EncounterStatic8U => true,
-            IOverworldCorrelation8 o when o.GetRequirement(pk) == OverworldCorrelation8Requirement.MustHave => true,
-            IStaticCorrelation8b s when s.GetRequirement(pk) == StaticCorrelation8bRequirement.MustHave => true,
-            EncounterSlot3 when pk.Species == (ushort)Species.Unown => true,
-            EncounterEgg when GameVersion.BDSP.Contains(enc.Version) => true,
-            _ => false,
-        };
-
-        /// <summary>
-        /// Sanity checking locations before passing them into ApplySetDetails.
-        /// Some encounters may have an empty met location leading to an encounter mismatch. Use this function for all encounter pre-processing!
-        /// </summary>
-        /// <param name="pk">Entity to fix</param>
-        /// <param name="enc">Matched encounter</param>
-        private static PKM SanityCheckLocation(this PKM pk, IEncounterable enc)
-        {
-            const int SharedNest = 162; // Shared Nest for online encounter
-            const int MaxLair = 244; // Dynamax Adventures
-            pk.MetLocation = enc switch
-            {
-                EncounterStatic8N or EncounterStatic8ND or EncounterStatic8NC => SharedNest,
-                EncounterStatic8U => MaxLair,
-                _ => pk.MetLocation,
-            };
-            return pk;
-        }
-
-        /// <summary>
-        /// Modifies the provided <see cref="pk"/> to the specifications required by <see cref="set"/>.
-        /// </summary>
-        /// <param name="pk">Converted final pkm to apply details to</param>
-        /// <param name="set">Set details required</param>
-        /// <param name="handler">Trainer to handle the Pokémon</param>
-        /// <param name="enc">Encounter details matched to the Pokémon</param>
-        /// <param name="regen">Regeneration information</param>
-        /// <param name="criteria"></param>
-        private static void ApplySetDetails(PKM pk, IBattleTemplate set, ITrainerInfo handler, IEncounterable enc, RegenSet regen, EncounterCriteria criteria)
-        {
-            var language = regen.Extra.Language;
-            var pidiv = MethodFinder.Analyze(pk);
-
-            pk.SetPINGA(set, pidiv.Type, set.HiddenPowerType, enc, criteria);
-            pk.SetSpeciesLevel(set, set.Form, enc, language);
-            pk.SetDateLocks(enc);
-            pk.SetHeldItem(set);
-
-            // Actions that do not affect set legality
-            pk.SetHandlerAndMemory(handler, enc);
-            pk.SetFriendship(enc);
-            pk.SetRecordFlags(set.Moves);
-
-            // Legality Fixing
-            pk.SetMovesEVs(set, enc);
-            pk.SetCorrectMetLevel();
-            pk.SetGVs();
-            pk.SetHyperTrainingFlags(set, enc);
-            pk.SetEncryptionConstant(enc);
-            pk.SetShinyBoolean(set.Shiny, enc, regen.Extra.ShinyType);
-            pk.FixGender(set);
-
-            // Final tweaks
-            pk.SetGimmicks(set);
-            pk.SetGigantamaxFactor(set, enc);
-            pk.SetSuggestedRibbons(set, enc, SetAllLegalRibbons);
-            pk.SetBelugaValues();
-            pk.SetSuggestedContestStats(enc);
-            pk.FixEdgeCases(enc);
-
-            // Aesthetics
-            pk.ApplyHeightWeight(enc);
-            pk.SetSuggestedBall(SetMatchingBalls, ForceSpecifiedBall, regen.Extra.Ball, enc);
-            pk.ApplyMarkings(UseMarkings);
-            pk.ApplyBattleVersion(handler);
-        }
-
-        /// <summary>
-        /// Validate and Set the gender if needed
-        /// </summary>
-        /// <param name="pk">PKM to modify</param>
-        /// <param name="enc"></param>
-        private static void ValidateGender(PKM pk, IEncounterable enc)
-        {
-            bool genderValid = pk.IsGenderValid();
-            if (!genderValid)
-            {
-                if (pk is { Format: 4, Species: (ushort)Species.Shedinja }) // Shedinja glitch
-                {
-                    // should match original gender
-                    var gender = EntityGender.GetFromPIDAndRatio(pk.PID, 0x7F); // 50-50
-                    if (gender == pk.Gender)
-                        genderValid = true;
-                }
-                else if (pk is { Format: > 5, Species: (ushort)Species.Marill or (ushort)Species.Azumarill })
-                {
-                    var gv = pk.PID & 0xFF;
-                    if (gv > 63 && pk.Gender == 1) // evolved from Azurill after transferring to keep gender
-                        genderValid = true;
-                }
+                value = g;
             }
             else
             {
-                // check for mixed->fixed gender incompatibility by checking the gender of the original species
-                if (SpeciesCategory.IsFixedGenderFromDual(pk.Species) && pk.Gender != 2) // Shedinja
-                    pk.Gender = EntityGender.GetFromPID(enc.Species, pk.EncryptionConstant);
-                    // genderValid = true; already true if we reach here
+                return false;
             }
-            if (genderValid)
-                return;
 
-            switch (pk.Gender)
+            GameVersion[] result;
+            if (value.IsValidSavedVersion())
             {
-                case 0:
-                    pk.Gender = 1;
-                    break;
-                case 1:
-                    pk.Gender = 0;
-                    break;
-                default:
-                    pk.GetSaneGender();
-                    break;
+                result = [value];
             }
-        }
-
-        /// <summary>
-        /// Competitive IVs or PKHeX default IVs implementation
-        /// </summary>
-        /// <param name="pk"></param>
-        /// <param name="apply">boolean to apply or not to apply markings</param>
-        private static void ApplyMarkings(this PKM pk, bool apply = true)
-        {
-            if (!apply || pk.Format <= 3) // No markings if pk.Format is less than or equal to 3
-                return;
-
-            pk.SetMarkings();
-        }
-
-        /// <summary>
-        /// Custom Marking applicator method
-        /// </summary>
-        /// <param name="pk">PK input</param>
-        /// <returns></returns>
-        public static Func<int, int, int> CompetitiveMarking(PKM pk)
-        {
-            return pk.Format < 7 ? GetSimpleMarking : GetComplexMarking;
-
-            static int GetSimpleMarking(int val, int _) => val == 31 ? 1 : 0;
-            static int GetComplexMarking(int val, int _) => val switch
+            else
             {
-                31 => 1,
-                30 => 2,
-                _ => 0,
+                result = GameUtil.GameVersions.Where(z => value.Contains(z)).ToArray();
+            }
+
+            gamelist = filter.Comparer switch
+            {
+                InstructionComparer.IsEqual => result,
+                InstructionComparer.IsNotEqual  => GameUtil.GameVersions.Where(z => !result.Contains(z)).ToArray(),
+                InstructionComparer.IsGreaterThan => GameUtil.GameVersions.Where(z => result.Any(g => z > g)).ToArray(),
+                InstructionComparer.IsGreaterThanOrEqual => GameUtil.GameVersions.Where(z => result.Any(g => z >= g)).ToArray(),
+                InstructionComparer.IsLessThan => GameUtil.GameVersions.Where(z => result.Any(g => z < g)).ToArray(),
+                InstructionComparer.IsLessThanOrEqual  => GameUtil.GameVersions.Where(z => result.Any(g => z <= g)).ToArray(),
+                _ => result,
             };
+            return gamelist.Length != 0;
         }
+        return false;
+    }
 
-        /// <summary>
-        /// Proper method to hyper train based on Showdown Sets. Also handles edge cases like ultra beasts
-        /// </summary>
-        /// <param name="pk">passed pkm object</param>
-        /// <param name="set">showdown set to base hyper training on</param>
-        /// <param name="enc"></param>
-        private static void SetHyperTrainingFlags(this PKM pk, IBattleTemplate set, IEncounterable enc)
+    /// <summary>
+    /// Grab a trainer from trainer database with mutated language
+    /// </summary>
+    /// <returns>ITrainerInfo of the trainer details</returns>
+    private static ITrainerInfo GetTrainer(RegenSet regen, IEncounterable enc, IBattleTemplate set, ITrainerInfo dest)
+    {
+        var ver = enc.Version;
+        var gen = enc.Generation;
+        var mutate = regen.Extra.Language;
+
+        // Edge case override for Meister Magikarp
+        var nicknames = new[]
         {
-            if (pk is not IHyperTrain t || pk.Species == (ushort)Species.Stakataka)
-                return;
+            "",
+            "ポッちゃん",
+            "Foppa",
+            "Bloupi",
+            "Mossy",
+            "Pador",
+            "",
+            "",
+            "",
+            "",
+            "",
+        };
+        var idx = Array.IndexOf(nicknames, set.Nickname);
+        if (idx > 0)
+            mutate = (LanguageID)idx;
 
-            // Game exceptions (IHyperTrain exists because of the field but game disallows hyper training)
-            if (!t.IsHyperTrainingAvailable(EvolutionChain.GetEvolutionChainsAllGens(pk, enc)))
-                return;
+        if (AllowTrainerOverride && regen is { HasTrainerSettings: true, Trainer: not null })
+            return regen.Trainer.MutateLanguage(mutate, ver);
 
-            pk.HyperTrain(set.IVs);
+        return UseTrainerData ? TrainerSettings.GetSavedTrainerData(ver, gen).MutateLanguage(mutate, ver) : TrainerSettings.DefaultFallback(ver, regen.Extra.Language??(LanguageID)dest.Language);
+    }
 
-            // Handle special cases here for ultrabeasts
-            switch (pk.Species)
+    /// <summary>
+    /// Gives the currently loaded save priority over other saves in the same generation. Otherwise, generational order is preserved
+    /// </summary>
+    /// <param name="gamelist">Array of GameVersion which needs to be prioritized</param>
+    /// <param name="game">GameVersion to prioritize</param>
+    /// <returns>A prioritized GameVersion list</returns>
+    private static GameVersion[] PrioritizeVersion(GameVersion[] gamelist, GameVersion game)
+    {
+        var matched = 0;
+        var retval = new List<GameVersion>();
+        foreach (GameVersion poss in gamelist)
+        {
+            if (poss == game || game.Contains(poss))
             {
-                case (int)Species.Kartana when pk.Nature == Nature.Timid && set.IVs[1] <= 21: // Speed boosting Timid Kartana ATK IVs <= 19
-                    t.HT_ATK = false;
-                    break;
-                case (int)Species.Stakataka when pk.StatNature == Nature.Lonely && set.IVs[2] <= 17: // Atk boosting Lonely Stakataka DEF IVs <= 15
-                    t.HT_DEF = false;
-                    break;
-                case (int)Species.Pyukumuku when set.IVs[2] == 0 && set.IVs[5] == 0 && pk.Ability == (int)Ability.InnardsOut: // 0 Def / 0 Spd Pyukumuku with innards out
-                    t.HT_DEF = false;
-                    t.HT_SPD = false;
-                    break;
+                retval.Insert(matched, poss);
+                matched++;
             }
-        }
-
-        /// <summary>
-        /// Sets past-generation Pokémon as Battle Ready for games that support it
-        /// </summary>
-        /// <param name="pk">Return PKM</param>
-        /// <param name="trainer">Trainer to handle the <see cref="pk"/></param>
-        private static void ApplyBattleVersion(this PKM pk, ITrainerInfo trainer)
-        {
-            if (!SetBattleVersion)
-                return;
-
-            if (pk is PK8 { SWSH: false } pk8)
+            else
             {
-                Span<ushort> relearn = stackalloc ushort[4];
-                pk8.GetRelearnMoves(relearn);
-
-                pk8.ClearRelearnMoves();
-                pk8.BattleVersion = trainer.Version == GameVersion.SWSH ? GameVersion.SW : trainer.Version;
-
-                if (!new LegalityAnalysis(pk8).Valid)
-                {
-                    pk8.BattleVersion = GameVersion.Any;
-                    pk8.SetRelearnMoves(relearn);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Set matching colored Poké Ball based on the color API in PersonalTable
-        /// </summary>
-        /// <param name="pk">Return PKM</param>
-        public static void SetMatchingBall(this PKM pk) => BallApplicator.ApplyBallLegalByColor(pk);
-
-        /// <summary>
-        /// Set forms of specific species to form 0 since they cannot have a form while boxed
-        /// </summary>
-        /// <param name="pk">Pokémon passed to the method</param>
-        public static void SetBoxForm(this PKM pk)
-        {
-            if (pk.Format > 6)
-                return;
-
-            switch (pk.Species)
-            {
-                case (int)Species.Shaymin when pk.Form != 0:
-                case (int)Species.Hoopa when pk.Form != 0:
-                case (int)Species.Furfrou when pk.Form != 0:
-                    pk.Form = 0;
-                    if (pk is IFormArgument f)
-                        f.FormArgument = 0;
-
-                    break;
+                retval.Add(poss);
             }
         }
+        return [.. retval];
+    }
 
-        /// <summary>
-        /// Handle Egg encounters (for example PGF events that were distributed as eggs)
-        /// </summary>
-        /// <param name="pk">pkm distributed as an egg</param>
-        /// <param name="enc">encounter detail</param>
-        /// <param name="tr">save file</param>
-        private static void HandleEggEncounters(this PKM pk, IEncounterable enc, ITrainerInfo tr)
+    /// <summary>
+    /// Checks if the encounter is even valid before processing it
+    /// </summary>
+    /// <param name="set">showdown set</param>
+    /// <param name="enc">encounter object</param>
+    /// <param name="abilityreq">is HA requested</param>
+    /// <param name="destVer">version to generate in</param>
+    /// <returns>if the encounter is valid or not</returns>
+    private static bool IsEncounterValid(IBattleTemplate set, IEncounterable enc, AbilityRequest abilityreq, GameVersion destVer)
+    {
+        if (enc is EncounterSlot3 && enc.Species == (ushort)Species.Unown && enc.Form != set.Form)
+            return false;
+        // Don't process if encounter min level is higher than requested level
+        if (!IsRequestedLevelValid(set, enc))
+            return false;
+
+        // Don't process if the ball requested is invalid
+        if (!IsRequestedBallValid(set, enc))
+            return false;
+
+        // Don't process if encounter and set shinies dont match
+        if (!IsRequestedShinyValid(set, enc))
+            return false;
+
+        // Don't process if the requested set is Alpha and the Encounter is not
+        if (!IsRequestedAlphaValid(set, enc))
+            return false;
+
+        // Don't process if the gender does not match the set
+        if (set.Gender is not null && enc is IFixedGender { IsFixedGender: true } fg && fg.Gender != set.Gender)
+            return false;
+
+        // Don't process if PKM is definitely Hidden Ability and the PKM is from Gen 3 or Gen 4 and Hidden Capsule doesn't exist
+        var gen = enc.Generation;
+        if (abilityreq == AbilityRequest.Hidden && gen is 3 or 4 && destVer.GetGeneration() < 8)
+            return false;
+
+        if (set.Species == (ushort)Species.Pikachu)
         {
-            if (!pk.IsEgg)
-                return; // should be checked before, but condition added for future usecases
-            // Handle egg encounters. Set them as traded and force hatch them before proceeding
-            pk.ForceHatchPKM();
-            if (enc is MysteryGift { IsEgg: true })
+            switch (enc.Generation)
             {
-                if (enc is EncounterGift3)
-                    pk.MetLevel = 0; // hatched
-
-                pk.Language = tr.Language;
-                pk.SetTrainerData(tr);
+                case 6 when set.Form != (enc is EncounterStatic6 ? enc.Form : 0):
+                case >= 7 when set.Form != (enc is EncounterInvalid or EncounterEgg ? 0 : enc.Form):
+                    return false;
             }
-            pk.EggLocation = Locations.TradedEggLocation(pk.Generation, pk.Version);
         }
+        if (enc.Generation > 2 && set.EVs.Sum() > 510 && destVer is not GameVersion.GP and not GameVersion.GE)
+            return false;
 
-        /// <summary>
-        /// Set IV Values for the Pokémon
-        /// </summary>
-        private static void SetPINGA(this PKM pk, IBattleTemplate set, PIDType method, int hpType, IEncounterable enc, EncounterCriteria criteria)
+        return destVer.ExistsInGame(set.Species, set.Form);
+    }
+
+    public static bool IsRequestedLevelValid(IBattleTemplate set, IEncounterable enc)
+    {
+        if (enc.Generation <= 4)
+            return true;
+
+        if (enc.LevelMin > enc.LevelMax)
+            return false;
+
+        if (enc.LevelMin > set.Level)
         {
-            var ivprop = enc.GetType().GetProperty("IVs");
-            if (enc is not EncounterStatic4Pokewalker && enc.Generation > 2)
-                ShowdownEdits.SetNature(pk, set, enc);
-
-            // If PID and IV is handled in PreSetPIDIV, don't set it here again and return out
-            var hascurry = set.GetBatchValue(nameof(IRibbonSetMark8.RibbonMarkCurry));
-            var changeec = hascurry != null && string.Equals(hascurry, "true", StringComparison.OrdinalIgnoreCase) && AllowBatchCommands;
-
-            if (IsPIDIVSet(pk, enc) && !changeec)
-                return;
-
-            if (pk.Context == EntityContext.Gen8 && changeec)
-                pk.SetRandomEC(); // break correlation
-
-            if (enc is MysteryGift mg)
+            var isRaid = enc is EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND or EncounterStatic8U;
+            if (enc is EncounterSlot6AO s)
             {
-                var ivs = pk.IVs;
-                Span<int> mgIvs = [];
-                mg.GetIVs(mgIvs);
-                for (int i = 0; i < mgIvs.Length; i++)
-                    ivs[i] = mgIvs[i] > 31 ? set.IVs[i] : mgIvs[i];
-
-                pk.IVs = ivs;
-                if (enc.Generation is not (3 or 4))
-                    return;
+                if (s.LevelMin - 4 > set.Level)
+                    return false;
             }
-
-            if (ivprop != null && ivprop.PropertyType == typeof(IndividualValueSet))
+            else if (!isRaid)
             {
-                var ivset = ivprop.GetValue(enc);
-                if (ivset != null && ((IndividualValueSet)ivset).IsSpecified)
-                    return;
+                return false;
             }
+        }
+        return true;
+    }
 
+    public static bool IsRequestedBallValid(IBattleTemplate set, IEncounterable enc)
+    {
+        if (set is RegenTemplate rt && enc.FixedBall != Ball.None && ForceSpecifiedBall)
+        {
+            var reqball = rt.Regen.Extra.Ball;
+            if (reqball != enc.FixedBall && reqball != Ball.None)
+                return false;
+        }
+        return true;
+    }
+
+    public static bool IsRequestedAlphaValid(IBattleTemplate set, IEncounterable enc)
+    {
+        // No Alpha setting in base showdown
+        if (set is not RegenTemplate rt)
+            return true;
+
+        // Check alpha request
+        var requested = false;
+        if (rt.Regen.HasExtraSettings)
+            requested = rt.Regen.Extra.Alpha;
+
+        // Requested alpha but encounter isn't an alpha
+        return enc is not IAlphaReadOnly a ? !requested : a.IsAlpha == requested;
+    }
+
+    public static bool IsRequestedShinyValid(IBattleTemplate set, IEncounterable enc)
+    {
+        if (enc is MysteryGift { CardID: >= 9000 })
+            return true;
+
+        // Don't process if shiny value doesn't match
+        if (set.Shiny && enc.Shiny == Shiny.Never)
+            return false;
+
+        if (!set.Shiny && enc.Shiny.IsShiny())
+            return false;
+
+        // Further shiny filtering if set is regen template
+        if (set is RegenTemplate { Regen: { HasExtraSettings: true } regen} && enc.Generation != 9)
+        {
+            var shinytype = regen.Extra.ShinyType;
+            if (shinytype == Shiny.AlwaysStar && enc.Shiny == Shiny.AlwaysSquare)
+                return false;
+            if (shinytype == Shiny.AlwaysSquare && enc.Shiny == Shiny.AlwaysStar)
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Method to check if PID/IV has already set
+    /// </summary>
+    /// <param name="pk">pkm to check</param>
+    /// <param name="enc">enc to check</param>
+    /// <returns></returns>
+    public static bool IsPIDIVSet(PKM pk, IEncounterable enc) => enc switch
+    {
+        // If PID and IV is handled in PreSetPIDIV, don't set it here again and return out
+        ITeraRaid9 or EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND or EncounterStatic8U => true,
+        IOverworldCorrelation8 o when o.GetRequirement(pk) == OverworldCorrelation8Requirement.MustHave => true,
+        IStaticCorrelation8b s when s.GetRequirement(pk) == StaticCorrelation8bRequirement.MustHave => true,
+        EncounterSlot3 when pk.Species == (ushort)Species.Unown => true,
+        EncounterEgg when GameVersion.BDSP.Contains(enc.Version) => true,
+        _ => false,
+    };
+
+    /// <summary>
+    /// Sanity checking locations before passing them into ApplySetDetails.
+    /// Some encounters may have an empty met location leading to an encounter mismatch. Use this function for all encounter pre-processing!
+    /// </summary>
+    /// <param name="pk">Entity to fix</param>
+    /// <param name="enc">Matched encounter</param>
+    private static PKM SanityCheckLocation(this PKM pk, IEncounterable enc)
+    {
+        const int SharedNest = 162; // Shared Nest for online encounter
+        const int MaxLair = 244; // Dynamax Adventures
+        pk.MetLocation = enc switch
+        {
+            EncounterStatic8N or EncounterStatic8ND or EncounterStatic8NC => SharedNest,
+            EncounterStatic8U => MaxLair,
+            _ => pk.MetLocation,
+        };
+        return pk;
+    }
+
+    /// <summary>
+    /// Modifies the provided <see cref="pk"/> to the specifications required by <see cref="set"/>.
+    /// </summary>
+    /// <param name="pk">Converted final pkm to apply details to</param>
+    /// <param name="set">Set details required</param>
+    /// <param name="handler">Trainer to handle the Pokémon</param>
+    /// <param name="enc">Encounter details matched to the Pokémon</param>
+    /// <param name="regen">Regeneration information</param>
+    /// <param name="criteria"></param>
+    private static void ApplySetDetails(PKM pk, IBattleTemplate set, ITrainerInfo handler, IEncounterable enc, RegenSet regen, EncounterCriteria criteria)
+    {
+        var language = regen.Extra.Language;
+        var pidiv = MethodFinder.Analyze(pk);
+
+        pk.SetPINGA(set, pidiv.Type, set.HiddenPowerType, enc, criteria);
+        pk.SetSpeciesLevel(set, set.Form, enc, language);
+        pk.SetDateLocks(enc);
+        pk.SetHeldItem(set);
+
+        // Actions that do not affect set legality
+        pk.SetHandlerAndMemory(handler, enc);
+        pk.SetFriendship(enc);
+        pk.SetRecordFlags(set.Moves);
+
+        // Legality Fixing
+        pk.SetMovesEVs(set, enc);
+        pk.SetCorrectMetLevel();
+        pk.SetGVs();
+        pk.SetHyperTrainingFlags(set, enc);
+        pk.SetEncryptionConstant(enc);
+        pk.SetShinyBoolean(set.Shiny, enc, regen.Extra.ShinyType);
+        pk.FixGender(set);
+
+        // Final tweaks
+        pk.SetGimmicks(set);
+        pk.SetGigantamaxFactor(set, enc);
+        pk.SetSuggestedRibbons(set, enc, SetAllLegalRibbons);
+        pk.SetBelugaValues();
+        pk.SetSuggestedContestStats(enc);
+        pk.FixEdgeCases(enc);
+
+        // Aesthetics
+        pk.ApplyHeightWeight(enc);
+        pk.SetSuggestedBall(SetMatchingBalls, ForceSpecifiedBall, regen.Extra.Ball, enc);
+        pk.ApplyMarkings(UseMarkings);
+        pk.ApplyBattleVersion(handler);
+    }
+
+    /// <summary>
+    /// Validate and Set the gender if needed
+    /// </summary>
+    /// <param name="pk">PKM to modify</param>
+    /// <param name="enc"></param>
+    private static void ValidateGender(PKM pk, IEncounterable enc)
+    {
+        bool genderValid = pk.IsGenderValid();
+        if (!genderValid)
+        {
+            if (pk is { Format: 4, Species: (ushort)Species.Shedinja }) // Shedinja glitch
+            {
+                // should match original gender
+                var gender = EntityGender.GetFromPIDAndRatio(pk.PID, 0x7F); // 50-50
+                if (gender == pk.Gender)
+                    genderValid = true;
+            }
+            else if (pk is { Format: > 5, Species: (ushort)Species.Marill or (ushort)Species.Azumarill })
+            {
+                var gv = pk.PID & 0xFF;
+                if (gv > 63 && pk.Gender == 1) // evolved from Azurill after transferring to keep gender
+                    genderValid = true;
+            }
+        }
+        else
+        {
+            // check for mixed->fixed gender incompatibility by checking the gender of the original species
+            if (SpeciesCategory.IsFixedGenderFromDual(pk.Species) && pk.Gender != 2) // Shedinja
+                pk.Gender = EntityGender.GetFromPID(enc.Species, pk.EncryptionConstant);
+            // genderValid = true; already true if we reach here
+        }
+        if (genderValid)
+            return;
+
+        switch (pk.Gender)
+        {
+            case 0:
+                pk.Gender = 1;
+                break;
+            case 1:
+                pk.Gender = 0;
+                break;
+            default:
+                pk.GetSaneGender();
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Competitive IVs or PKHeX default IVs implementation
+    /// </summary>
+    /// <param name="pk"></param>
+    /// <param name="apply">boolean to apply or not to apply markings</param>
+    private static void ApplyMarkings(this PKM pk, bool apply = true)
+    {
+        if (!apply || pk.Format <= 3) // No markings if pk.Format is less than or equal to 3
+            return;
+
+        pk.SetMarkings();
+    }
+
+    /// <summary>
+    /// Custom Marking applicator method
+    /// </summary>
+    /// <param name="pk">PK input</param>
+    /// <returns></returns>
+    public static Func<int, int, int> CompetitiveMarking(PKM pk)
+    {
+        return pk.Format < 7 ? GetSimpleMarking : GetComplexMarking;
+
+        static int GetSimpleMarking(int val, int _) => val == 31 ? 1 : 0;
+        static int GetComplexMarking(int val, int _) => val switch
+        {
+            31 => 1,
+            30 => 2,
+            _ => 0,
+        };
+    }
+
+    /// <summary>
+    /// Proper method to hyper train based on Showdown Sets. Also handles edge cases like ultra beasts
+    /// </summary>
+    /// <param name="pk">passed pkm object</param>
+    /// <param name="set">showdown set to base hyper training on</param>
+    /// <param name="enc"></param>
+    private static void SetHyperTrainingFlags(this PKM pk, IBattleTemplate set, IEncounterable enc)
+    {
+        if (pk is not IHyperTrain t || pk.Species == (ushort)Species.Stakataka)
+            return;
+
+        // Game exceptions (IHyperTrain exists because of the field but game disallows hyper training)
+        if (!t.IsHyperTrainingAvailable(EvolutionChain.GetEvolutionChainsAllGens(pk, enc)))
+            return;
+
+        pk.HyperTrain(set.IVs);
+
+        // Handle special cases here for ultrabeasts
+        switch (pk.Species)
+        {
+            case (int)Species.Kartana when pk.Nature == Nature.Timid && set.IVs[1] <= 21: // Speed boosting Timid Kartana ATK IVs <= 19
+                t.HT_ATK = false;
+                break;
+            case (int)Species.Stakataka when pk.StatNature == Nature.Lonely && set.IVs[2] <= 17: // Atk boosting Lonely Stakataka DEF IVs <= 15
+                t.HT_DEF = false;
+                break;
+            case (int)Species.Pyukumuku when set.IVs[2] == 0 && set.IVs[5] == 0 && pk.Ability == (int)Ability.InnardsOut: // 0 Def / 0 Spd Pyukumuku with innards out
+                t.HT_DEF = false;
+                t.HT_SPD = false;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Sets past-generation Pokémon as Battle Ready for games that support it
+    /// </summary>
+    /// <param name="pk">Return PKM</param>
+    /// <param name="trainer">Trainer to handle the <see cref="pk"/></param>
+    private static void ApplyBattleVersion(this PKM pk, ITrainerInfo trainer)
+    {
+        if (!SetBattleVersion)
+            return;
+
+        if (pk is PK8 { SWSH: false } pk8)
+        {
+            Span<ushort> relearn = stackalloc ushort[4];
+            pk8.GetRelearnMoves(relearn);
+
+            pk8.ClearRelearnMoves();
+            pk8.BattleVersion = trainer.Version == GameVersion.SWSH ? GameVersion.SW : trainer.Version;
+
+            if (!new LegalityAnalysis(pk8).Valid)
+            {
+                pk8.BattleVersion = GameVersion.Any;
+                pk8.SetRelearnMoves(relearn);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Set matching colored Poké Ball based on the color API in PersonalTable
+    /// </summary>
+    /// <param name="pk">Return PKM</param>
+    public static void SetMatchingBall(this PKM pk) => BallApplicator.ApplyBallLegalByColor(pk);
+
+    /// <summary>
+    /// Set forms of specific species to form 0 since they cannot have a form while boxed
+    /// </summary>
+    /// <param name="pk">Pokémon passed to the method</param>
+    public static void SetBoxForm(this PKM pk)
+    {
+        if (pk.Format > 6)
+            return;
+
+        switch (pk.Species)
+        {
+            case (int)Species.Shaymin when pk.Form != 0:
+            case (int)Species.Hoopa when pk.Form != 0:
+            case (int)Species.Furfrou when pk.Form != 0:
+                pk.Form = 0;
+                if (pk is IFormArgument f)
+                    f.FormArgument = 0;
+
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Handle Egg encounters (for example PGF events that were distributed as eggs)
+    /// </summary>
+    /// <param name="pk">pkm distributed as an egg</param>
+    /// <param name="enc">encounter detail</param>
+    /// <param name="tr">save file</param>
+    private static void HandleEggEncounters(this PKM pk, IEncounterable enc, ITrainerInfo tr)
+    {
+        if (!pk.IsEgg)
+            return; // should be checked before, but condition added for future usecases
+        // Handle egg encounters. Set them as traded and force hatch them before proceeding
+        pk.ForceHatchPKM();
+        if (enc is MysteryGift { IsEgg: true })
+        {
+            if (enc is EncounterGift3)
+                pk.MetLevel = 0; // hatched
+
+            pk.Language = tr.Language;
+            pk.SetTrainerData(tr);
+        }
+        pk.EggLocation = Locations.TradedEggLocation(pk.Generation, pk.Version);
+    }
+
+    /// <summary>
+    /// Set IV Values for the Pokémon
+    /// </summary>
+    private static void SetPINGA(this PKM pk, IBattleTemplate set, PIDType method, int hpType, IEncounterable enc, EncounterCriteria criteria)
+    {
+        var ivprop = enc.GetType().GetProperty("IVs");
+        if (enc is not EncounterStatic4Pokewalker && enc.Generation > 2)
+            ShowdownEdits.SetNature(pk, set, enc);
+
+        // If PID and IV is handled in PreSetPIDIV, don't set it here again and return out
+        var hascurry = set.GetBatchValue(nameof(IRibbonSetMark8.RibbonMarkCurry));
+        var changeec = hascurry != null && string.Equals(hascurry, "true", StringComparison.OrdinalIgnoreCase) && AllowBatchCommands;
+
+        if (IsPIDIVSet(pk, enc) && !changeec)
+            return;
+
+        if (pk.Context == EntityContext.Gen8 && changeec)
+            pk.SetRandomEC(); // break correlation
+
+        if (enc is MysteryGift mg)
+        {
+            var ivs = pk.IVs;
+            Span<int> mgIvs = [];
+            mg.GetIVs(mgIvs);
+            for (int i = 0; i < mgIvs.Length; i++)
+                ivs[i] = mgIvs[i] > 31 ? set.IVs[i] : mgIvs[i];
+
+            pk.IVs = ivs;
             if (enc.Generation is not (3 or 4))
+                return;
+        }
+
+        if (ivprop != null && ivprop.PropertyType == typeof(IndividualValueSet))
+        {
+            var ivset = ivprop.GetValue(enc);
+            if (ivset != null && ((IndividualValueSet)ivset).IsSpecified)
+                return;
+        }
+
+        if (enc.Generation is not (3 or 4))
+        {
+            pk.IVs = set.IVs;
+            if (pk is IAwakened)
             {
-                pk.IVs = set.IVs;
-                if (pk is IAwakened)
-                {
-                    pk.SetAwakenedValues(set);
-                    return;
-                }
+                pk.SetAwakenedValues(set);
                 return;
             }
+            return;
+        }
 
+        switch (enc)
+        {
+            case EncounterSlot3XD:
+            case PCD:
+            case EncounterEgg:
+                return;
+            // EncounterTrade4 doesn't have fixed PIDs, so don't early return
+            case EncounterTrade3:
+            case EncounterTrade4PID:
+            case EncounterTrade4RanchGift:
+                pk.SetEncounterTradeIVs();
+                return; // Fixed PID, no need to mutate
+            default:
+                FindPIDIV(pk, method, hpType, set.Shiny, enc, set, criteria);
+                ValidateGender(pk, enc);
+                break;
+        }
+
+        // Handle mismatching abilities due to a PID re-roll
+        // Check against ability index because the Pokémon could be a pre-evo at this point
+        if (pk.Ability != set.Ability)
+            pk.RefreshAbility(pk is PK5 { HiddenAbility: true } ? 2 : pk.AbilityNumber >> 1);
+
+        var ability_idx = GetRequiredAbilityIdx(pk, set);
+        if (set.Ability == -1 || set.Ability == pk.Ability || pk.AbilityNumber >> 1 == ability_idx || ability_idx == -1)
+            return;
+
+        var abilitypref = enc.Ability;
+        ShowdownEdits.SetAbility(pk, set, abilitypref);
+    }
+
+    /// <summary>
+    /// Set Ganbaru Values after IVs are fully set
+    /// </summary>
+    /// <param name="pk">PKM to set GVs on</param>
+    private static void SetGVs(this PKM pk)
+    {
+        if (pk is not IGanbaru g)
+            return;
+
+        g.SetSuggestedGanbaruValues(pk);
+    }
+
+    /// <summary>
+    /// Set PIDIV for raid PKM via XOROSHIRO incase it is transferred to future generations to preserve the IVs
+    /// </summary>
+    /// <param name="pk">Pokemon to be edited</param>
+    /// <param name="enc">Raid encounter encounterable</param>
+    /// <param name="set">Set to pass in requested IVs</param>
+    /// <param name="criteria"></param>
+    private static void PreSetPIDIV(this PKM pk, IEncounterable enc, IBattleTemplate set, EncounterCriteria criteria)
+    {
+        if (enc is ITeraRaid9)
+        {
+            var pk9 = (PK9)pk;
             switch (enc)
             {
-                case EncounterSlot3XD:
-                case PCD:
-                case EncounterEgg:
-                    return;
-                // EncounterTrade4 doesn't have fixed PIDs, so don't early return
-                case EncounterTrade3:
-                case EncounterTrade4PID:
-                case EncounterTrade4RanchGift:
-                    pk.SetEncounterTradeIVs();
-                    return; // Fixed PID, no need to mutate
-                default:
-                    FindPIDIV(pk, method, hpType, set.Shiny, enc, set, criteria);
-                    ValidateGender(pk, enc);
+                case EncounterTera9 e:
+                    FindTeraPIDIV(pk9, e, set, criteria);
+                    break;
+                case EncounterDist9 e:
+                    FindTeraPIDIV(pk9, e, set, criteria);
+                    break;
+                case EncounterMight9 e:
+                    FindTeraPIDIV(pk9, e, set, criteria);
                     break;
             }
-
-            // Handle mismatching abilities due to a PID re-roll
-            // Check against ability index because the Pokémon could be a pre-evo at this point
-            if (pk.Ability != set.Ability)
-                pk.RefreshAbility(pk is PK5 { HiddenAbility: true } ? 2 : pk.AbilityNumber >> 1);
-
-            var ability_idx = GetRequiredAbilityIdx(pk, set);
-            if (set.Ability == -1 || set.Ability == pk.Ability || pk.AbilityNumber >> 1 == ability_idx || ability_idx == -1)
-                return;
-
-            var abilitypref = enc.Ability;
-            ShowdownEdits.SetAbility(pk, set, abilitypref);
+            if (set.TeraType != MoveType.Any && set.TeraType != pk9.TeraType)
+                pk9.SetTeraType(set.TeraType);
         }
-
-        /// <summary>
-        /// Set Ganbaru Values after IVs are fully set
-        /// </summary>
-        /// <param name="pk">PKM to set GVs on</param>
-        private static void SetGVs(this PKM pk)
+        else if (enc is EncounterStatic8U && set.Shiny)
         {
-            if (pk is not IGanbaru g)
-                return;
-
-            g.SetSuggestedGanbaruValues(pk);
+            // Dynamax Adventure shinies are always XOR 1 (thanks santacrab!)
+            pk.PID = SimpleEdits.GetShinyPID(pk.TID16, pk.SID16, pk.PID, 1);
         }
-
-        /// <summary>
-        /// Set PIDIV for raid PKM via XOROSHIRO incase it is transferred to future generations to preserve the IVs
-        /// </summary>
-        /// <param name="pk">Pokemon to be edited</param>
-        /// <param name="enc">Raid encounter encounterable</param>
-        /// <param name="set">Set to pass in requested IVs</param>
-        /// <param name="criteria"></param>
-        private static void PreSetPIDIV(this PKM pk, IEncounterable enc, IBattleTemplate set, EncounterCriteria criteria)
+        else if (enc is IOverworldCorrelation8 eo)
         {
-            if (enc is ITeraRaid9)
+            var flawless = 0;
+            if (enc is EncounterStatic8 estatic8)
             {
-                var pk9 = (PK9)pk;
-                switch (enc)
-                {
-                    case EncounterTera9 e:
-                        FindTeraPIDIV(pk9, e, set, criteria);
-                        break;
-                    case EncounterDist9 e:
-                        FindTeraPIDIV(pk9, e, set, criteria);
-                        break;
-                    case EncounterMight9 e:
-                        FindTeraPIDIV(pk9, e, set, criteria);
-                        break;
-                }
-                if (set.TeraType != MoveType.Any && set.TeraType != pk9.TeraType)
-                    pk9.SetTeraType(set.TeraType);
-            }
-            else if (enc is EncounterStatic8U && set.Shiny)
-            {
-                // Dynamax Adventure shinies are always XOR 1 (thanks santacrab!)
-                pk.PID = SimpleEdits.GetShinyPID(pk.TID16, pk.SID16, pk.PID, 1);
-            }
-            else if (enc is IOverworldCorrelation8 eo)
-            {
-                var flawless = 0;
-                if (enc is EncounterStatic8 estatic8)
-                {
-                    if (estatic8.ScriptedNoMarks || estatic8.Gift)
-                        return;
-
-                    flawless = estatic8.FlawlessIVCount;
-                }
-
-                var pk8 = (PK8)pk;
-                if (eo.GetRequirement(pk8) != OverworldCorrelation8Requirement.MustHave)
+                if (estatic8.ScriptedNoMarks || estatic8.Gift)
                     return;
 
-                Shiny shiny;
-                if (set is RegenTemplate r)
-                {
-                    shiny = r.Regen.Extra.ShinyType;
-                }
-                else
-                {
-                    shiny = set.Shiny ? Shiny.Always : Shiny.Never;
-                }
-
-                var cloned = new int[set.IVs.Length];
-
-                // Attempt to give them requested 0 ivs at the very least unless they specifically request for all random ivs
-                if (set.IVs.Contains(31) || set.IVs.Contains(0))
-                {
-                    for (int i = 0; i < set.IVs.Length; i++)
-                        cloned[i] = set.IVs[i] != 0 ? 31 : 0;
-                }
-                else
-                {
-                    cloned = set.IVs;
-                }
-
-                if (!SimpleEdits.TryApplyHardcodedSeedWild8(pk8, enc, cloned, shiny))
-                    FindWildPIDIV8(pk8, shiny, flawless);
+                flawless = estatic8.FlawlessIVCount;
             }
-            else if (enc is IStaticCorrelation8b esc)
-            {
-                var flawless = 0;
-                if (enc is EncounterStatic8b estatic8b)
-                    flawless = estatic8b.FlawlessIVCount;
 
-                if (esc.GetRequirement(pk) != StaticCorrelation8bRequirement.MustHave)
-                    return;
-
-                Shiny shiny;
-                if (set is RegenTemplate r)
-                {
-                    shiny = r.Regen.Extra.ShinyType;
-                }
-                else
-                {
-                    shiny = set.Shiny ? Shiny.Always : Shiny.Never;
-                }
-
-                Roaming8bRNG.ApplyDetails(pk, EncounterCriteria.Unrestricted, shiny, flawless);
-                pk.MetLocation = SimpleEdits.RoamingMetLocationBDSP[0];
-            }
-            else if (enc is EncounterEgg && GameVersion.BDSP.Contains(enc.Version))
-            {
-                pk.IVs = set.IVs;
-                Shiny shiny;
-                if (set is RegenTemplate r)
-                {
-                    shiny = r.Regen.Extra.ShinyType;
-                }
-                else
-                {
-                    shiny = set.Shiny ? Shiny.Always : Shiny.Never;
-                }
-
-                FindEggPIDIV8b(pk, shiny, set.Gender, criteria);
-            }
-            else if (enc is EncounterSlot3 enc3 && pk.Species == (ushort)Species.Unown)
-            {
-                enc3.SetFromIVsUnown((PK3)pk, criteria);
-            }
-        }
-
-        private static void FindTeraPIDIV<T>(PK9 pk, T enc, IBattleTemplate set, EncounterCriteria criteria) where T : ITeraRaid9, IEncounterTemplate
-        {
-            if (IsMatchCriteria9(pk, set, criteria))
+            var pk8 = (PK8)pk;
+            if (eo.GetRequirement(pk8) != OverworldCorrelation8Requirement.MustHave)
                 return;
 
-            uint count = 0;
-            uint finalseed = 0;
-            ulong seed = Util.Rand.Rand64();
-            Span<int> ivs = stackalloc int[6];
-            do
+            Shiny shiny;
+            if (set is RegenTemplate r)
             {
-                var pi = PersonalTable.SV.GetFormEntry(enc.Species, enc.Form);
-                var rand = new Xoroshiro128Plus(seed);
-                seed = rand.NextInt(uint.MaxValue);
-                if (!enc.CanBeEncountered((uint)seed))
-                    continue;
-                rand = new Xoroshiro128Plus(seed);
-                pk.EncryptionConstant = (uint)rand.NextInt(uint.MaxValue);
-                var fakeTID = (uint)rand.NextInt();
-                uint pid = (uint)rand.NextInt();
-                if (((IEncounterable)enc).Shiny == Shiny.Random) // let's decide if it's shiny or not!
-                {
-                    int i = 1;
-                    bool isShiny;
-                    uint xor;
-                    while (true)
-                    {
-                        xor = ShinyUtil.GetShinyXor(pid, fakeTID);
-                        isShiny = xor < 16;
-                        if (isShiny)
-                        {
-                            if (xor != 0)
-                                xor = 1;
-                            break;
-                        }
-                        if (i >= 1)
-                            break;
-                        pid = (uint)rand.NextInt();
-                        i++;
-                    }
-                    ShinyUtil.ForceShinyState(isShiny, ref pid, pk.ID32, xor);
-                }
-                else if (((IEncounterable)enc).Shiny == Shiny.Always)
-                {
-                    var tid = (ushort)fakeTID;
-                    var sid = (ushort)(fakeTID >> 16);
-                    if (!ShinyUtil.GetIsShiny(fakeTID, pid)) // battled
-                        pid = ShinyUtil.GetShinyPID(tid, sid, pid, 0);
-                    if (!ShinyUtil.GetIsShiny(pk.ID32, pid)) // captured
-                        pid = ShinyUtil.GetShinyPID(pk.TID16, pk.SID16, pid, ShinyUtil.GetShinyXor(pid, fakeTID) == 0 ? 0u : 1u);
-                }
-                else // Never
-                {
-                    if (ShinyUtil.GetIsShiny(fakeTID, pid)) // battled
-                        pid ^= 0x1000_0000;
-                    if (ShinyUtil.GetIsShiny(pk.ID32, pid)) // captured
-                        pid ^= 0x1000_0000;
-                }
-                pk.PID = pid;
-                if (pk.IsShiny != set.Shiny)
-                    continue;
-
-                ivs.Fill(-1);
-                for (int i = 0; i < ((IFlawlessIVCount)enc).FlawlessIVCount; i++)
-                {
-                    int index;
-                    do { index = (int)rand.NextInt(6); }
-                    while (ivs[index] != -1);
-                    ivs[index] = 31;
-                }
-
-                for (int i = 0; i < 6; i++)
-                {
-                    if (ivs[i] == -1)
-                        ivs[i] = (int)rand.NextInt(32);
-                }
-                if (!criteria.IsIVsCompatibleSpeedLast(ivs,9))
-                    continue;
-                pk.IV_HP = ivs[0];
-                pk.IV_ATK = ivs[1];
-                pk.IV_DEF = ivs[2];
-                pk.IV_SPA = ivs[3];
-                pk.IV_SPD = ivs[4];
-                pk.IV_SPE = ivs[5];
-
-                int abil = enc.Ability switch
-                {
-                    AbilityPermission.Any12H => (int)rand.NextInt(3) << 1,
-                    AbilityPermission.Any12 => (int)rand.NextInt(2) << 1,
-                    _ => (int)enc.Ability,
-                };
-                pk.RefreshAbility(abil >> 1);
-
-                var gender_ratio = pi.Gender;
-                Gender gender = gender_ratio switch
-                {
-                    PersonalInfo.RatioMagicGenderless => Gender.Genderless,
-                    PersonalInfo.RatioMagicFemale => Gender.Female,
-                    PersonalInfo.RatioMagicMale => Gender.Male,
-                    _ => (Gender)Encounter9RNG.GetGender(gender_ratio, rand.NextInt(100)),
-                };
-                if (!criteria.IsGenderSatisfied((byte)gender))
-                    continue;
-                pk.Gender = (byte)gender;
-
-                Nature nature = enc.Species == (int)Species.Toxtricity ? ToxtricityUtil.GetRandomNature(ref rand, pk.Form) : (Nature)rand.NextInt(25);
-                if (criteria.Nature != Nature.Random && nature != criteria.Nature)
-                    continue;
-                pk.Nature = pk.StatNature = nature;
-
-                pk.HeightScalar = (byte)(rand.NextInt(0x81) + rand.NextInt(0x80));
-                pk.WeightScalar = (byte)(rand.NextInt(0x81) + rand.NextInt(0x80));
-                pk.Scale = enc switch
-                {
-                    EncounterMight9 m => m.ScaleType.GetSizeValue(m.Scale, ref rand),
-                    EncounterDist9 d => d.ScaleType.GetSizeValue(d.Scale, ref rand),
-                    _ => SizeType9Extensions.GetSizeValue(0, 0, ref rand),
-                };
-                finalseed = (uint)seed;
-                break;
-            } while (++count < uint.MaxValue);
-            var type = Tera9RNG.GetTeraType(finalseed, enc.TeraType, enc.Species, enc.Form);
-            pk.TeraTypeOriginal = (MoveType)type;
-            if (criteria.TeraType != -1 && type != criteria.TeraType && TeraTypeUtil.CanChangeTeraType(enc.Species))
-                pk.SetTeraType((MoveType)criteria.TeraType);
-        }
-
-        /// <summary>
-        /// Wild PID IVs being set through XOROSHIRO128
-        /// </summary>
-        /// <param name="pk">Pokémon to edit</param>
-        /// <param name="shiny">Shinytype requested</param>
-        /// <param name="flawless">number of flawless ivs</param>
-        /// <param name="fixedseed">Optional fixed RNG seed</param>
-        public static void FindWildPIDIV8(PK8 pk, Shiny shiny, int flawless = 0, uint? fixedseed = null)
-        {
-            // Modified version of the standard XOROSHIRO algorithm (32 bit seed 0, same const seed 1)
-            // EC -> PID -> Flawless IV rolls -> Non-flawless IVs -> height -> weight
-            uint seed;
-            Xoroshiro128Plus rng;
-            var ivs = new[] { -1, -1, -1, -1, -1, -1 };
-
-            if (fixedseed != null)
-            {
-                seed = (uint)fixedseed;
-                rng = new Xoroshiro128Plus(seed);
-
-                pk.EncryptionConstant = (uint)rng.NextInt();
-                pk.PID = (uint)rng.NextInt();
+                shiny = r.Regen.Extra.ShinyType;
             }
             else
             {
+                shiny = set.Shiny ? Shiny.Always : Shiny.Never;
+            }
+
+            var cloned = new int[set.IVs.Length];
+
+            // Attempt to give them requested 0 ivs at the very least unless they specifically request for all random ivs
+            if (set.IVs.Contains(31) || set.IVs.Contains(0))
+            {
+                for (int i = 0; i < set.IVs.Length; i++)
+                    cloned[i] = set.IVs[i] != 0 ? 31 : 0;
+            }
+            else
+            {
+                cloned = set.IVs;
+            }
+
+            if (!SimpleEdits.TryApplyHardcodedSeedWild8(pk8, enc, cloned, shiny))
+                FindWildPIDIV8(pk8, shiny, flawless);
+        }
+        else if (enc is IStaticCorrelation8b esc)
+        {
+            var flawless = 0;
+            if (enc is EncounterStatic8b estatic8b)
+                flawless = estatic8b.FlawlessIVCount;
+
+            if (esc.GetRequirement(pk) != StaticCorrelation8bRequirement.MustHave)
+                return;
+
+            Shiny shiny;
+            if (set is RegenTemplate r)
+            {
+                shiny = r.Regen.Extra.ShinyType;
+            }
+            else
+            {
+                shiny = set.Shiny ? Shiny.Always : Shiny.Never;
+            }
+
+            Roaming8bRNG.ApplyDetails(pk, EncounterCriteria.Unrestricted, shiny, flawless);
+            pk.MetLocation = SimpleEdits.RoamingMetLocationBDSP[0];
+        }
+        else if (enc is EncounterEgg && GameVersion.BDSP.Contains(enc.Version))
+        {
+            pk.IVs = set.IVs;
+            Shiny shiny;
+            if (set is RegenTemplate r)
+            {
+                shiny = r.Regen.Extra.ShinyType;
+            }
+            else
+            {
+                shiny = set.Shiny ? Shiny.Always : Shiny.Never;
+            }
+
+            FindEggPIDIV8b(pk, shiny, set.Gender, criteria);
+        }
+        else if (enc is EncounterSlot3 enc3 && pk.Species == (ushort)Species.Unown)
+        {
+            enc3.SetFromIVsUnown((PK3)pk, criteria);
+        }
+    }
+
+    private static void FindTeraPIDIV<T>(PK9 pk, T enc, IBattleTemplate set, EncounterCriteria criteria) where T : ITeraRaid9, IEncounterTemplate
+    {
+        if (IsMatchCriteria9(pk, set, criteria))
+            return;
+
+        uint count = 0;
+        uint finalseed = 0;
+        ulong seed = Util.Rand.Rand64();
+        Span<int> ivs = stackalloc int[6];
+        do
+        {
+            var pi = PersonalTable.SV.GetFormEntry(enc.Species, enc.Form);
+            var rand = new Xoroshiro128Plus(seed);
+            seed = rand.NextInt(uint.MaxValue);
+            if (!enc.CanBeEncountered((uint)seed))
+                continue;
+            rand = new Xoroshiro128Plus(seed);
+            pk.EncryptionConstant = (uint)rand.NextInt(uint.MaxValue);
+            var fakeTID = (uint)rand.NextInt();
+            uint pid = (uint)rand.NextInt();
+            if (((IEncounterable)enc).Shiny == Shiny.Random) // let's decide if it's shiny or not!
+            {
+                int i = 1;
+                bool isShiny;
+                uint xor;
                 while (true)
                 {
-                    seed = Util.Rand32();
-                    rng = new Xoroshiro128Plus(seed);
-
-                    pk.EncryptionConstant = (uint)rng.NextInt();
-                    pk.PID = (uint)rng.NextInt();
-
-                    var xor = pk.ShinyXor;
-                    switch (shiny)
+                    xor = ShinyUtil.GetShinyXor(pid, fakeTID);
+                    isShiny = xor < 16;
+                    if (isShiny)
                     {
-                        case Shiny.AlwaysStar when xor is 0 or > 15:
-                        case Shiny.Never when xor < 16:
-                            continue;
+                        if (xor != 0)
+                            xor = 1;
+                        break;
                     }
-
-                    // Every other case can be valid and genned, so break out
-                    break;
+                    if (i >= 1)
+                        break;
+                    pid = (uint)rand.NextInt();
+                    i++;
                 }
+                ShinyUtil.ForceShinyState(isShiny, ref pid, pk.ID32, xor);
             }
-
-            // Square shiny: if not xor0, force xor0
-            // Always shiny: if not xor0-15, force xor0
-            var editnecessary = (shiny == Shiny.AlwaysSquare && pk.ShinyXor != 0) || (shiny == Shiny.Always && pk.ShinyXor > 15);
-            if (editnecessary)
+            else if (((IEncounterable)enc).Shiny == Shiny.Always)
             {
-                pk.PID = SimpleEdits.GetShinyPID(pk.TID16, pk.SID16, pk.PID, 0);
+                var tid = (ushort)fakeTID;
+                var sid = (ushort)(fakeTID >> 16);
+                if (!ShinyUtil.GetIsShiny(fakeTID, pid)) // battled
+                    pid = ShinyUtil.GetShinyPID(tid, sid, pid, 0);
+                if (!ShinyUtil.GetIsShiny(pk.ID32, pid)) // captured
+                    pid = ShinyUtil.GetShinyPID(pk.TID16, pk.SID16, pid, ShinyUtil.GetShinyXor(pid, fakeTID) == 0 ? 0u : 1u);
             }
-
-            // RNG is fixed now, and you have the requested shiny!
-
-            for (int i = ivs.Count(z => z == 31); i < flawless; i++)
+            else // Never
             {
-                int index = (int)rng.NextInt(6);
-                while (ivs[index] != -1)
-                {
-                    index = (int)rng.NextInt(6);
-                }
+                if (ShinyUtil.GetIsShiny(fakeTID, pid)) // battled
+                    pid ^= 0x1000_0000;
+                if (ShinyUtil.GetIsShiny(pk.ID32, pid)) // captured
+                    pid ^= 0x1000_0000;
+            }
+            pk.PID = pid;
+            if (pk.IsShiny != set.Shiny)
+                continue;
 
+            ivs.Fill(-1);
+            for (int i = 0; i < ((IFlawlessIVCount)enc).FlawlessIVCount; i++)
+            {
+                int index;
+                do { index = (int)rand.NextInt(6); }
+                while (ivs[index] != -1);
                 ivs[index] = 31;
             }
 
             for (int i = 0; i < 6; i++)
             {
                 if (ivs[i] == -1)
-                    ivs[i] = (int)rng.NextInt(32);
+                    ivs[i] = (int)rand.NextInt(32);
             }
-
+            if (!criteria.IsIVsCompatibleSpeedLast(ivs,9))
+                continue;
             pk.IV_HP = ivs[0];
             pk.IV_ATK = ivs[1];
             pk.IV_DEF = ivs[2];
@@ -1218,282 +1096,345 @@ namespace PKHeX.Core.AutoMod
             pk.IV_SPD = ivs[4];
             pk.IV_SPE = ivs[5];
 
-            var height = (int)rng.NextInt(0x81) + (int)rng.NextInt(0x80);
-            var weight = (int)rng.NextInt(0x81) + (int)rng.NextInt(0x80);
-            pk.HeightScalar = (byte)height;
-            pk.WeightScalar = (byte)weight;
-        }
+            int abil = enc.Ability switch
+            {
+                AbilityPermission.Any12H => (int)rand.NextInt(3) << 1,
+                AbilityPermission.Any12 => (int)rand.NextInt(2) << 1,
+                _ => (int)enc.Ability,
+            };
+            pk.RefreshAbility(abil >> 1);
 
-        /// <summary>
-        /// Egg PID IVs being set through XOROSHIRO1288b
-        /// </summary>
-        /// <param name="pk">Pokémon to edit</param>
-        /// <param name="shiny">Shinytype requested</param>
-        /// <param name="gender"></param>
-        /// <param name="criteria"></param>
-        public static void FindEggPIDIV8b(PKM pk, Shiny shiny, byte? gender, EncounterCriteria criteria)
+            var gender_ratio = pi.Gender;
+            Gender gender = gender_ratio switch
+            {
+                PersonalInfo.RatioMagicGenderless => Gender.Genderless,
+                PersonalInfo.RatioMagicFemale => Gender.Female,
+                PersonalInfo.RatioMagicMale => Gender.Male,
+                _ => (Gender)Encounter9RNG.GetGender(gender_ratio, rand.NextInt(100)),
+            };
+            if (!criteria.IsGenderSatisfied((byte)gender))
+                continue;
+            pk.Gender = (byte)gender;
+
+            Nature nature = enc.Species == (int)Species.Toxtricity ? ToxtricityUtil.GetRandomNature(ref rand, pk.Form) : (Nature)rand.NextInt(25);
+            if (criteria.Nature != Nature.Random && nature != criteria.Nature)
+                continue;
+            pk.Nature = pk.StatNature = nature;
+
+            pk.HeightScalar = (byte)(rand.NextInt(0x81) + rand.NextInt(0x80));
+            pk.WeightScalar = (byte)(rand.NextInt(0x81) + rand.NextInt(0x80));
+            pk.Scale = enc switch
+            {
+                EncounterMight9 m => m.ScaleType.GetSizeValue(m.Scale, ref rand),
+                EncounterDist9 d => d.ScaleType.GetSizeValue(d.Scale, ref rand),
+                _ => SizeType9Extensions.GetSizeValue(0, 0, ref rand),
+            };
+            finalseed = (uint)seed;
+            break;
+        } while (++count < uint.MaxValue);
+        var type = Tera9RNG.GetTeraType(finalseed, enc.TeraType, enc.Species, enc.Form);
+        pk.TeraTypeOriginal = (MoveType)type;
+        if (criteria.TeraType != -1 && type != criteria.TeraType && TeraTypeUtil.CanChangeTeraType(enc.Species))
+            pk.SetTeraType((MoveType)criteria.TeraType);
+    }
+
+    /// <summary>
+    /// Wild PID IVs being set through XOROSHIRO128
+    /// </summary>
+    /// <param name="pk">Pokémon to edit</param>
+    /// <param name="shiny">Shinytype requested</param>
+    /// <param name="flawless">number of flawless ivs</param>
+    /// <param name="fixedseed">Optional fixed RNG seed</param>
+    public static void FindWildPIDIV8(PK8 pk, Shiny shiny, int flawless = 0, uint? fixedseed = null)
+    {
+        // Modified version of the standard XOROSHIRO algorithm (32 bit seed 0, same const seed 1)
+        // EC -> PID -> Flawless IV rolls -> Non-flawless IVs -> height -> weight
+        uint seed;
+        Xoroshiro128Plus rng;
+        var ivs = new[] { -1, -1, -1, -1, -1, -1 };
+
+        if (fixedseed != null)
         {
-            Span<int> ivs = stackalloc int[6];
-            ReadOnlySpan<int> required_ivs = [pk.IV_HP, pk.IV_ATK, pk.IV_DEF, pk.IV_SPA, pk.IV_SPD, pk.IV_SPE];
-            var pi = PersonalTable.BDSP.GetFormEntry(pk.Species, pk.Form);
-            var ratio = pi.Gender;
-            var species = (int)pk.Species;
+            seed = (uint)fixedseed;
+            rng = new Xoroshiro128Plus(seed);
+
+            pk.EncryptionConstant = (uint)rng.NextInt();
+            pk.PID = (uint)rng.NextInt();
+        }
+        else
+        {
             while (true)
             {
-                var seed = Util.Rand32();
-                var rng = new Xoroshiro128Plus8b(seed);
-
-                if ((uint)(species - (int)Species.NidoranF) < 6)
-                {
-                    var nido_roll = rng.NextUInt(2);
-                    if (nido_roll == 1 && species <= (int)Species.Nidoqueen) // Nidoran F
-                        continue;
-
-                    if (nido_roll == 0 && species >= (int)Species.NidoranM) // Nidoran M
-                        continue;
-                }
-
-                if (species is (int)Species.Illumise or (int)Species.Volbeat)
-                {
-                    if (rng.NextUInt(2) != (int)Species.Illumise - species)
-                        continue;
-                }
-
-                if (species == (int)Species.Indeedee)
-                {
-                    if (rng.NextUInt(2) != pk.Form)
-                        continue;
-                }
-
-                if (ratio is not PersonalInfo.RatioMagicMale and not PersonalInfo.RatioMagicFemale and not PersonalInfo.RatioMagicGenderless)
-                {
-                    var gender_roll = rng.NextUInt(252) + 1;
-                    var fin_gender = gender_roll < ratio ? 1 : 0;
-                    if (gender is not null and not (byte)Gender.Genderless && gender != fin_gender)
-                        continue;
-                }
-
-                // nature
-                _ = rng.NextUInt(25); // Assume one parent always carries an Everstone.
-
-                // ability
-                _ = rng.NextUInt(100); // Ability can be changed using Capsule/Patch (Assume parent is ability 0/1).
-
-                // The game does a rand(6) to decide which IV's inheritance to check.
-                // If that IV isn't marked to inherit from a parent, it does a rand(2) to pick the parent.
-                // When generating egg IVs, it first randomly fills in the egg IVs with rand(32) x6, then overwrites with parent IVs based on tracking.
-                // We'll assume both parents have the perfect IVs and copy over the parent IV as it's inherited, then fill in blanks afterwards.
-
-                // assume other parent always has destiny knot
-                const int inheritCount = 5;
-                var inherited = 0;
-                ivs.Fill(-1);
-                while (inherited < inheritCount)
-                {
-                    var stat = (int)rng.NextUInt(6); // Decides which IV to check.
-                    if (ivs[stat] != -1) // Only -1 if not already inherited.
-                        continue;
-
-                    _ = rng.NextUInt(2); // Decides which parent's IV to inherit. Assume both parents have the same desired IVs.
-                    ivs[stat] = required_ivs[stat];
-                    inherited++;
-                }
-                Span<uint> randomivs = [
-                    rng.NextUInt(32),
-                    rng.NextUInt(32),
-                    rng.NextUInt(32),
-                    rng.NextUInt(32),
-                    rng.NextUInt(32),
-                    rng.NextUInt(32),
-                ];
-                for (int i = 0; i < 6; i++)
-                {
-                    if (ivs[i] == -1)
-                        ivs[i] = (int)randomivs[i];
-                }
-                if (!criteria.IsIVsCompatibleSpeedLast(ivs, 8))
-                    continue;
-                pk.IV_HP = ivs[0];
-                pk.IV_ATK = ivs[1];
-                pk.IV_DEF = ivs[2];
-                pk.IV_SPA = ivs[3];
-                pk.IV_SPD = ivs[4];
-                pk.IV_SPE = ivs[5];
-
-                pk.EncryptionConstant = rng.NextUInt();
-
-                // PID dissociated completely (assume no masuda and no shiny charm)
-                if (shiny is Shiny.Never or Shiny.Random)
-                {
-                    pk.SetUnshiny();
-                }
-                else
-                {
-                    pk.PID = SimpleEdits.GetShinyPID(pk.TID16, pk.SID16, pk.PID, shiny == Shiny.AlwaysSquare ? 0 : 1);
-                }
-
-                break;
-            }
-        }
-
-        private static bool IsMatchCriteria9(PK9 pk, IBattleTemplate template, EncounterCriteria criteria, bool compromise = false)
-        {
-            // compromise on nature since they can be minted
-            if (criteria.Nature != Nature.Random && criteria.Nature != pk.Nature && !compromise) // match nature
-                return false;
-
-            if (template.Gender is not null && (uint)template.Gender < 2 && template.Gender != pk.Gender) // match gender
-                return false;
-
-            if (template.Form != pk.Form && !FormInfo.IsFormChangeable(pk.Species, pk.Form, template.Form, EntityContext.Gen9, pk.Context)) // match form -- Toxtricity etc
-                return false;
-            return template.Shiny == pk.IsShiny;
-        }
-
-        /// <summary>
-        /// Method to set PID, IV while validating nature.
-        /// </summary>
-        /// <param name="pk">PKM to modify</param>
-        /// <param name="Method">Given Method</param>
-        /// <param name="HPType">HPType INT for preserving Hidden powers</param>
-        /// <param name="shiny">Only used for CHANNEL RNG type</param>
-        /// <param name="enc"></param>
-        /// <param name="set"></param>
-        /// <param name="criteria"></param>
-        private static void FindPIDIV(PKM pk, PIDType Method, int HPType, bool shiny, IEncounterable enc, IBattleTemplate set, EncounterCriteria criteria)
-        {
-            if (enc.Generation == 4 && pk.Species == (ushort)Species.Unown)
-                pk.Form = set.Form;
-            if (Method == PIDType.None)
-            {
-                if (enc is EncounterGift3 wc3)
-                {
-                    Method = wc3.Method;
-                }
-                else
-                {
-                    Method = FindLikelyPIDType(pk);
-                }
-
-                if (pk.Version == GameVersion.CXD && Method != PIDType.PokeSpot)
-                    Method = PIDType.CXD;
-
-                if (Method == PIDType.None && pk.Generation >= 3)
-                    pk.SetPIDGender(pk.Gender);
-            }
-            switch (Method)
-            {
-                case PIDType.Method_1_Roamer when pk.HPType != (int)MoveType.Fighting - 1: // M1 Roamers can only be HP fighting
-                case PIDType.Pokewalker when (pk.Nature >= Nature.Quirky || pk.AbilityNumber == 4): // No possible pokewalker matches
-                    return;
-            }
-            var iterPKM = pk.Clone();
-            // Requested Pokémon may be an evolution, guess index based on requested species ability
-            var ability_idx = GetRequiredAbilityIdx(iterPKM, set);
-
-            if (iterPKM.AbilityNumber >> 1 != ability_idx && set.Ability != -1 && ability_idx != -1)
-                iterPKM.SetAbilityIndex(ability_idx);
-
-            var count = 0;
-            var isWishmaker = Method == PIDType.BACD_R && shiny && enc is EncounterGift3 { OriginalTrainerName: "WISHMKR" };
-            var compromise = false;
-            var gr = pk.PersonalInfo.Gender;
-            uint seed = Util.Rand32();
-            if (IsMatchFromPKHeX(pk, iterPKM, HPType, shiny, gr, enc, seed, Method))
-                return;
-            do
-            {
-                if (count >= 2_500_000 && pk.Species != (ushort)Species.Unown)
-                    compromise = true;
-
                 seed = Util.Rand32();
-                if (isWishmaker)
+                rng = new Xoroshiro128Plus(seed);
+
+                pk.EncryptionConstant = (uint)rng.NextInt();
+                pk.PID = (uint)rng.NextInt();
+
+                var xor = pk.ShinyXor;
+                switch (shiny)
                 {
-                    seed = WC3Seeds.GetShinyWishmakerSeed(iterPKM.Nature);
-                    isWishmaker = false;
-                }
-                if (PokeWalkerSeedFail(seed, Method, pk, iterPKM))
-                    continue;
-                PIDGenerator.SetValuesFromSeed(pk, Method, seed);
-                if (pk.AbilityNumber != iterPKM.AbilityNumber )
-                    continue;
-                if (!compromise && pk.Nature != iterPKM.Nature)
-                    continue;
-                if (pk.PIDAbility != iterPKM.PIDAbility)
-                    continue;
-
-                if (HPType >= 0 && pk.HPType != HPType)
-                    continue;
-
-                if (pk.PID % 25 != (int)iterPKM.Nature) // Util.Rand32 is the way to go
-                    continue;
-
-                if (pk.Gender != EntityGender.GetFromPIDAndRatio(pk.PID, gr))
-                    continue;
-                if (enc is EncounterSlot4 s4)
-                {
-                    var lvl = new SingleLevelRange(enc.LevelMin);
-                    if (!LeadFinder.TryGetLeadInfo4(s4, lvl, pk.HGSS, seed, 4, out _))
+                    case Shiny.AlwaysStar when xor is 0 or > 15:
+                    case Shiny.Never when xor < 16:
                         continue;
                 }
 
-                if (pk.Version == GameVersion.CXD && Method == PIDType.CXD) // verify locks
-                {
-                    pk.EncryptionConstant = pk.PID;
-                    var ec = pk.PID;
-                    bool xorPID = ((pk.TID16 ^ pk.SID16 ^ (int)(ec & 0xFFFF) ^ (int)(ec >> 16)) & ~0x7) == 8;
-                    if (enc is EncounterStatic3XD && enc.Species == (int)Species.Eevee && (shiny != pk.IsShiny || xorPID)) // Starter Correlation
-                        continue;
-
-                    var la = new LegalityAnalysis(pk);
-                    if (la.Info.PIDIV.Type is not PIDType.CXD and not PIDType.CXD_ColoStarter || !la.Info.PIDIVMatches || !pk.IsValidGenderPID(enc))
-                        continue;
-                }
-                if (pk.Species == (ushort)Species.Unown)
-                {
-                    if (enc is EncounterSlot4 enc4)
-                    {
-                        var pi = PersonalTable.HGSS[pk.Species];
-                        if (pk.HGSS)
-                            enc4.SetFromIVsK((PK4)pk, pi, criteria, out var _);
-                        else
-                            enc4.SetFromIVsJ((PK4)pk, pi, criteria, out var _);
-                    }
-                    if (enc is EncounterSlot3 && pk.Form != EntityPID.GetUnownForm3(pk.PID))
-                        continue;
-                }
-                var pidxor = ((pk.TID16 ^ pk.SID16 ^ (int)(pk.PID & 0xFFFF) ^ (int)(pk.PID >> 16)) & ~0x7) == 8;
-                if (Method == PIDType.Channel && (shiny != pk.IsShiny || pidxor))
-                    continue;
-                if (Method == PIDType.Channel && !ChannelJirachi.IsPossible(seed))
-                    continue;
-                if (pk.TID16 == 06930 && !MystryMew.IsValidSeed(seed))
-                    continue;
-
+                // Every other case can be valid and genned, so break out
                 break;
-            } while (++count < 5_000_000);
+            }
         }
-        private static bool IsMatchFromPKHeX(PKM pk, PKM iterPKM, int HPType, bool shiny, byte gr, IEncounterable enc, uint seed, PIDType Method)
-        {
-            if (pk.AbilityNumber != iterPKM.AbilityNumber && pk.Nature != iterPKM.Nature)
-                return false;
 
+        // Square shiny: if not xor0, force xor0
+        // Always shiny: if not xor0-15, force xor0
+        var editnecessary = (shiny == Shiny.AlwaysSquare && pk.ShinyXor != 0) || (shiny == Shiny.Always && pk.ShinyXor > 15);
+        if (editnecessary)
+        {
+            pk.PID = SimpleEdits.GetShinyPID(pk.TID16, pk.SID16, pk.PID, 0);
+        }
+
+        // RNG is fixed now, and you have the requested shiny!
+
+        for (int i = ivs.Count(z => z == 31); i < flawless; i++)
+        {
+            int index = (int)rng.NextInt(6);
+            while (ivs[index] != -1)
+            {
+                index = (int)rng.NextInt(6);
+            }
+
+            ivs[index] = 31;
+        }
+
+        for (int i = 0; i < 6; i++)
+        {
+            if (ivs[i] == -1)
+                ivs[i] = (int)rng.NextInt(32);
+        }
+
+        pk.IV_HP = ivs[0];
+        pk.IV_ATK = ivs[1];
+        pk.IV_DEF = ivs[2];
+        pk.IV_SPA = ivs[3];
+        pk.IV_SPD = ivs[4];
+        pk.IV_SPE = ivs[5];
+
+        var height = (int)rng.NextInt(0x81) + (int)rng.NextInt(0x80);
+        var weight = (int)rng.NextInt(0x81) + (int)rng.NextInt(0x80);
+        pk.HeightScalar = (byte)height;
+        pk.WeightScalar = (byte)weight;
+    }
+
+    /// <summary>
+    /// Egg PID IVs being set through XOROSHIRO1288b
+    /// </summary>
+    /// <param name="pk">Pokémon to edit</param>
+    /// <param name="shiny">Shinytype requested</param>
+    /// <param name="gender"></param>
+    /// <param name="criteria"></param>
+    public static void FindEggPIDIV8b(PKM pk, Shiny shiny, byte? gender, EncounterCriteria criteria)
+    {
+        Span<int> ivs = stackalloc int[6];
+        ReadOnlySpan<int> required_ivs = [pk.IV_HP, pk.IV_ATK, pk.IV_DEF, pk.IV_SPA, pk.IV_SPD, pk.IV_SPE];
+        var pi = PersonalTable.BDSP.GetFormEntry(pk.Species, pk.Form);
+        var ratio = pi.Gender;
+        var species = (int)pk.Species;
+        while (true)
+        {
+            var seed = Util.Rand32();
+            var rng = new Xoroshiro128Plus8b(seed);
+
+            if ((uint)(species - (int)Species.NidoranF) < 6)
+            {
+                var nido_roll = rng.NextUInt(2);
+                if (nido_roll == 1 && species <= (int)Species.Nidoqueen) // Nidoran F
+                    continue;
+
+                if (nido_roll == 0 && species >= (int)Species.NidoranM) // Nidoran M
+                    continue;
+            }
+
+            if (species is (int)Species.Illumise or (int)Species.Volbeat)
+            {
+                if (rng.NextUInt(2) != (int)Species.Illumise - species)
+                    continue;
+            }
+
+            if (species == (int)Species.Indeedee)
+            {
+                if (rng.NextUInt(2) != pk.Form)
+                    continue;
+            }
+
+            if (ratio is not PersonalInfo.RatioMagicMale and not PersonalInfo.RatioMagicFemale and not PersonalInfo.RatioMagicGenderless)
+            {
+                var gender_roll = rng.NextUInt(252) + 1;
+                var fin_gender = gender_roll < ratio ? 1 : 0;
+                if (gender is not null and not (byte)Gender.Genderless && gender != fin_gender)
+                    continue;
+            }
+
+            // nature
+            _ = rng.NextUInt(25); // Assume one parent always carries an Everstone.
+
+            // ability
+            _ = rng.NextUInt(100); // Ability can be changed using Capsule/Patch (Assume parent is ability 0/1).
+
+            // The game does a rand(6) to decide which IV's inheritance to check.
+            // If that IV isn't marked to inherit from a parent, it does a rand(2) to pick the parent.
+            // When generating egg IVs, it first randomly fills in the egg IVs with rand(32) x6, then overwrites with parent IVs based on tracking.
+            // We'll assume both parents have the perfect IVs and copy over the parent IV as it's inherited, then fill in blanks afterwards.
+
+            // assume other parent always has destiny knot
+            const int inheritCount = 5;
+            var inherited = 0;
+            ivs.Fill(-1);
+            while (inherited < inheritCount)
+            {
+                var stat = (int)rng.NextUInt(6); // Decides which IV to check.
+                if (ivs[stat] != -1) // Only -1 if not already inherited.
+                    continue;
+
+                _ = rng.NextUInt(2); // Decides which parent's IV to inherit. Assume both parents have the same desired IVs.
+                ivs[stat] = required_ivs[stat];
+                inherited++;
+            }
+            Span<uint> randomivs = [
+                rng.NextUInt(32),
+                rng.NextUInt(32),
+                rng.NextUInt(32),
+                rng.NextUInt(32),
+                rng.NextUInt(32),
+                rng.NextUInt(32),
+            ];
+            for (int i = 0; i < 6; i++)
+            {
+                if (ivs[i] == -1)
+                    ivs[i] = (int)randomivs[i];
+            }
+            if (!criteria.IsIVsCompatibleSpeedLast(ivs, 8))
+                continue;
+            pk.IV_HP = ivs[0];
+            pk.IV_ATK = ivs[1];
+            pk.IV_DEF = ivs[2];
+            pk.IV_SPA = ivs[3];
+            pk.IV_SPD = ivs[4];
+            pk.IV_SPE = ivs[5];
+
+            pk.EncryptionConstant = rng.NextUInt();
+
+            // PID dissociated completely (assume no masuda and no shiny charm)
+            if (shiny is Shiny.Never or Shiny.Random)
+            {
+                pk.SetUnshiny();
+            }
+            else
+            {
+                pk.PID = SimpleEdits.GetShinyPID(pk.TID16, pk.SID16, pk.PID, shiny == Shiny.AlwaysSquare ? 0 : 1);
+            }
+
+            break;
+        }
+    }
+
+    private static bool IsMatchCriteria9(PK9 pk, IBattleTemplate template, EncounterCriteria criteria, bool compromise = false)
+    {
+        // compromise on nature since they can be minted
+        if (criteria.Nature != Nature.Random && criteria.Nature != pk.Nature && !compromise) // match nature
+            return false;
+
+        if (template.Gender is not null && (uint)template.Gender < 2 && template.Gender != pk.Gender) // match gender
+            return false;
+
+        if (template.Form != pk.Form && !FormInfo.IsFormChangeable(pk.Species, pk.Form, template.Form, EntityContext.Gen9, pk.Context)) // match form -- Toxtricity etc
+            return false;
+        return template.Shiny == pk.IsShiny;
+    }
+
+    /// <summary>
+    /// Method to set PID, IV while validating nature.
+    /// </summary>
+    /// <param name="pk">PKM to modify</param>
+    /// <param name="Method">Given Method</param>
+    /// <param name="HPType">HPType INT for preserving Hidden powers</param>
+    /// <param name="shiny">Only used for CHANNEL RNG type</param>
+    /// <param name="enc"></param>
+    /// <param name="set"></param>
+    /// <param name="criteria"></param>
+    private static void FindPIDIV(PKM pk, PIDType Method, int HPType, bool shiny, IEncounterable enc, IBattleTemplate set, EncounterCriteria criteria)
+    {
+        if (enc.Generation == 4 && pk.Species == (ushort)Species.Unown)
+            pk.Form = set.Form;
+        if (Method == PIDType.None)
+        {
+            if (enc is EncounterGift3 wc3)
+            {
+                Method = wc3.Method;
+            }
+            else
+            {
+                Method = FindLikelyPIDType(pk);
+            }
+
+            if (pk.Version == GameVersion.CXD && Method != PIDType.PokeSpot)
+                Method = PIDType.CXD;
+
+            if (Method == PIDType.None && pk.Generation >= 3)
+                pk.SetPIDGender(pk.Gender);
+        }
+        switch (Method)
+        {
+            case PIDType.Method_1_Roamer when pk.HPType != (int)MoveType.Fighting - 1: // M1 Roamers can only be HP fighting
+            case PIDType.Pokewalker when (pk.Nature >= Nature.Quirky || pk.AbilityNumber == 4): // No possible pokewalker matches
+                return;
+        }
+        var iterPKM = pk.Clone();
+        // Requested Pokémon may be an evolution, guess index based on requested species ability
+        var ability_idx = GetRequiredAbilityIdx(iterPKM, set);
+
+        if (iterPKM.AbilityNumber >> 1 != ability_idx && set.Ability != -1 && ability_idx != -1)
+            iterPKM.SetAbilityIndex(ability_idx);
+
+        var count = 0;
+        var isWishmaker = Method == PIDType.BACD_R && shiny && enc is EncounterGift3 { OriginalTrainerName: "WISHMKR" };
+        var compromise = false;
+        var gr = pk.PersonalInfo.Gender;
+        uint seed = Util.Rand32();
+        if (IsMatchFromPKHeX(pk, iterPKM, HPType, shiny, gr, enc, seed, Method))
+            return;
+        do
+        {
+            if (count >= 2_500_000 && pk.Species != (ushort)Species.Unown)
+                compromise = true;
+
+            seed = Util.Rand32();
+            if (isWishmaker)
+            {
+                seed = WC3Seeds.GetShinyWishmakerSeed(iterPKM.Nature);
+                isWishmaker = false;
+            }
+            if (PokeWalkerSeedFail(seed, Method, pk, iterPKM))
+                continue;
+            PIDGenerator.SetValuesFromSeed(pk, Method, seed);
+            if (pk.AbilityNumber != iterPKM.AbilityNumber )
+                continue;
+            if (!compromise && pk.Nature != iterPKM.Nature)
+                continue;
             if (pk.PIDAbility != iterPKM.PIDAbility)
-                return false;
+                continue;
 
             if (HPType >= 0 && pk.HPType != HPType)
-                return false;
+                continue;
 
             if (pk.PID % 25 != (int)iterPKM.Nature) // Util.Rand32 is the way to go
-                return false;
+                continue;
 
             if (pk.Gender != EntityGender.GetFromPIDAndRatio(pk.PID, gr))
-                return false;
+                continue;
             if (enc is EncounterSlot4 s4)
             {
                 var lvl = new SingleLevelRange(enc.LevelMin);
                 if (!LeadFinder.TryGetLeadInfo4(s4, lvl, pk.HGSS, seed, 4, out _))
-                    return false;
+                    continue;
             }
 
             if (pk.Version == GameVersion.CXD && Method == PIDType.CXD) // verify locks
@@ -1502,237 +1443,296 @@ namespace PKHeX.Core.AutoMod
                 var ec = pk.PID;
                 bool xorPID = ((pk.TID16 ^ pk.SID16 ^ (int)(ec & 0xFFFF) ^ (int)(ec >> 16)) & ~0x7) == 8;
                 if (enc is EncounterStatic3XD && enc.Species == (int)Species.Eevee && (shiny != pk.IsShiny || xorPID)) // Starter Correlation
-                    return false;
+                    continue;
 
                 var la = new LegalityAnalysis(pk);
                 if (la.Info.PIDIV.Type is not PIDType.CXD and not PIDType.CXD_ColoStarter || !la.Info.PIDIVMatches || !pk.IsValidGenderPID(enc))
-                    return false;
+                    continue;
             }
             if (pk.Species == (ushort)Species.Unown)
             {
-                if (pk.Form != iterPKM.Form)
-                    return false;
-                if (enc.Generation == 3 && pk.Form != EntityPID.GetUnownForm3(pk.PID))
-                    return false;
+                if (enc is EncounterSlot4 enc4)
+                {
+                    var pi = PersonalTable.HGSS[pk.Species];
+                    if (pk.HGSS)
+                        enc4.SetFromIVsK((PK4)pk, pi, criteria, out var _);
+                    else
+                        enc4.SetFromIVsJ((PK4)pk, pi, criteria, out var _);
+                }
+                if (enc is EncounterSlot3 && pk.Form != EntityPID.GetUnownForm3(pk.PID))
+                    continue;
             }
             var pidxor = ((pk.TID16 ^ pk.SID16 ^ (int)(pk.PID & 0xFFFF) ^ (int)(pk.PID >> 16)) & ~0x7) == 8;
             if (Method == PIDType.Channel && (shiny != pk.IsShiny || pidxor))
-                return false;
-            if (pk.Species == (ushort)Species.Jirachi)
-                return false;
-            if (Method == PIDType.Pokewalker)
-                return false;
-            if (!new LegalityAnalysis(pk).Valid)
-                return false;
-            return true;
-        }
-        private static int GetRequiredAbilityIdx(PKM pkm, IBattleTemplate set)
-        {
-            if (set.Ability == -1)
-                return -1;
+                continue;
+            if (Method == PIDType.Channel && !ChannelJirachi.IsPossible(seed))
+                continue;
+            if (pk.TID16 == 06930 && !MystryMew.IsValidSeed(seed))
+                continue;
 
-            var temp = pkm.Clone();
-            temp.Species = set.Species;
-            temp.SetAbilityIndex(pkm.AbilityNumber >> 1);
-            if (temp.Ability == set.Ability)
-                return -1;
-
-            var idx = temp.PersonalInfo.GetIndexOfAbility(set.Ability);
-            return idx;
-        }
-
-        /// <summary>
-        /// Checks if a Pokewalker seed failed, and if it did, randomizes TID and SID (to retry in the future)
-        /// </summary>
-        /// <param name="seed">Seed</param>
-        /// <param name="method">RNG method (every method except pokewalker is ignored)</param>
-        /// <param name="pk">PKM object</param>
-        /// <param name="original">original encounter pkm</param>
-        private static bool PokeWalkerSeedFail(uint seed, PIDType method, PKM pk, PKM original)
-        {
-            if (method != PIDType.Pokewalker)
-                return false;
-
-            if (seed % 24 != (int)original.Nature)
-                return true;
-
-            pk.TID16 = (ushort)Util.Rand.Next(65535);
-            pk.SID16 = (ushort)Util.Rand.Next(65535);
+            break;
+        } while (++count < 5_000_000);
+    }
+    private static bool IsMatchFromPKHeX(PKM pk, PKM iterPKM, int HPType, bool shiny, byte gr, IEncounterable enc, uint seed, PIDType Method)
+    {
+        if (pk.AbilityNumber != iterPKM.AbilityNumber && pk.Nature != iterPKM.Nature)
             return false;
+
+        if (pk.PIDAbility != iterPKM.PIDAbility)
+            return false;
+
+        if (HPType >= 0 && pk.HPType != HPType)
+            return false;
+
+        if (pk.PID % 25 != (int)iterPKM.Nature) // Util.Rand32 is the way to go
+            return false;
+
+        if (pk.Gender != EntityGender.GetFromPIDAndRatio(pk.PID, gr))
+            return false;
+        if (enc is EncounterSlot4 s4)
+        {
+            var lvl = new SingleLevelRange(enc.LevelMin);
+            if (!LeadFinder.TryGetLeadInfo4(s4, lvl, pk.HGSS, seed, 4, out _))
+                return false;
         }
 
-        /// <summary>
-        /// Secondary fallback if PIDType.None to slot the PKM into its most likely type
-        /// </summary>
-        /// <param name="pk">PKM to modify</param>
-        /// <returns>PIDType that is likely used</returns>
-        private static PIDType FindLikelyPIDType(PKM pk)
+        if (pk.Version == GameVersion.CXD && Method == PIDType.CXD) // verify locks
         {
-            if (pk is { Species: (int)Species.Manaphy, Gen4: true })
-            {
-                pk.EggLocation = Locations.LinkTrade4; // todo: really shouldn't be doing this, don't modify pkm
-                return PIDType.Method_1;
-            }
-            var info = new LegalInfo(pk, []);
-            EncounterFinder.FindVerifiedEncounter(pk, info);
-            return pk.Generation switch
-            {
-                3 => info.EncounterMatch switch
-                {
-                    EncounterGift3 g => g.Method,
-                    EncounterStatic3 when pk.Version == GameVersion.CXD => PIDType.CXD,
-                    EncounterStatic3Colo when pk.Version == GameVersion.CXD => PIDType.CXD,
-                    EncounterStatic3XD when pk.Version == GameVersion.CXD => PIDType.CXD,
-                    EncounterStatic3 => pk.Version switch
-                    {
-                        GameVersion.E => PIDType.Method_1,
-                        GameVersion.FR or GameVersion.LG => PIDType.Method_1, // roamer glitch
-                        _ => PIDType.Method_1,
-                    },
+            pk.EncryptionConstant = pk.PID;
+            var ec = pk.PID;
+            bool xorPID = ((pk.TID16 ^ pk.SID16 ^ (int)(ec & 0xFFFF) ^ (int)(ec >> 16)) & ~0x7) == 8;
+            if (enc is EncounterStatic3XD && enc.Species == (int)Species.Eevee && (shiny != pk.IsShiny || xorPID)) // Starter Correlation
+                return false;
 
-                    EncounterSlot3 when pk.Version == GameVersion.CXD => PIDType.PokeSpot,
-                    EncounterSlot3XD when pk.Version == GameVersion.CXD => PIDType.PokeSpot,
-                    EncounterSlot3 => pk.Species == (int)Species.Unown ? PIDType.Method_1_Unown : PIDType.Method_1,
-                    _ => PIDType.None,
+            var la = new LegalityAnalysis(pk);
+            if (la.Info.PIDIV.Type is not PIDType.CXD and not PIDType.CXD_ColoStarter || !la.Info.PIDIVMatches || !pk.IsValidGenderPID(enc))
+                return false;
+        }
+        if (pk.Species == (ushort)Species.Unown)
+        {
+            if (pk.Form != iterPKM.Form)
+                return false;
+            if (enc.Generation == 3 && pk.Form != EntityPID.GetUnownForm3(pk.PID))
+                return false;
+        }
+        var pidxor = ((pk.TID16 ^ pk.SID16 ^ (int)(pk.PID & 0xFFFF) ^ (int)(pk.PID >> 16)) & ~0x7) == 8;
+        if (Method == PIDType.Channel && (shiny != pk.IsShiny || pidxor))
+            return false;
+        if (pk.Species == (ushort)Species.Jirachi)
+            return false;
+        if (Method == PIDType.Pokewalker)
+            return false;
+        if (!new LegalityAnalysis(pk).Valid)
+            return false;
+        return true;
+    }
+    private static int GetRequiredAbilityIdx(PKM pkm, IBattleTemplate set)
+    {
+        if (set.Ability == -1)
+            return -1;
+
+        var temp = pkm.Clone();
+        temp.Species = set.Species;
+        temp.SetAbilityIndex(pkm.AbilityNumber >> 1);
+        if (temp.Ability == set.Ability)
+            return -1;
+
+        var idx = temp.PersonalInfo.GetIndexOfAbility(set.Ability);
+        return idx;
+    }
+
+    /// <summary>
+    /// Checks if a Pokewalker seed failed, and if it did, randomizes TID and SID (to retry in the future)
+    /// </summary>
+    /// <param name="seed">Seed</param>
+    /// <param name="method">RNG method (every method except pokewalker is ignored)</param>
+    /// <param name="pk">PKM object</param>
+    /// <param name="original">original encounter pkm</param>
+    private static bool PokeWalkerSeedFail(uint seed, PIDType method, PKM pk, PKM original)
+    {
+        if (method != PIDType.Pokewalker)
+            return false;
+
+        if (seed % 24 != (int)original.Nature)
+            return true;
+
+        pk.TID16 = (ushort)Util.Rand.Next(65535);
+        pk.SID16 = (ushort)Util.Rand.Next(65535);
+        return false;
+    }
+
+    /// <summary>
+    /// Secondary fallback if PIDType.None to slot the PKM into its most likely type
+    /// </summary>
+    /// <param name="pk">PKM to modify</param>
+    /// <returns>PIDType that is likely used</returns>
+    private static PIDType FindLikelyPIDType(PKM pk)
+    {
+        if (pk is { Species: (int)Species.Manaphy, Gen4: true })
+        {
+            pk.EggLocation = Locations.LinkTrade4; // todo: really shouldn't be doing this, don't modify pkm
+            return PIDType.Method_1;
+        }
+        var info = new LegalInfo(pk, []);
+        EncounterFinder.FindVerifiedEncounter(pk, info);
+        return pk.Generation switch
+        {
+            3 => info.EncounterMatch switch
+            {
+                EncounterGift3 g => g.Method,
+                EncounterStatic3 when pk.Version == GameVersion.CXD => PIDType.CXD,
+                EncounterStatic3Colo when pk.Version == GameVersion.CXD => PIDType.CXD,
+                EncounterStatic3XD when pk.Version == GameVersion.CXD => PIDType.CXD,
+                EncounterStatic3 => pk.Version switch
+                {
+                    GameVersion.E => PIDType.Method_1,
+                    GameVersion.FR or GameVersion.LG => PIDType.Method_1, // roamer glitch
+                    _ => PIDType.Method_1,
                 },
 
-                4 => info.EncounterMatch switch
-                {
-                    EncounterStatic4Pokewalker => PIDType.Pokewalker,
-                    EncounterStatic4 s => (s.Shiny == Shiny.Always ? PIDType.ChainShiny : PIDType.Method_1),
-                    PGT => PIDType.Method_1,
-                    _ => PIDType.None,
-                },
-
+                EncounterSlot3 when pk.Version == GameVersion.CXD => PIDType.PokeSpot,
+                EncounterSlot3XD when pk.Version == GameVersion.CXD => PIDType.PokeSpot,
+                EncounterSlot3 => pk.Species == (int)Species.Unown ? PIDType.Method_1_Unown : PIDType.Method_1,
                 _ => PIDType.None,
-            };
-        }
+            },
 
-        /// <summary>
-        /// Method to get the correct met level for a Pokémon. Move up the met level till all moves are legal
-        /// </summary>
-        /// <param name="pk">Pokémon</param>
-        public static void SetCorrectMetLevel(this PKM pk)
+            4 => info.EncounterMatch switch
+            {
+                EncounterStatic4Pokewalker => PIDType.Pokewalker,
+                EncounterStatic4 s => (s.Shiny == Shiny.Always ? PIDType.ChainShiny : PIDType.Method_1),
+                PGT => PIDType.Method_1,
+                _ => PIDType.None,
+            },
+
+            _ => PIDType.None,
+        };
+    }
+
+    /// <summary>
+    /// Method to get the correct met level for a Pokémon. Move up the met level till all moves are legal
+    /// </summary>
+    /// <param name="pk">Pokémon</param>
+    public static void SetCorrectMetLevel(this PKM pk)
+    {
+        var lvl = pk.CurrentLevel;
+        if (pk.MetLevel > lvl)
+            pk.MetLevel = lvl;
+
+        if (pk.MetLocation is not (Locations.Transfer1 or Locations.Transfer2 or Locations.Transfer3 or Locations.Transfer4 or Locations.GO8))
+            return;
+
+        var level = pk.MetLevel;
+        if (lvl <= level)
+            return;
+
+        while (lvl >= pk.MetLevel)
         {
-            var lvl = pk.CurrentLevel;
-            if (pk.MetLevel > lvl)
-                pk.MetLevel = lvl;
+            var la = new LegalityAnalysis(pk);
+            if (la.Info.Moves.All(z => z.Valid))
+                return;
+            pk.MetLevel++;
+        }
+        pk.MetLevel = level; // Set back to normal if nothing legalized
+    }
 
-            if (pk.MetLocation is not (Locations.Transfer1 or Locations.Transfer2 or Locations.Transfer3 or Locations.Transfer4 or Locations.GO8))
+    /// <summary>
+    /// Edge case memes for weird properties that I have no interest in setting for other Pokémon.
+    /// </summary>
+    /// <param name="pk">Pokemon to edit</param>
+    /// <param name="enc">Encounter the <see cref="pk"/> originated rom</param>
+    private static void FixEdgeCases(this PKM pk, IEncounterable enc)
+    {
+        if (pk.Nickname.Length == 0)
+            pk.ClearNickname();
+
+        // Shiny Manaphy Egg
+        if (enc is MysteryGift { Species: (int)Species.Manaphy, Generation: 4 } && pk.IsShiny)
+        {
+            pk.EggLocation = Locations.LinkTrade4;
+            if (pk.Format != 4)
                 return;
 
-            var level = pk.MetLevel;
-            if (lvl <= level)
-                return;
-
-            while (lvl >= pk.MetLevel)
-            {
-                var la = new LegalityAnalysis(pk);
-                if (la.Info.Moves.All(z => z.Valid))
-                    return;
-                pk.MetLevel++;
-            }
-            pk.MetLevel = level; // Set back to normal if nothing legalized
+            pk.MetLocation = pk.HGSS ? Locations.HatchLocationHGSS : Locations.HatchLocationDPPt;
         }
 
-        /// <summary>
-        /// Edge case memes for weird properties that I have no interest in setting for other Pokémon.
-        /// </summary>
-        /// <param name="pk">Pokemon to edit</param>
-        /// <param name="enc">Encounter the <see cref="pk"/> originated rom</param>
-        private static void FixEdgeCases(this PKM pk, IEncounterable enc)
+        // CXD only has a male trainer
+        if (pk is { Version: GameVersion.CXD, OriginalTrainerGender: (int)Gender.Female }) // Colosseum and XD are sexist games.
+            pk.OriginalTrainerGender = (int)Gender.Male;
+
+        // VC Games are locked to console region (modify based on language)
+        if (pk is PK7 { Generation: <= 2 } pk7)
+            pk7.FixVCRegion();
+
+        // Vivillon pattern fixes if necessary
+        if (pk is IGeoTrack && pk.Species is (int)Species.Vivillon or (int)Species.Spewpa or (int)Species.Scatterbug)
+            pk.FixVivillonRegion();
+    }
+
+    /// <summary>
+    /// Fix region locked VCs for PK7s
+    /// </summary>
+    /// <param name="pk7">PK7 to fix</param>
+    public static void FixVCRegion(this PK7 pk7)
+    {
+        var valid = Locale3DS.IsRegionLockedLanguageValidVC(pk7.ConsoleRegion, pk7.Language);
+        if (!valid)
         {
-            if (pk.Nickname.Length == 0)
-                pk.ClearNickname();
-
-            // Shiny Manaphy Egg
-            if (enc is MysteryGift { Species: (int)Species.Manaphy, Generation: 4 } && pk.IsShiny)
+            switch (pk7.Language)
             {
-                pk.EggLocation = Locations.LinkTrade4;
-                if (pk.Format != 4)
-                    return;
-
-                pk.MetLocation = pk.HGSS ? Locations.HatchLocationHGSS : Locations.HatchLocationDPPt;
-            }
-
-            // CXD only has a male trainer
-            if (pk is { Version: GameVersion.CXD, OriginalTrainerGender: (int)Gender.Female }) // Colosseum and XD are sexist games.
-                pk.OriginalTrainerGender = (int)Gender.Male;
-
-            // VC Games are locked to console region (modify based on language)
-            if (pk is PK7 { Generation: <= 2 } pk7)
-                pk7.FixVCRegion();
-
-            // Vivillon pattern fixes if necessary
-            if (pk is IGeoTrack && pk.Species is (int)Species.Vivillon or (int)Species.Spewpa or (int)Species.Scatterbug)
-                pk.FixVivillonRegion();
-        }
-
-        /// <summary>
-        /// Fix region locked VCs for PK7s
-        /// </summary>
-        /// <param name="pk7">PK7 to fix</param>
-        public static void FixVCRegion(this PK7 pk7)
-        {
-            var valid = Locale3DS.IsRegionLockedLanguageValidVC(pk7.ConsoleRegion, pk7.Language);
-            if (!valid)
-            {
-                switch (pk7.Language)
-                {
-                    case (int)LanguageID.English:
-                    case (int)LanguageID.Spanish:
-                    case (int)LanguageID.French:
-                        pk7.ConsoleRegion = 1;
-                        pk7.Region = 0;
-                        pk7.Country = 49;
-                        break;
-                    case (int)LanguageID.German:
-                    case (int)LanguageID.Italian:
-                        pk7.ConsoleRegion = 2;
-                        pk7.Region = 0;
-                        pk7.Country = 105;
-                        break;
-                    case (int)LanguageID.Japanese:
-                        pk7.ConsoleRegion = 0;
-                        pk7.Region = 0;
-                        pk7.Country = 1;
-                        break;
-                    case (int)LanguageID.Korean:
-                        pk7.ConsoleRegion = 5;
-                        pk7.Region = 0;
-                        pk7.Country = 136;
-                        break;
-                }
+                case (int)LanguageID.English:
+                case (int)LanguageID.Spanish:
+                case (int)LanguageID.French:
+                    pk7.ConsoleRegion = 1;
+                    pk7.Region = 0;
+                    pk7.Country = 49;
+                    break;
+                case (int)LanguageID.German:
+                case (int)LanguageID.Italian:
+                    pk7.ConsoleRegion = 2;
+                    pk7.Region = 0;
+                    pk7.Country = 105;
+                    break;
+                case (int)LanguageID.Japanese:
+                    pk7.ConsoleRegion = 0;
+                    pk7.Region = 0;
+                    pk7.Country = 1;
+                    break;
+                case (int)LanguageID.Korean:
+                    pk7.ConsoleRegion = 5;
+                    pk7.Region = 0;
+                    pk7.Country = 136;
+                    break;
             }
         }
+    }
 
-        /// <summary>
-        /// Handle search criteria for very specific encounters.
-        /// </summary>
-        public static EncounterCriteria SetSpecialCriteria(EncounterCriteria criteria, IEncounterable enc, IBattleTemplate set)
+    /// <summary>
+    /// Handle search criteria for very specific encounters.
+    /// </summary>
+    public static EncounterCriteria SetSpecialCriteria(EncounterCriteria criteria, IEncounterable enc, IBattleTemplate set)
+    {
+        if (enc is EncounterEgg && enc.Version is not (GameVersion.BD or GameVersion.SP))
+            return criteria;
+        if (enc is EncounterStatic8U)
+            criteria = criteria with { Shiny = Shiny.Never };
+
+        return enc.Species switch
         {
-            if (enc is EncounterEgg && enc.Version is not (GameVersion.BD or GameVersion.SP))
-                return criteria;
-            if (enc is EncounterStatic8U)
-                criteria = criteria with { Shiny = Shiny.Never };
+            (int)Species.Kartana when criteria is { Nature: Nature.Timid, IV_ATK: <= 21 } => // Beast Boost: Speed
+                Revise(criteria, atk: criteria.IV_ATK),
+            (int)Species.Stakataka when criteria is { Nature: Nature.Lonely, IV_DEF: <= 17 } => // Beast Boost: Attack
+                Revise(criteria, def: criteria.IV_DEF, spe: criteria.IV_SPE),
+            (int)Species.Pyukumuku when criteria is { IV_DEF: 0, IV_SPD: 0 } && set.Ability == (int)Ability.InnardsOut =>
+                Revise(criteria, def: criteria.IV_DEF, spd: criteria.IV_SPD),
+            (int)Species.Unown when enc.Generation is 4 => criteria,
 
-            return enc.Species switch
-            {
-                (int)Species.Kartana when criteria is { Nature: Nature.Timid, IV_ATK: <= 21 } => // Beast Boost: Speed
-                    Revise(criteria, atk: criteria.IV_ATK),
-                (int)Species.Stakataka when criteria is { Nature: Nature.Lonely, IV_DEF: <= 17 } => // Beast Boost: Attack
-                    Revise(criteria, def: criteria.IV_DEF, spe: criteria.IV_SPE),
-                (int)Species.Pyukumuku when criteria is { IV_DEF: 0, IV_SPD: 0 } && set.Ability == (int)Ability.InnardsOut =>
-                    Revise(criteria, def: criteria.IV_DEF, spd: criteria.IV_SPD),
-                (int)Species.Unown when enc.Generation is 4 => criteria,
+            _ => Revise(criteria, atk: criteria.IV_ATK == 0 ? (sbyte)0 : (sbyte)-1, spe: criteria.IV_SPE == 0 ? (sbyte)0 : (sbyte)-1),
+        };
+    }
 
-                _ => Revise(criteria, atk: criteria.IV_ATK == 0 ? (sbyte)0 : (sbyte)-1, spe: criteria.IV_SPE == 0 ? (sbyte)0 : (sbyte)-1),
-            };
-        }
-
-        private static EncounterCriteria Revise(EncounterCriteria enc,
-            sbyte hp = -1, sbyte atk = -1, sbyte def = -1, sbyte spa = -1, sbyte spd = -1, sbyte spe = -1)
-            => enc with
+    private static EncounterCriteria Revise(EncounterCriteria enc,
+        sbyte hp = -1, sbyte atk = -1, sbyte def = -1, sbyte spa = -1, sbyte spd = -1, sbyte spe = -1)
+        => enc with
         {
             IV_HP  = hp,
             IV_ATK = atk,
@@ -1742,121 +1742,120 @@ namespace PKHeX.Core.AutoMod
             IV_SPE = spe,
         };
 
-        /// <summary>
-        /// Handle edge case Vivillon legality if the Trainer Data region is invalid
-        /// </summary>
-        /// <param name="pk">pkm to fix</param>
-        public static void FixVivillonRegion(this PKM pk)
+    /// <summary>
+    /// Handle edge case Vivillon legality if the Trainer Data region is invalid
+    /// </summary>
+    /// <param name="pk">pkm to fix</param>
+    public static void FixVivillonRegion(this PKM pk)
+    {
+        if (pk is not IGeoTrack g)
+            return;
+
+        var valid = Vivillon3DS.IsPatternValid(pk.Form, g.ConsoleRegion);
+        if (valid)
+            return;
+
+        var (consoleRegion, region, country) = GetVivillonRegion(pk.Form);
+        g.ConsoleRegion = consoleRegion;
+        g.Region = region;
+        g.Country = country;
+    }
+
+    private static (byte ConsoleRegion, byte Region, byte Country) GetVivillonRegion(int form) => form switch
+    {
+        // 5: JP
+        // 7, 14: USA
+        // else: EUR
+        5       => (0, 0, 001),
+        7 or 14 => (1, 0, 049),
+        _       => (2, 0, 105),
+    };
+
+    /// <summary>
+    /// Wrapper function for GetLegalFromTemplate but with a Timeout
+    /// </summary>
+    public static AsyncLegalizationResult GetLegalFromTemplateTimeout(this ITrainerInfo dest, PKM template, IBattleTemplate set, bool nativeOnly = false)
+    {
+        AsyncLegalizationResult GetLegal()
         {
-            if (pk is not IGeoTrack g)
-                return;
-
-            var valid = Vivillon3DS.IsPatternValid(pk.Form, g.ConsoleRegion);
-            if (valid)
-                return;
-
-            var (consoleRegion, region, country) = GetVivillonRegion(pk.Form);
-            g.ConsoleRegion = consoleRegion;
-            g.Region = region;
-            g.Country = country;
-        }
-
-        private static (byte ConsoleRegion, byte Region, byte Country) GetVivillonRegion(int form) => form switch
-        {
-            // 5: JP
-            // 7, 14: USA
-            // else: EUR
-            5       => (0, 0, 001),
-            7 or 14 => (1, 0, 049),
-            _       => (2, 0, 105),
-        };
-
-        /// <summary>
-        /// Wrapper function for GetLegalFromTemplate but with a Timeout
-        /// </summary>
-        public static AsyncLegalizationResult GetLegalFromTemplateTimeout(this ITrainerInfo dest, PKM template, IBattleTemplate set, bool nativeOnly = false)
-        {
-            AsyncLegalizationResult GetLegal()
-            {
-                try
-                {
-                    if (!EnableDevMode && ALMVersion.GetIsMismatch())
-                        return new(template, LegalizationResult.VersionMismatch);
-
-                    var res = dest.GetLegalFromTemplate(template, set, out var s, nativeOnly);
-                    return new AsyncLegalizationResult(res, s);
-                }
-                catch (MissingMethodException)
-                {
-                    return new AsyncLegalizationResult(template, LegalizationResult.VersionMismatch);
-                }
-            }
-
-            var task = Task.Run(GetLegal);
-            var first = task.TimeoutAfter(new TimeSpan(0, 0, 0, Timeout))?.Result;
-            return first ?? new AsyncLegalizationResult(template, LegalizationResult.Timeout);
-        }
-        public static AsyncLegalizationResult AsyncGetLegalFromTemplateTimeout(this ITrainerInfo dest, PKM template, IBattleTemplate set, bool nativeOnly = false) =>
-          GetLegalFromTemplateTimeoutAsync(dest, template, set, nativeOnly).ConfigureAwait(false).GetAwaiter().GetResult();
-        public static async Task<AsyncLegalizationResult> GetLegalFromTemplateTimeoutAsync(this ITrainerInfo dest, PKM template, IBattleTemplate set, bool nativeOnly = false)
-        {
-            AsyncLegalizationResult GetLegal()
-            {
-                try
-                {
-                    if (!EnableDevMode && ALMVersion.GetIsMismatch())
-                        return new(template, LegalizationResult.VersionMismatch);
-
-                    var res = dest.GetLegalFromTemplate(template, set, out var s, nativeOnly);
-                    return new AsyncLegalizationResult(res, s);
-                }
-                catch (MissingMethodException)
-                {
-                    return new AsyncLegalizationResult(template, LegalizationResult.VersionMismatch);
-                }
-            }
-
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
             try
             {
-                return await Task.Run(GetLegal, cts.Token).ConfigureAwait(false);
+                if (!EnableDevMode && ALMVersion.GetIsMismatch())
+                    return new(template, LegalizationResult.VersionMismatch);
+
+                var res = dest.GetLegalFromTemplate(template, set, out var s, nativeOnly);
+                return new AsyncLegalizationResult(res, s);
             }
-            catch (TaskCanceledException)
+            catch (MissingMethodException)
             {
-                return new AsyncLegalizationResult(template, LegalizationResult.Timeout);
+                return new AsyncLegalizationResult(template, LegalizationResult.VersionMismatch);
             }
         }
 
-        /// <summary>
-        /// Async Related actions for global timer.
-        /// </summary>
-        public class AsyncLegalizationResult(PKM pk, LegalizationResult res)
+        var task = Task.Run(GetLegal);
+        var first = task.TimeoutAfter(new TimeSpan(0, 0, 0, Timeout))?.Result;
+        return first ?? new AsyncLegalizationResult(template, LegalizationResult.Timeout);
+    }
+    public static AsyncLegalizationResult AsyncGetLegalFromTemplateTimeout(this ITrainerInfo dest, PKM template, IBattleTemplate set, bool nativeOnly = false) =>
+        GetLegalFromTemplateTimeoutAsync(dest, template, set, nativeOnly).ConfigureAwait(false).GetAwaiter().GetResult();
+    public static async Task<AsyncLegalizationResult> GetLegalFromTemplateTimeoutAsync(this ITrainerInfo dest, PKM template, IBattleTemplate set, bool nativeOnly = false)
+    {
+        AsyncLegalizationResult GetLegal()
         {
-            public readonly PKM Created = pk;
-            public readonly LegalizationResult Status = res;
-        }
-
-        private static async Task<AsyncLegalizationResult?>? TimeoutAfter(this Task<AsyncLegalizationResult> task, TimeSpan timeout)
-        {
-            using var cts = new CancellationTokenSource(timeout);
-            var delay = Task.Delay(timeout, cts.Token);
-            var completedTask = await Task.WhenAny(task, delay).ConfigureAwait(false);
-            if (completedTask != task)
-                return null;
-
-            return await task.ConfigureAwait(false); // will re-fire exception if present
-        }
-
-        private static GameVersion[] GetPairedVersions(GameVersion version, IEnumerable<GameVersion> versionlist)
-        {
-            var group = version switch
+            try
             {
-                GameVersion.RD or GameVersion.C => version,
-                _ => GameUtil.GetMetLocationVersionGroup(version),
-            };
+                if (!EnableDevMode && ALMVersion.GetIsMismatch())
+                    return new(template, LegalizationResult.VersionMismatch);
 
-            var res = group.GetVersionsWithinRange(versionlist.ToArray());
-            return res.Length > 0 ? res : ([version]);
+                var res = dest.GetLegalFromTemplate(template, set, out var s, nativeOnly);
+                return new AsyncLegalizationResult(res, s);
+            }
+            catch (MissingMethodException)
+            {
+                return new AsyncLegalizationResult(template, LegalizationResult.VersionMismatch);
+            }
         }
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
+        try
+        {
+            return await Task.Run(GetLegal, cts.Token).ConfigureAwait(false);
+        }
+        catch (TaskCanceledException)
+        {
+            return new AsyncLegalizationResult(template, LegalizationResult.Timeout);
+        }
+    }
+
+    /// <summary>
+    /// Async Related actions for global timer.
+    /// </summary>
+    public class AsyncLegalizationResult(PKM pk, LegalizationResult res)
+    {
+        public readonly PKM Created = pk;
+        public readonly LegalizationResult Status = res;
+    }
+
+    private static async Task<AsyncLegalizationResult?>? TimeoutAfter(this Task<AsyncLegalizationResult> task, TimeSpan timeout)
+    {
+        using var cts = new CancellationTokenSource(timeout);
+        var delay = Task.Delay(timeout, cts.Token);
+        var completedTask = await Task.WhenAny(task, delay).ConfigureAwait(false);
+        if (completedTask != task)
+            return null;
+
+        return await task.ConfigureAwait(false); // will re-fire exception if present
+    }
+
+    private static GameVersion[] GetPairedVersions(GameVersion version, IEnumerable<GameVersion> versionlist)
+    {
+        var group = version switch
+        {
+            GameVersion.RD or GameVersion.C => version,
+            _ => GameUtil.GetMetLocationVersionGroup(version),
+        };
+
+        var res = group.GetVersionsWithinRange(versionlist.ToArray());
+        return res.Length > 0 ? res : ([version]);
     }
 }

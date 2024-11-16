@@ -1,35 +1,34 @@
-namespace PKHeX.Core.AutoMod
+namespace PKHeX.Core.AutoMod;
+
+/// <summary>
+/// Result codes for legalization and import operations.
+/// </summary>
+public enum AutoModErrorCode
 {
+    None,
+    NoSingleImport,
+
     /// <summary>
-    /// Result codes for legalization and import operations.
+    /// Don't use this!
     /// </summary>
-    public enum AutoModErrorCode
+    CODE_SILENT,
+
+    NotEnoughSpace,
+    InvalidLines,
+    VersionMismatch,
+}
+
+public static class AutoModErrorCodeExtensions
+{
+    public static string GetMessage(this AutoModErrorCode code)
     {
-        None,
-        NoSingleImport,
-
-        /// <summary>
-        /// Don't use this!
-        /// </summary>
-        CODE_SILENT,
-
-        NotEnoughSpace,
-        InvalidLines,
-        VersionMismatch,
-    }
-
-    public static class AutoModErrorCodeExtensions
-    {
-        public static string GetMessage(this AutoModErrorCode code)
+        return code.IsSilent() ? string.Empty : code switch
         {
-            return code.IsSilent() ? string.Empty : code switch
-                {
-                    AutoModErrorCode.NotEnoughSpace => "Not enough space in the box.",
-                    AutoModErrorCode.InvalidLines => "Invalid lines detected.",
-                    _ => string.Empty,
-                };
-        }
-
-        public static bool IsSilent(this AutoModErrorCode code) => code <= AutoModErrorCode.CODE_SILENT;
+            AutoModErrorCode.NotEnoughSpace => "Not enough space in the box.",
+            AutoModErrorCode.InvalidLines => "Invalid lines detected.",
+            _ => string.Empty,
+        };
     }
+
+    public static bool IsSilent(this AutoModErrorCode code) => code <= AutoModErrorCode.CODE_SILENT;
 }

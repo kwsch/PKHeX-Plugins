@@ -4,61 +4,60 @@ using AutoModPlugins.Properties;
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
 
-namespace AutoModPlugins
+namespace AutoModPlugins;
+
+public class ExportBoxToShowdown : AutoModPlugin
 {
-    public class ExportBoxToShowdown : AutoModPlugin
+    public override string Name => "Export Box to ALM Showdown Template";
+    public static string Name2 => "Export Active to ALM Showdown Template";
+    public override int Priority => 1;
+
+    protected override void AddPluginControl(ToolStripDropDownItem modmenu)
     {
-        public override string Name => "Export Box to ALM Showdown Template";
-        public static string Name2 => "Export Active to ALM Showdown Template";
-        public override int Priority => 1;
+        var ctrl = new ToolStripMenuItem(Name) { Image = Resources.exportboxtoshowdown };
+        ctrl.Click += (_, _) => Export(SaveFileEditor);
+        ctrl.Name = "Menu_ExportBoxtoShowdown";
+        modmenu.DropDownItems.Add(ctrl);
+        var ctrl2 = new ToolStripMenuItem(Name2) { Image = Resources.exportboxtoshowdown };
+        ctrl2.Click += (_, _) => Export2();
+        ctrl2.Name = "Menu_ExportActivetoShowdown";
+        modmenu.DropDownItems.Add(ctrl2);
+    }
 
-        protected override void AddPluginControl(ToolStripDropDownItem modmenu)
+    private static void Export(ISaveFileProvider provider)
+    {
+        try
         {
-            var ctrl = new ToolStripMenuItem(Name) { Image = Resources.exportboxtoshowdown };
-            ctrl.Click += (_, _) => Export(SaveFileEditor);
-            ctrl.Name = "Menu_ExportBoxtoShowdown";
-            modmenu.DropDownItems.Add(ctrl);
-            var ctrl2 = new ToolStripMenuItem(Name2) { Image = Resources.exportboxtoshowdown };
-            ctrl2.Click += (_, _) => Export2();
-            ctrl2.Name = "Menu_ExportActivetoShowdown";
-            modmenu.DropDownItems.Add(ctrl2);
+            var str = provider.GetRegenSetsFromBoxCurrent();
+            if (string.IsNullOrWhiteSpace(str))
+            {
+                return;
+            }
+
+            Clipboard.SetText(str);
+            WinFormsUtil.Alert("Exported the active box in RegenTemplate format to clipboard.");
         }
-
-        private static void Export(ISaveFileProvider provider)
+        catch (Exception e)
         {
-            try
-            {
-                var str = provider.GetRegenSetsFromBoxCurrent();
-                if (string.IsNullOrWhiteSpace(str))
-                {
-                    return;
-                }
-
-                Clipboard.SetText(str);
-                WinFormsUtil.Alert("Exported the active box in RegenTemplate format to clipboard.");
-            }
-            catch (Exception e)
-            {
-                WinFormsUtil.Error("Unable to export text to clipboard.", e.Message);
-            }
+            WinFormsUtil.Error("Unable to export text to clipboard.", e.Message);
         }
-        public void Export2()
+    }
+    public void Export2()
+    {
+        try
         {
-            try
+            var str = PKMEditor.PreparePKM().GetRegenText();
+            if (string.IsNullOrWhiteSpace(str))
             {
-                var str = PKMEditor.PreparePKM().GetRegenText();
-                if (string.IsNullOrWhiteSpace(str))
-                {
-                    return;
-                }
+                return;
+            }
 
-                Clipboard.SetText(str);
-                WinFormsUtil.Alert("Exported the active box in RegenTemplate format to clipboard.");
-            }
-            catch (Exception e)
-            {
-                WinFormsUtil.Error("Unable to export text to clipboard.", e.Message);
-            }
+            Clipboard.SetText(str);
+            WinFormsUtil.Alert("Exported the active box in RegenTemplate format to clipboard.");
+        }
+        catch (Exception e)
+        {
+            WinFormsUtil.Error("Unable to export text to clipboard.", e.Message);
         }
     }
 }

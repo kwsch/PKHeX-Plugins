@@ -1,120 +1,119 @@
 ﻿using System;
 
-namespace PKHeX.Core.Enhancements
+namespace PKHeX.Core.Enhancements;
+
+/// <summary>
+/// Paste Details originating from a common pasting website URL.
+/// </summary>
+public class TeamPasteInfo
 {
-    /// <summary>
-    /// Paste Details originating from a common pasting website URL.
-    /// </summary>
-    public class TeamPasteInfo
+    public readonly bool Valid;
+    public readonly PasteSource Source;
+    public readonly string URL;
+    public readonly string Sets = string.Empty;
+
+    public string Summary => $"{Source} data:\nTitle: {Title}\nAuthor: {Author}\nDescription: {Description}";
+
+    public string Author { get; private set; } = "Showdown Paste";
+    public string Title { get; private set; } = "Pokémon Trainer";
+    public string Description { get; private set; } = "A Mysterious Paste";
+
+    public enum PasteSource
     {
-        public readonly bool Valid;
-        public readonly PasteSource Source;
-        public readonly string URL;
-        public readonly string Sets = string.Empty;
+        None,
+        Pastebin,
+        PokePaste,
+    }
 
-        public string Summary => $"{Source} data:\nTitle: {Title}\nAuthor: {Author}\nDescription: {Description}";
+    private void GetFromPokePaste(string url)
+    {
+        var htmldoc = NetUtil.GetPageText(url);
+        var pastedata = htmldoc.Split("<aside>")[1].Split("</aside>")[0];
 
-        public string Author { get; private set; } = "Showdown Paste";
-        public string Title { get; private set; } = "Pokémon Trainer";
-        public string Description { get; private set; } = "A Mysterious Paste";
+        var title = pastedata.Split("<h1>");
+        if (title.Length > 1)
+            Title = GetVal(title[1]);
 
-        public enum PasteSource
+        var auth = pastedata.Split("<h2>&nbsp;by");
+        if (auth.Length > 1)
+            Author = GetVal(auth[1]);
+
+        var desc = pastedata.Split("<p>");
+        if (desc.Length > 1)
+            Description = GetVal(desc[1]);
+    }
+
+    private void GetFromPasteBin(string url)
+    {
+        var page = NetUtil.GetPageText(url);
+
+        var title = page.Split("<h1>")[1];
+        Title = GetVal(title);
+
+        var auth = page.Split("<div class=\"username\">")[1].Split('>');
+        Author = GetVal(auth[0]);
+
+        var datestr = auth[3];
+        var date = GetVal(datestr);
+        Description = $"Pastebin created on: {date}";
+    }
+
+    private static PasteSource GetSource(string url)
+    {
+        if (url.Contains("pokepast.es/"))
+            return PasteSource.PokePaste;
+
+        return url.Contains("pastebin.com/") ? PasteSource.Pastebin : PasteSource.None;
+    }
+
+    private string GetRawURL(string url)
+    {
+        return Source switch
         {
-            None,
-            Pastebin,
-            PokePaste,
-        }
+            PasteSource.PokePaste => url.EndsWith("/raw") ? url : url + "/raw",
+            PasteSource.Pastebin => url.Contains("/raw/") ? url : url.Replace("pastebin.com/", "pastebin.com/raw/"),
+            _ => url, // This should never happen
+        };
+    }
 
-        private void GetFromPokePaste(string url)
+    private void LoadMetadata()
+    {
+        // Passed URL must be non raw
+        switch (Source)
         {
-            var htmldoc = NetUtil.GetPageText(url);
-            var pastedata = htmldoc.Split("<aside>")[1].Split("</aside>")[0];
-
-            var title = pastedata.Split("<h1>");
-            if (title.Length > 1)
-                Title = GetVal(title[1]);
-
-            var auth = pastedata.Split("<h2>&nbsp;by");
-            if (auth.Length > 1)
-                Author = GetVal(auth[1]);
-
-            var desc = pastedata.Split("<p>");
-            if (desc.Length > 1)
-                Description = GetVal(desc[1]);
+            case PasteSource.PokePaste:
+                {
+                    var url = URL.Replace("/raw", "");
+                    GetFromPokePaste(url);
+                    return;
+                }
+            case PasteSource.Pastebin:
+                {
+                    var url = URL.Replace("/raw/", "/");
+                    GetFromPasteBin(url);
+                    return;
+                }
+            default:
+                return; // This should never happen
         }
+    }
 
-        private void GetFromPasteBin(string url)
-        {
-            var page = NetUtil.GetPageText(url);
+    private static string GetVal(string s, char c = '<') => s.Split(c)[0].Trim();
 
-            var title = page.Split("<h1>")[1];
-            Title = GetVal(title);
+    public TeamPasteInfo(string url)
+    {
+        URL = url;
+        var isUri = Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute);
+        if (!isUri)
+            return;
 
-            var auth = page.Split("<div class=\"username\">")[1].Split('>');
-            Author = GetVal(auth[0]);
+        Source = GetSource(url);
+        if (Source == PasteSource.None)
+            return;
 
-            var datestr = auth[3];
-            var date = GetVal(datestr);
-            Description = $"Pastebin created on: {date}";
-        }
-
-        private static PasteSource GetSource(string url)
-        {
-            if (url.Contains("pokepast.es/"))
-                return PasteSource.PokePaste;
-
-            return url.Contains("pastebin.com/") ? PasteSource.Pastebin : PasteSource.None;
-        }
-
-        private string GetRawURL(string url)
-        {
-            return Source switch
-            {
-                PasteSource.PokePaste => url.EndsWith("/raw") ? url : url + "/raw",
-                PasteSource.Pastebin => url.Contains("/raw/") ? url : url.Replace("pastebin.com/", "pastebin.com/raw/"),
-                _ => url, // This should never happen
-            };
-        }
-
-        private void LoadMetadata()
-        {
-            // Passed URL must be non raw
-            switch (Source)
-            {
-                case PasteSource.PokePaste:
-                    {
-                        var url = URL.Replace("/raw", "");
-                        GetFromPokePaste(url);
-                        return;
-                    }
-                case PasteSource.Pastebin:
-                    {
-                        var url = URL.Replace("/raw/", "/");
-                        GetFromPasteBin(url);
-                        return;
-                    }
-                default:
-                    return; // This should never happen
-            }
-        }
-
-        private static string GetVal(string s, char c = '<') => s.Split(c)[0].Trim();
-
-        public TeamPasteInfo(string url)
-        {
-            URL = url;
-            var isUri = Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute);
-            if (!isUri)
-                return;
-
-            Source = GetSource(url);
-            if (Source == PasteSource.None)
-                return;
-
-            url = GetRawURL(url);
-            Sets = NetUtil.GetPageText(url).Trim();
-            LoadMetadata();
-            Valid = true;
-        }
+        url = GetRawURL(url);
+        Sets = NetUtil.GetPageText(url).Trim();
+        LoadMetadata();
+        Valid = true;
     }
 }

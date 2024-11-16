@@ -1,111 +1,110 @@
-﻿namespace PKHeX.Core.AutoMod
+﻿namespace PKHeX.Core.AutoMod;
+
+/// <summary>
+/// Suggestion edits that rely on a <see cref="LegalityAnalysis"/> being done.
+/// </summary>
+public static class LegalEdits
 {
-    /// <summary>
-    /// Suggestion edits that rely on a <see cref="LegalityAnalysis"/> being done.
-    /// </summary>
-    public static class LegalEdits
+    public static bool ReplaceBallPrefixLA { get; set; }
+
+    private static Ball GetBallLA(Ball ball) => ball switch
     {
-        public static bool ReplaceBallPrefixLA { get; set; }
+        Ball.Poke => Ball.LAPoke,
+        Ball.Great => Ball.LAGreat,
+        Ball.Ultra => Ball.LAUltra,
+        Ball.Heavy => Ball.LAHeavy,
+        _ => ball,
+    };
 
-        private static Ball GetBallLA(Ball ball) => ball switch
+    /// <summary>
+    /// Set a valid Pokeball based on a legality check's suggestions.
+    /// </summary>
+    /// <param name="pk">Pokémon to modify</param>
+    /// <param name="matching">Set matching ball</param>
+    /// <param name="force"></param>
+    /// <param name="ball"></param>
+    /// <param name="enc"></param>
+    public static void SetSuggestedBall(this PKM pk, bool matching = true, bool force = false, Ball ball = Ball.None, IEncounterable? enc = null)
+    {
+        var orig = pk.Ball;
+        if (ball == Ball.None)
+            force = false; // accept anything if no ball is specified
+
+        if (enc is MysteryGift)
+            return;
+
+        var la = new LegalityAnalysis(pk);
+        var legal = la.Valid;
+
+        if (ball != Ball.None)
         {
-            Ball.Poke => Ball.LAPoke,
-            Ball.Great => Ball.LAGreat,
-            Ball.Ultra => Ball.LAUltra,
-            Ball.Heavy => Ball.LAHeavy,
-            _ => ball,
-        };
+            if (pk.LA && ReplaceBallPrefixLA)
+                ball = GetBallLA(ball);
 
-        /// <summary>
-        /// Set a valid Pokeball based on a legality check's suggestions.
-        /// </summary>
-        /// <param name="pk">Pokémon to modify</param>
-        /// <param name="matching">Set matching ball</param>
-        /// <param name="force"></param>
-        /// <param name="ball"></param>
-        /// <param name="enc"></param>
-        public static void SetSuggestedBall(this PKM pk, bool matching = true, bool force = false, Ball ball = Ball.None, IEncounterable? enc = null)
+            pk.Ball = (byte)ball;
+            if (!force && !pk.ValidBall())
+                pk.Ball = orig;
+        }
+        else if (matching)
         {
-            var orig = pk.Ball;
-            if (ball == Ball.None)
-                force = false; // accept anything if no ball is specified
-
-            if (enc is MysteryGift)
-                return;
-
-            var la = new LegalityAnalysis(pk);
-            var legal = la.Valid;
-
-            if (ball != Ball.None)
-            {
-                if (pk.LA && ReplaceBallPrefixLA)
-                    ball = GetBallLA(ball);
-
-                pk.Ball = (byte)ball;
-                if (!force && !pk.ValidBall())
-                    pk.Ball = orig;
-            }
-            else if (matching)
-            {
-                if (!pk.IsShiny)
-                    pk.SetMatchingBall();
-                else
-                    Aesthetics.ApplyShinyBall(pk);
-            }
-
-            if (force)
-                return;
-            la = new LegalityAnalysis(pk);
-            if (la.Valid)
-                return;
-
-            if (pk is { Generation: 5, MetLocation: 75 })
-            {
-                if (pk.Species == (ushort)Species.Shedinja)
-                    pk.Ball = (int)Ball.Poke;
-                else
-                    pk.Ball = (int)Ball.Dream;
-            }
+            if (!pk.IsShiny)
+                pk.SetMatchingBall();
             else
-            {
-                pk.Ball = orig;
-            }
-
-            if (legal && !la.Valid)
-                pk.Ball = orig;
+                Aesthetics.ApplyShinyBall(pk);
         }
 
-        public static bool ValidBall(this PKM pk)
+        if (force)
+            return;
+        la = new LegalityAnalysis(pk);
+        if (la.Valid)
+            return;
+
+        if (pk is { Generation: 5, MetLocation: 75 })
         {
-            var la = new LegalityAnalysis(pk);
-            foreach (var msg in la.Results)
-            {
-                if (msg.Identifier is not CheckIdentifier.Ball)
-                    continue;
-                var line = msg.Comment;
-                if (line == LegalityCheckStrings.LBallEnc || line == LegalityCheckStrings.LBallSpeciesPass)
-                    return true;
-            }
-            return false;
+            if (pk.Species == (ushort)Species.Shedinja)
+                pk.Ball = (int)Ball.Poke;
+            else
+                pk.Ball = (int)Ball.Dream;
         }
-
-        /// <summary>
-        /// Sets all ribbon flags according to a legality report.
-        /// </summary>
-        /// <param name="pk">Pokémon to modify</param>
-        /// <param name="set"></param>
-        /// <param name="enc">Encounter matched to</param>
-        /// <param name="allValid">Set all valid ribbons only</param>
-        public static void SetSuggestedRibbons(this PKM pk, IBattleTemplate set, IEncounterable enc, bool allValid)
+        else
         {
-            if (!allValid)
-                return;
-
-            RibbonApplicator.SetAllValidRibbons(pk);
-            if (pk is PK8 { Species: not (int)Species.Shedinja } pk8 && pk8.GetRandomValidMark(set, enc, out var mark))
-                pk8.SetRibbonIndex(mark);
-            if (pk is PK9 { Species: not (int)Species.Shedinja } pk9 && pk9.GetRandomValidMark(set, enc, out var mark9))
-                pk9.SetRibbonIndex(mark9);
+            pk.Ball = orig;
         }
+
+        if (legal && !la.Valid)
+            pk.Ball = orig;
+    }
+
+    public static bool ValidBall(this PKM pk)
+    {
+        var la = new LegalityAnalysis(pk);
+        foreach (var msg in la.Results)
+        {
+            if (msg.Identifier is not CheckIdentifier.Ball)
+                continue;
+            var line = msg.Comment;
+            if (line == LegalityCheckStrings.LBallEnc || line == LegalityCheckStrings.LBallSpeciesPass)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Sets all ribbon flags according to a legality report.
+    /// </summary>
+    /// <param name="pk">Pokémon to modify</param>
+    /// <param name="set"></param>
+    /// <param name="enc">Encounter matched to</param>
+    /// <param name="allValid">Set all valid ribbons only</param>
+    public static void SetSuggestedRibbons(this PKM pk, IBattleTemplate set, IEncounterable enc, bool allValid)
+    {
+        if (!allValid)
+            return;
+
+        RibbonApplicator.SetAllValidRibbons(pk);
+        if (pk is PK8 { Species: not (int)Species.Shedinja } pk8 && pk8.GetRandomValidMark(set, enc, out var mark))
+            pk8.SetRibbonIndex(mark);
+        if (pk is PK9 { Species: not (int)Species.Shedinja } pk9 && pk9.GetRandomValidMark(set, enc, out var mark9))
+            pk9.SetRibbonIndex(mark9);
     }
 }

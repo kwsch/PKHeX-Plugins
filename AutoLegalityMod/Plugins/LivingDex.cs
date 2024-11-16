@@ -6,58 +6,57 @@ using AutoModPlugins.Properties;
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
 
-namespace AutoModPlugins
-{
-    public class LivingDex : AutoModPlugin
-    {
-        public override string Name => "Generate Living Dex";
-        public override int Priority => 1;
+namespace AutoModPlugins;
 
-        protected override void AddPluginControl(ToolStripDropDownItem modmenu)
+public class LivingDex : AutoModPlugin
+{
+    public override string Name => "Generate Living Dex";
+    public override int Priority => 1;
+
+    protected override void AddPluginControl(ToolStripDropDownItem modmenu)
+    {
+        var ctrl = new ToolStripMenuItem(Name) { Image = Resources.livingdex };
+        ctrl.Click += GenLivingDex;
+        ctrl.Name = "Menu_LivingDex";
+        modmenu.DropDownItems.Add(ctrl);
+    }
+
+    private void GenLivingDex(object? sender, EventArgs e)
+    {
+        var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Generate a Living Dex?");
+        if (prompt != DialogResult.Yes)
+            return;
+
+        var sav = SaveFileEditor.SAV;
+        Span<PKM> pkms = sav.GenerateLivingDex().ToArray();
+        Span<PKM> bd = sav.BoxData.ToArray();
+        Span<PKM> ExtraPkms = [];
+        if (pkms.Length > bd.Length)
         {
-            var ctrl = new ToolStripMenuItem(Name) { Image = Resources.livingdex };
-            ctrl.Click += GenLivingDex;
-            ctrl.Name = "Menu_LivingDex";
-            modmenu.DropDownItems.Add(ctrl);
+            ExtraPkms = pkms[bd.Length..];
+            pkms = pkms[..bd.Length];
         }
 
-        private void GenLivingDex(object? sender, EventArgs e)
+        pkms.CopyTo(bd);
+        sav.BoxData = bd.ToArray();
+        SaveFileEditor.ReloadSlots();
+        if (ExtraPkms.Length > 0)
         {
-            var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Generate a Living Dex?");
-            if (prompt != DialogResult.Yes)
-                return;
+            prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "This Living Dex does not fit in all boxes. Save the extra pkms to a folder?");
 
-            var sav = SaveFileEditor.SAV;
-            Span<PKM> pkms = sav.GenerateLivingDex().ToArray();
-            Span<PKM> bd = sav.BoxData.ToArray();
-            Span<PKM> ExtraPkms = [];
-            if (pkms.Length > bd.Length)
+            if (prompt == DialogResult.Yes)
             {
-                ExtraPkms = pkms[bd.Length..];
-                pkms = pkms[..bd.Length];
-            }
-
-            pkms.CopyTo(bd);
-            sav.BoxData = bd.ToArray();
-            SaveFileEditor.ReloadSlots();
-            if (ExtraPkms.Length > 0)
-            {
-                prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "This Living Dex does not fit in all boxes. Save the extra pkms to a folder?");
-
-                if (prompt == DialogResult.Yes)
+                using var ofd = new FolderBrowserDialog();
+                if (ofd.ShowDialog() == DialogResult.OK)
                 {
-                    using var ofd = new FolderBrowserDialog();
-                    if (ofd.ShowDialog() == DialogResult.OK)
+                    if (ofd.SelectedPath != null)
                     {
-                        if (ofd.SelectedPath != null)
-                        {
-                            foreach (var f in ExtraPkms)
-                                File.WriteAllBytes($"{ofd.SelectedPath}/{f.FileName}", f.EncryptedPartyData);
-                        }
+                        foreach (var f in ExtraPkms)
+                            File.WriteAllBytes($"{ofd.SelectedPath}/{f.FileName}", f.EncryptedPartyData);
                     }
                 }
             }
-            System.Diagnostics.Debug.WriteLine($"Generated Living Dex with {pkms.Length} entries.");
         }
+        System.Diagnostics.Debug.WriteLine($"Generated Living Dex with {pkms.Length} entries.");
     }
 }

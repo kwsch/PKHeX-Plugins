@@ -1,93 +1,92 @@
 ﻿using System;
 using System.Linq;
 
-namespace PKHeX.Core.Injection
+namespace PKHeX.Core.Injection;
+
+public static class InjectionUtil
 {
-    public static class InjectionUtil
+    public const ulong INVALID_PTR = 0;
+
+    public static ulong GetPointerAddress(this ICommunicatorNX sb, string ptr, bool heapRelative = true)
     {
-        public const ulong INVALID_PTR = 0;
+        if (string.IsNullOrWhiteSpace(ptr) || ptr.IndexOfAny(['-', '/', '*']) != -1)
+            return INVALID_PTR;
 
-        public static ulong GetPointerAddress(this ICommunicatorNX sb, string ptr, bool heapRelative = true)
+        while (ptr.Contains("]]"))
+            ptr = ptr.Replace("]]", "]+0]");
+
+        uint finadd = 0;
+        if (!ptr.EndsWith(']'))
         {
-            if (string.IsNullOrWhiteSpace(ptr) || ptr.IndexOfAny(['-', '/', '*']) != -1)
-                return INVALID_PTR;
-
-            while (ptr.Contains("]]"))
-                ptr = ptr.Replace("]]", "]+0]");
-
-            uint finadd = 0;
-            if (!ptr.EndsWith(']'))
-            {
-                finadd = Util.GetHexValue(ptr.Split('+').Last());
-                ptr = ptr[..ptr.LastIndexOf('+')];
-            }
-            var jumps = ptr.Replace("main", "").Replace("[", "").Replace("]", "").Split("+", StringSplitOptions.RemoveEmptyEntries);
-            if (jumps.Length == 0)
-                return INVALID_PTR;
-
-            var initaddress = Util.GetHexValue(jumps[0].Trim());
-            ulong address = BitConverter.ToUInt64(sb.ReadBytesMain(initaddress, 0x8), 0);
-            foreach (var j in jumps)
-            {
-                var val = Util.GetHexValue(j.Trim());
-                if (val == initaddress)
-                    continue;
-
-                address = BitConverter.ToUInt64(sb.ReadBytesAbsolute(address + val, 0x8), 0);
-            }
-            address += finadd;
-            if (heapRelative)
-            {
-                ulong heap = sb.GetHeapBase();
-                address -= heap;
-            }
-            return address;
+            finadd = Util.GetHexValue(ptr.Split('+').Last());
+            ptr = ptr[..ptr.LastIndexOf('+')];
         }
+        var jumps = ptr.Replace("main", "").Replace("[", "").Replace("]", "").Split("+", StringSplitOptions.RemoveEmptyEntries);
+        if (jumps.Length == 0)
+            return INVALID_PTR;
 
-        public static string ExtendPointer(this string pointer, params uint[] jumps)
+        var initaddress = Util.GetHexValue(jumps[0].Trim());
+        ulong address = BitConverter.ToUInt64(sb.ReadBytesMain(initaddress, 0x8), 0);
+        foreach (var j in jumps)
         {
-            foreach (var jump in jumps)
-                pointer = $"[{pointer}]+{jump:X}";
+            var val = Util.GetHexValue(j.Trim());
+            if (val == initaddress)
+                continue;
 
-            return pointer;
+            address = BitConverter.ToUInt64(sb.ReadBytesAbsolute(address + val, 0x8), 0);
         }
-
-        public static ulong SearchSaveKey(this PokeSysBotMini psb, string saveblocks, uint key)
+        address += finadd;
+        if (heapRelative)
         {
-            if (psb.com is not ICommunicatorNX nx)
-                return 0;
-
-            var ptr = psb.GetCachedPointer(nx, saveblocks, false);
-            var dt = nx.ReadBytesAbsolute(ptr + 8, 16);
-            var start = BitConverter.ToUInt64(dt.AsSpan()[..8]);
-            var end = BitConverter.ToUInt64(dt.AsSpan()[8..]);
-            var size = (ulong)GetBlockSizeSV(psb.Version);
-
-            while (start < end)
-            {
-                var block_ct = (end - start) / size;
-                var mid = start + ((block_ct >> 1) * size);
-                var found = BitConverter.ToUInt32(nx.ReadBytesAbsolute(mid, 4));
-                if (found == key)
-                    return mid;
-
-                if (found >= key)
-                {
-                    end = mid;
-                }
-                else
-                {
-                    start = mid + size;
-                }
-            }
-            return 0;
+            ulong heap = sb.GetHeapBase();
+            address -= heap;
         }
-
-        private static int GetBlockSizeSV(LiveHeXVersion version) =>
-            version switch
-            {
-                >= LiveHeXVersion.SV_v130 => 48, // Thanks, santacrab!
-                _ => 32,
-            };
+        return address;
     }
+
+    public static string ExtendPointer(this string pointer, params uint[] jumps)
+    {
+        foreach (var jump in jumps)
+            pointer = $"[{pointer}]+{jump:X}";
+
+        return pointer;
+    }
+
+    public static ulong SearchSaveKey(this PokeSysBotMini psb, string saveblocks, uint key)
+    {
+        if (psb.com is not ICommunicatorNX nx)
+            return 0;
+
+        var ptr = psb.GetCachedPointer(nx, saveblocks, false);
+        var dt = nx.ReadBytesAbsolute(ptr + 8, 16);
+        var start = BitConverter.ToUInt64(dt.AsSpan()[..8]);
+        var end = BitConverter.ToUInt64(dt.AsSpan()[8..]);
+        var size = (ulong)GetBlockSizeSV(psb.Version);
+
+        while (start < end)
+        {
+            var block_ct = (end - start) / size;
+            var mid = start + ((block_ct >> 1) * size);
+            var found = BitConverter.ToUInt32(nx.ReadBytesAbsolute(mid, 4));
+            if (found == key)
+                return mid;
+
+            if (found >= key)
+            {
+                end = mid;
+            }
+            else
+            {
+                start = mid + size;
+            }
+        }
+        return 0;
+    }
+
+    private static int GetBlockSizeSV(LiveHeXVersion version) =>
+        version switch
+        {
+            >= LiveHeXVersion.SV_v130 => 48, // Thanks, santacrab!
+            _ => 32,
+        };
 }

@@ -1,11 +1,10 @@
-﻿namespace PKHeX.Core.Injection
+﻿namespace PKHeX.Core.Injection;
+
+/// <summary>
+/// Controller Stick differentiation
+/// </summary>
+public enum SwitchStick
 {
-    /// <summary>
-    /// Controller Stick differentiation
-    /// </summary>
-    public enum SwitchStick
-    {
-        LEFT,
-        RIGHT,
-    }
+    LEFT,
+    RIGHT,
 }

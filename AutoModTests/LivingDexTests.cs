@@ -6,124 +6,123 @@ using PKHeX.Core.AutoMod;
 using Xunit;
 using static PKHeX.Core.GameVersion;
 
-namespace AutoModTests
+namespace AutoModTests;
+
+public static class LivingDexTests
 {
-    public static class LivingDexTests
+    static LivingDexTests() => TestUtil.InitializePKHeXEnvironment();
+
+    private static readonly GameVersion[] GetGameVersionsToTest =
+    [
+        SL,
+        BD,
+        PLA,
+        SW,
+        US,
+        SN,
+        OR,
+        X,
+        B2,
+        B,
+        Pt,
+        E,
+        C,
+        RD,
+    ];
+
+    private static GenerateResult SingleSaveTest(this GameVersion s, LivingDexConfig cfg)
     {
-        static LivingDexTests() => TestUtil.InitializePKHeXEnvironment();
+        var sav = SaveUtil.GetBlankSAV(s, "ALMUT");
+        RecentTrainerCache.SetRecentTrainer(sav);
 
-        private static readonly GameVersion[] GetGameVersionsToTest =
-        [
-            SL,
-            BD,
-            PLA,
-            SW,
-            US,
-            SN,
-            OR,
-            X,
-            B2,
-            B,
-            Pt,
-            E,
-            C,
-            RD,
-        ];
+        var expected = sav.GetExpectedDexCount(cfg);
+        expected.Should().NotBe(0);
 
-        private static GenerateResult SingleSaveTest(this GameVersion s, LivingDexConfig cfg)
+        var pkms = sav.GenerateLivingDex(cfg).ToArray();
+        var genned = pkms.Length;
+        var val = new GenerateResult(genned == expected, expected, genned);
+        return val;
+    }
+
+    public static IEnumerable<object[]> GetLivingDexTestData()
+    {
+        var cfgs = new LivingDexConfig[16];
+        for (int i = 0; i < 16; i++)
+            cfgs[i] = new LivingDexConfig((byte)i);
+
+        foreach (var ver in GetGameVersionsToTest)
         {
-            var sav = SaveUtil.GetBlankSAV(s, "ALMUT");
-            RecentTrainerCache.SetRecentTrainer(sav);
-
-            var expected = sav.GetExpectedDexCount(cfg);
-            expected.Should().NotBe(0);
-
-            var pkms = sav.GenerateLivingDex(cfg).ToArray();
-            var genned = pkms.Length;
-            var val = new GenerateResult(genned == expected, expected, genned);
-            return val;
+            foreach (var cf in cfgs)
+                yield return [ver, cf];
         }
+    }
 
-        public static IEnumerable<object[]> GetLivingDexTestData()
+    [Theory]
+    [MemberData(nameof(GetLivingDexTestData))]
+    public static void VerifyDex(GameVersion game, LivingDexConfig cfg)
+    {
+        APILegality.Timeout = 99999;
+        Legalizer.EnableEasterEggs = false;
+        APILegality.SetAllLegalRibbons = false;
+
+        var res = game.SingleSaveTest(cfg);
+        res.Success.Should().BeTrue($"GameVersion: {game}\n{cfg}\nExpected: {res.Expected}\nGenerated: {res.Generated}");
+    }
+
+    private readonly record struct GenerateResult(bool Success, int Expected, int Generated);
+
+    // Ideally should use purely PKHeX's methods or known total counts so that we're not verifying against ourselves.
+    private static int GetExpectedDexCount(this SaveFile sav, LivingDexConfig cfg)
+    {
+        Dictionary<ushort, List<byte>> speciesDict = [];
+        var personal = sav.Personal;
+        var species = Enumerable.Range(1, sav.MaxSpeciesID).Select(x => (ushort)x);
+        foreach (ushort s in species)
         {
-            var cfgs = new LivingDexConfig[16];
-            for (int i = 0; i < 16; i++)
-                cfgs[i] = new LivingDexConfig((byte)i);
+            if (!personal.IsSpeciesInGame(s))
+                continue;
 
-            foreach (var ver in GetGameVersionsToTest)
+            List<byte> forms = [];
+            var formCount = personal[s].FormCount;
+            var str = GameInfo.Strings;
+            if (formCount == 1 && cfg.IncludeForms) // Validate through form lists
+                formCount = (byte)FormConverter.GetFormList(s, str.types, str.forms, GameInfo.GenderSymbolUnicode, sav.Context).Length;
+            if (s == (ushort)Species.Alcremie)
+                formCount = (byte)(formCount * 6);
+            uint formarg = 0;
+            byte acform = 0;
+            for (byte f = 0; f < formCount; f++)
             {
-                foreach (var cf in cfgs)
-                    yield return [ver, cf];
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(GetLivingDexTestData))]
-        public static void VerifyDex(GameVersion game, LivingDexConfig cfg)
-        {
-            APILegality.Timeout = 99999;
-            Legalizer.EnableEasterEggs = false;
-            APILegality.SetAllLegalRibbons = false;
-
-            var res = game.SingleSaveTest(cfg);
-            res.Success.Should().BeTrue($"GameVersion: {game}\n{cfg}\nExpected: {res.Expected}\nGenerated: {res.Generated}");
-        }
-
-        private readonly record struct GenerateResult(bool Success, int Expected, int Generated);
-
-        // Ideally should use purely PKHeX's methods or known total counts so that we're not verifying against ourselves.
-        private static int GetExpectedDexCount(this SaveFile sav, LivingDexConfig cfg)
-        {
-            Dictionary<ushort, List<byte>> speciesDict = [];
-            var personal = sav.Personal;
-            var species = Enumerable.Range(1, sav.MaxSpeciesID).Select(x => (ushort)x);
-            foreach (ushort s in species)
-            {
-                if (!personal.IsSpeciesInGame(s))
+                byte form = f;
+                if (s == (ushort)Species.Alcremie)
+                {
+                    form = acform;
+                    if (f % 6 == 0)
+                    {
+                        acform++;
+                        formarg = 0;
+                    }
+                    else
+                    {
+                        formarg++;
+                    }
+                }
+                if (!personal.IsPresentInGame(s, form) || FormInfo.IsFusedForm(s, form, sav.Generation) || FormInfo.IsBattleOnlyForm(s, form, sav.Generation) || (FormInfo.IsTotemForm(s, form) && sav.Context is not EntityContext.Gen7) || FormInfo.IsLordForm(s, form, sav.Context))
                     continue;
 
-                List<byte> forms = [];
-                var formCount = personal[s].FormCount;
-                var str = GameInfo.Strings;
-                if (formCount == 1 && cfg.IncludeForms) // Validate through form lists
-                    formCount = (byte)FormConverter.GetFormList(s, str.types, str.forms, GameInfo.GenderSymbolUnicode, sav.Context).Length;
-                if (s == (ushort)Species.Alcremie)
-                    formCount = (byte)(formCount * 6);
-                uint formarg = 0;
-                byte acform = 0;
-                for (byte f = 0; f < formCount; f++)
-                {
-                    byte form = f;
-                    if (s == (ushort)Species.Alcremie)
-                    {
-                        form = acform;
-                        if (f % 6 == 0)
-                        {
-                            acform++;
-                            formarg = 0;
-                        }
-                        else
-                        {
-                            formarg++;
-                        }
-                    }
-                    if (!personal.IsPresentInGame(s, form) || FormInfo.IsFusedForm(s, form, sav.Generation) || FormInfo.IsBattleOnlyForm(s, form, sav.Generation) || (FormInfo.IsTotemForm(s, form) && sav.Context is not EntityContext.Gen7) || FormInfo.IsLordForm(s, form, sav.Context))
-                        continue;
+                var valid = sav.GetRandomEncounter(s, form, cfg.SetShiny, cfg.SetAlpha, cfg.NativeOnly, out PKM? pk);
+                if (pk is null || !valid || pk.Form != form)
+                    continue;
 
-                    var valid = sav.GetRandomEncounter(s, form, cfg.SetShiny, cfg.SetAlpha, cfg.NativeOnly, out PKM? pk);
-                    if (pk is null || !valid || pk.Form != form)
-                        continue;
-
-                    forms.Add(form);
-                    if (!cfg.IncludeForms)
-                        break;
-                }
-
-                if (forms.Count > 0)
-                    speciesDict.TryAdd(s, forms);
+                forms.Add(form);
+                if (!cfg.IncludeForms)
+                    break;
             }
 
-            return cfg.IncludeForms ? speciesDict.Values.Sum(x => x.Count) : speciesDict.Count;
+            if (forms.Count > 0)
+                speciesDict.TryAdd(s, forms);
         }
+
+        return cfg.IncludeForms ? speciesDict.Values.Sum(x => x.Count) : speciesDict.Count;
     }
 }

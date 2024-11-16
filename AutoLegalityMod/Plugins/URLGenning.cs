@@ -3,49 +3,48 @@ using System.Windows.Forms;
 using AutoModPlugins.Properties;
 using PKHeX.Core.Enhancements;
 
-namespace AutoModPlugins
+namespace AutoModPlugins;
+
+public class URLGenning : AutoModPlugin
 {
-    public class URLGenning : AutoModPlugin
+    public override string Name => "Generate from URL";
+    public override int Priority => 1;
+
+    protected override void AddPluginControl(ToolStripDropDownItem modmenu)
     {
-        public override string Name => "Generate from URL";
-        public override int Priority => 1;
+        var ctrl = new ToolStripMenuItem(Name) { Image = Resources.urlimport };
+        ctrl.Click += URLGen;
+        ctrl.Name = "Menu_URLGenning";
+        modmenu.DropDownItems.Add(ctrl);
+    }
 
-        protected override void AddPluginControl(ToolStripDropDownItem modmenu)
+    private static void URLGen(object? sender, EventArgs e)
+    {
+        var url = Clipboard.GetText().Trim();
+        TeamPasteInfo info;
+        try
         {
-            var ctrl = new ToolStripMenuItem(Name) { Image = Resources.urlimport };
-            ctrl.Click += URLGen;
-            ctrl.Name = "Menu_URLGenning";
-            modmenu.DropDownItems.Add(ctrl);
+            info = new TeamPasteInfo(url);
+        }
+        catch (Exception ex)
+        {
+            WinFormsUtil.Error("An error occurred while trying to obtain the contents of the URL.", $"The exact error is as follows: {ex}");
+            return;
+        }
+        if (!info.Valid)
+        {
+            WinFormsUtil.Error("The data inside the URL are not valid Showdown Sets");
+            return;
+        }
+        if (info.Source == TeamPasteInfo.PasteSource.None)
+        {
+            WinFormsUtil.Error("The URL provided is not from a supported website.");
+            return;
         }
 
-        private static void URLGen(object? sender, EventArgs e)
-        {
-            var url = Clipboard.GetText().Trim();
-            TeamPasteInfo info;
-            try
-            {
-                info = new TeamPasteInfo(url);
-            }
-            catch (Exception ex)
-            {
-                WinFormsUtil.Error("An error occurred while trying to obtain the contents of the URL.", $"The exact error is as follows: {ex}");
-                return;
-            }
-            if (!info.Valid)
-            {
-                WinFormsUtil.Error("The data inside the URL are not valid Showdown Sets");
-                return;
-            }
-            if (info.Source == TeamPasteInfo.PasteSource.None)
-            {
-                WinFormsUtil.Error("The URL provided is not from a supported website.");
-                return;
-            }
+        ShowdownSetLoader.Import(info.Sets);
 
-            ShowdownSetLoader.Import(info.Sets);
-
-            var response = $"All sets generated from the following URL: {info.URL}";
-            WinFormsUtil.Alert(response, info.Summary);
-        }
+        var response = $"All sets generated from the following URL: {info.URL}";
+        WinFormsUtil.Alert(response, info.Summary);
     }
 }
