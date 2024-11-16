@@ -253,7 +253,7 @@ public static class ModLogic
         if (blank is { Species: (ushort)Keldeo, Form: 1 })
             blank.Move1 = (ushort)Move.SecretSword;
 
-        if (blank.GetIsFormInvalid(tr, blank.Form))
+        if (blank.GetIsFormInvalid(tr.Generation, blank.Form))
             return null;
 
         var setText = new ShowdownSet(blank).Text.Split('\r')[0];
@@ -293,18 +293,14 @@ public static class ModLogic
         return success == LegalizationResult.Regenerated ? pk : null;
     }
 
-    private static bool GetIsFormInvalid(this PKM pk, ITrainerInfo tr, byte form)
+    private static bool GetIsFormInvalid(this PKM pk, byte generation, byte form)
     {
-        var generation = tr.Generation;
         var species = pk.Species;
         switch ((Species)species)
         {
             case Floette when form == 5:
-                return true;
             case Shaymin or Furfrou or Hoopa when form != 0 && generation <= 6:
-                return true;
             case Arceus when generation == 4 && form == 9: // ??? form
-                return true;
             case Scatterbug or Spewpa when form == 19:
                 return true;
         }
@@ -408,55 +404,70 @@ public static class ModLogic
 
         return ctr;
     }
-    public static PKM[] GetSixRandomMons(this SaveFile sav)
+
+    public static PKM[] GetSixRandomMons(this ITrainerInfo tr) =>
+        tr.GetSixRandomMons(GameData.GetPersonal(tr.Version));
+
+    public static PKM[] GetSixRandomMons(this ITrainerInfo tr, IPersonalTable personal)
     {
-        var RandomTeam = new List<PKM>();
+        var result = new PKM[6];
         Span<int> ivs = stackalloc int[6];
         var selectedSpecies = new HashSet<ushort>();
         var rng = new Random();
 
-        while (RandomTeam.Count < 6)
+        int ctr = 0;
+        MoveType[] types = APILegality.RandTypes;
+        byte destGeneration = tr.Generation;
+        var destVersion = tr.Version;
+
+        while (ctr != 6)
         {
-            var spec = (ushort)rng.Next(sav.MaxSpeciesID);
+            var spec = (ushort)rng.Next(personal.MaxSpeciesID);
 
             if (selectedSpecies.Contains(spec))
                 continue;
 
-            var rough = EntityBlank.GetBlank(sav);
+            byte form = 0;
+            var rough = EntityBlank.GetBlank(tr);
             rough.Species = spec;
             rough.Gender = rough.GetSaneGender();
 
-            if (!sav.Personal.IsSpeciesInGame(rough.Species))
+            if (!personal.IsSpeciesInGame(spec))
                 continue;
 
-            if (APILegality.RandTypes.Length > 0 && (!APILegality.RandTypes.Contains((MoveType)rough.PersonalInfo.Type1) || !APILegality.RandTypes.Contains((MoveType)rough.PersonalInfo.Type2)))
-                continue;
+            if (types.Length != 0)
+            {
+                var pi = rough.PersonalInfo;
+                if (!types.Contains((MoveType)pi.Type1) || !types.Contains((MoveType)pi.Type2))
+                    continue;
+            }
 
-            var formnumb = sav.Personal[rough.Species].FormCount;
+            var formnumb = personal[spec].FormCount;
             if (formnumb == 1)
-                formnumb = (byte)FormConverter.GetFormList(rough.Species, GameInfo.Strings.types, GameInfo.Strings.forms, GameInfo.GenderSymbolUnicode, sav.Context).Length;
+                formnumb = (byte)FormConverter.GetFormList(spec, GameInfo.Strings.types, GameInfo.Strings.forms, GameInfo.GenderSymbolUnicode, tr.Context).Length;
 
             do
             {
-                if (formnumb == 0) break;
-                rough.Form = (byte)rng.Next(formnumb);
+                if (formnumb == 0)
+                    break;
+                form = rough.Form = (byte)rng.Next(formnumb);
             }
-            while (!sav.Personal.IsPresentInGame(rough.Species, rough.Form) || FormInfo.IsLordForm(rough.Species, rough.Form, sav.Context) || FormInfo.IsBattleOnlyForm(rough.Species, rough.Form, sav.Generation) || FormInfo.IsFusedForm(rough.Species, rough.Form, sav.Generation) || (FormInfo.IsTotemForm(rough.Species, rough.Form) && sav.Context is not EntityContext.Gen7));
+            while (!personal.IsPresentInGame(spec, form) || FormInfo.IsLordForm(spec, form, tr.Context) || FormInfo.IsBattleOnlyForm(spec, form, destGeneration) || FormInfo.IsFusedForm(spec, form, destGeneration) || (FormInfo.IsTotemForm(spec, form) && tr.Context is not EntityContext.Gen7));
 
-            if (rough.Species is ((ushort)Meowstic) or ((ushort)Indeedee))
+            if (spec is ((ushort)Meowstic) or ((ushort)Indeedee))
             {
                 rough.Gender = rough.Form;
-                rough.Form = rough.Gender;
+                form = rough.Form = rough.Gender;
             }
 
-            var item = GetFormSpecificItem(sav.Version, rough.Species, rough.Form);
+            var item = GetFormSpecificItem(destVersion, spec, form);
             if (item is not null)
                 rough.HeldItem = (int)item;
 
             if (rough is { Species: (ushort)Keldeo, Form: 1 })
                 rough.Move1 = (ushort)Move.SecretSword;
 
-            if (GetIsFormInvalid(rough, sav, rough.Form))
+            if (GetIsFormInvalid(rough, destGeneration, form))
                 continue;
 
             try
@@ -464,12 +475,12 @@ public static class ModLogic
                 var goodset = new SmogonSetGenerator(rough);
                 if (goodset is { Valid: true, Sets.Count: not 0 })
                 {
-                    var checknull = sav.GetLegalFromSet(goodset.Sets[rng.Next(goodset.Sets.Count)]);
+                    var checknull = tr.GetLegalFromSet(goodset.Sets[rng.Next(goodset.Sets.Count)]);
                     if (checknull.Status != LegalizationResult.Regenerated)
                         continue;
                     checknull.Created.ResetPartyStats();
-                    RandomTeam.Add(checknull.Created);
-                    selectedSpecies.Add(rough.Species);
+                    result[ctr++] = checknull.Created;
+                    selectedSpecies.Add(spec);
                     continue;
                 }
             }
@@ -484,14 +495,15 @@ public static class ModLogic
             rough.GetMoveSet(m, true);
             showstring += $"- {GameInfo.MoveDataSource.First(z => z.Value == m[0]).Text}\n- {GameInfo.MoveDataSource.First(z => z.Value == m[1]).Text}\n- {GameInfo.MoveDataSource.First(z => z.Value == m[2]).Text}\n- {GameInfo.MoveDataSource.First(z => z.Value == m[3]).Text}";
             showstring += "\n\n";
-            var nullcheck = sav.GetLegalFromSet(new ShowdownSet(showstring));
+            var nullcheck = tr.GetLegalFromSet(new ShowdownSet(showstring));
             if (nullcheck.Status != LegalizationResult.Regenerated)
                 continue;
-            nullcheck.Created.ResetPartyStats();
-            RandomTeam.Add(nullcheck.Created);
-            selectedSpecies.Add(rough.Species);
+            var pk = nullcheck.Created;
+            pk.ResetPartyStats();
+            result[ctr++] = pk;
+            selectedSpecies.Add(spec);
         }
 
-        return [.. RandomTeam];
+        return result;
     }
 }

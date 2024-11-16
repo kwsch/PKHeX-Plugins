@@ -38,19 +38,26 @@ public class PasteImporter : AutoModPlugin
 
     private void Downkey(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode is Keys.NumPad6 or Keys.D6 && e.Control)
+        if (e.KeyCode is not (Keys.NumPad6 or Keys.D6) || !e.Control)
+            return;
+
+        if (WinFormsUtil.Prompt(MessageBoxButtons.OKCancel, "Generate 6 Random Pokemon?") != DialogResult.OK)
+            return;
+
+        APILegality.RandTypes = _settings.RandomTypes;
+        var sav = SaveFileEditor.SAV;
+        var result = sav.GetSixRandomMons();
+
+        const int slotIndexStart = 0;
+        var slot = slotIndexStart - 1;
+        foreach (var pk in result)
         {
-            if (WinFormsUtil.Prompt(MessageBoxButtons.OKCancel, "Generate 6 Random Pokemon?") != DialogResult.OK)
-                return;
-            APILegality.RandTypes = _settings.RandomTypes;
-            var RandomTeam = SaveFileEditor.SAV.GetSixRandomMons();
-            var empties = Legalizer.FindAllEmptySlots(SaveFileEditor.SAV.BoxData, 0);
-            for (int k = 0; k < 6; k++)
-            {
-                SaveFileEditor.SAV.SetBoxSlotAtIndex(RandomTeam[k], empties[k]);
-            }
-            SaveFileEditor.ReloadSlots();
+            slot = sav.NextOpenBoxSlot(slot);
+            if (slot == -1)
+                break;
+            sav.SetBoxSlotAtIndex(pk, slot);
         }
+        SaveFileEditor.ReloadSlots();
     }
 
     private static void ImportPaste(object? sender, EventArgs e)
