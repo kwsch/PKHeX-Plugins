@@ -20,9 +20,8 @@ namespace PKHeX.Core.AutoMod
             if (la.Valid)
                 return;
 
-            string Report = la.Report();
-
-            if (Report.Contains(LegalityCheckStrings.LPIDGenderMismatch))
+            var genderMismatch = la.Results.Any(z => z.Comment == LegalityCheckStrings.LPIDGenderMismatch);
+            if (genderMismatch)
                 pk.Gender = pk.Gender == 0 ? (byte)1 : (byte)0;
 
             if (pk.Gender is not 0 and not 1)
@@ -122,7 +121,7 @@ namespace PKHeX.Core.AutoMod
                 sv.WeightAbsolute = sv.CalcWeightAbsolute;
             }
 
-            // Don't allow invalid tox nature, set random nature first and then statnature later
+            // Don't allow invalid Toxtricity nature, set random Nature first and then StatNature later
             if (pk.Species == (int)Species.Toxtricity)
             {
                 while (true)
@@ -162,18 +161,18 @@ namespace PKHeX.Core.AutoMod
 
             if (enc is IFixedTrainer { IsFixedTrainer: true })
             {
-                // Set this before hand incase it is true. Will early return if it is also IFixedNickname
+                // Set this beforehand in case it is true. Will early return if it is also IFixedNickname
                 // Wait for PKHeX to expose this instead of using reflection
             }
-            // don't bother checking encountertrade nicknames for length validity
+            // don't bother checking EncounterTrade nicknames for length validity
             if (enc is IFixedNickname { IsFixedNickname: true } et)
             {
                 // Nickname matches the requested nickname already
                 if (pk.Nickname == set.Nickname)
                     return;
-                // This should be illegal except Meister Magikarp in BDSP, however trust the user and set corresponding OT
+                // This should be illegal except Meister Magikarp in BD/SP, however trust the user and set corresponding OT
                 var nick = et.GetNickname(pk.Language);
-                if (nick != null)
+                if (!string.IsNullOrWhiteSpace(nick))
                 {
                     pk.Nickname = nick;
                     return;
@@ -187,13 +186,9 @@ namespace PKHeX.Core.AutoMod
                 newnick = SpeciesName.GetSpeciesName(pk.Species, (int)finallang);
             var nickname = newnick.Length > maxlen ? newnick[..maxlen] : newnick;
             if (!WordFilter.IsFiltered(nickname, out _))
-            {
                 pk.SetNickname(nickname);
-            }
             else
-            {
                 pk.ClearNickname();
-            }
         }
 
         /// <summary>
@@ -203,7 +198,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="set">IBattleset template to grab the set gender</param>
         private static void ApplySetGender(this PKM pk, IBattleTemplate set)
         {
-            pk.Gender = set.Gender != null ? (byte)set.Gender : pk.GetSaneGender();
+            pk.Gender = set.Gender ?? pk.GetSaneGender();
         }
 
         /// <summary>
@@ -243,15 +238,14 @@ namespace PKHeX.Core.AutoMod
         /// </summary>
         /// <param name="pkm">PKM to modify</param>
         /// <returns>boolean indicating validity</returns>
-        private static bool IsValidGenderMismatch(PKM pkm) =>
-            pkm.Species switch
-            {
-                // Shedinja evolution gender glitch, should match original Gender
-                (int)Species.Shedinja when pkm.Format == 4 => pkm.Gender == EntityGender.GetFromPIDAndRatio(pkm.EncryptionConstant, 0x7F), // 50M-50F
-                // Evolved from Azurill after transferring to keep gender
-                (int)Species.Marill or (int)Species.Azumarill when pkm.Format >= 6 => pkm.Gender == 1 && (pkm.EncryptionConstant & 0xFF) > 0x3F,
-                _ => false,
-            };
+        private static bool IsValidGenderMismatch(PKM pkm) => pkm.Species switch
+        {
+            // Shedinja evolution gender glitch, should match original Gender
+            (int)Species.Shedinja when pkm.Format == 4 => pkm.Gender == EntityGender.GetFromPIDAndRatio(pkm.EncryptionConstant, 0x7F), // 50M-50F
+            // Evolved from Azurill after transferring to keep gender
+            (int)Species.Marill or (int)Species.Azumarill when pkm.Format >= 6 => pkm.Gender == 1 && (pkm.EncryptionConstant & 0xFF) > 0x3F,
+            _ => false,
+        };
 
         /// <summary>
         /// Set Moves, EVs and Items for a specific PKM. These should not affect legality after being vetted by GeneratePKMs
@@ -286,9 +280,7 @@ namespace PKHeX.Core.AutoMod
             }
             la = new LegalityAnalysis(pk);
             if (la.Info.Relearn.Any(z => z.Judgement == Severity.Invalid))
-            {
                 pk.ClearRelearnMoves();
-            }
 
             if (pk is IAwakened)
             {
@@ -353,13 +345,9 @@ namespace PKHeX.Core.AutoMod
                 case Species.Giratina
                     when pk is { Form: 1, HeldItem: not 112 and not 1779 }:
                     if (pk.Context >= EntityContext.Gen9)
-                    {
                         pk.HeldItem = 1779;
-                    }
                     else
-                    {
                         pk.HeldItem = 112;
-                    }
 
                     break;
                 case Species.Dialga when pk is { Form: 1, HeldItem: not 1777 }:

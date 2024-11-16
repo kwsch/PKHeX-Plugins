@@ -1,21 +1,20 @@
-﻿using System.Collections.Generic;
-
-namespace PKHeX.Core.AutoMod
+﻿namespace PKHeX.Core.AutoMod
 {
     /// <summary>
     /// Suggestion edits that rely on a <see cref="LegalityAnalysis"/> being done.
     /// </summary>
     public static class LegalEdits
     {
-        private static readonly Dictionary<Ball, Ball> LABallMapping = new()
-            {
-                { Ball.Poke, Ball.LAPoke },
-                { Ball.Great, Ball.LAGreat },
-                { Ball.Ultra, Ball.LAUltra },
-                { Ball.Heavy, Ball.LAHeavy },
-            };
-
         public static bool ReplaceBallPrefixLA { get; set; }
+
+        private static Ball GetBallLA(Ball ball) => ball switch
+        {
+            Ball.Poke => Ball.LAPoke,
+            Ball.Great => Ball.LAGreat,
+            Ball.Ultra => Ball.LAUltra,
+            Ball.Heavy => Ball.LAHeavy,
+            _ => ball,
+        };
 
         /// <summary>
         /// Set a valid Pokeball based on a legality check's suggestions.
@@ -24,6 +23,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="matching">Set matching ball</param>
         /// <param name="force"></param>
         /// <param name="ball"></param>
+        /// <param name="enc"></param>
         public static void SetSuggestedBall(this PKM pk, bool matching = true, bool force = false, Ball ball = Ball.None, IEncounterable? enc = null)
         {
             var orig = pk.Ball;
@@ -33,34 +33,30 @@ namespace PKHeX.Core.AutoMod
             if (enc is MysteryGift)
                 return;
 
-            var legal = new LegalityAnalysis(pk).Valid;
+            var la = new LegalityAnalysis(pk);
+            var legal = la.Valid;
 
             if (ball != Ball.None)
             {
-                if (pk.LA && ReplaceBallPrefixLA && LABallMapping.TryGetValue(ball, out var modified))
-                {
-                    ball = modified;
-                }
+                if (pk.LA && ReplaceBallPrefixLA)
+                    ball = GetBallLA(ball);
 
                 pk.Ball = (byte)ball;
                 if (!force && !pk.ValidBall())
-                {
                     pk.Ball = orig;
-                }
             }
             else if (matching)
             {
                 if (!pk.IsShiny)
-                {
                     pk.SetMatchingBall();
-                }
                 else
-                {
                     Aesthetics.ApplyShinyBall(pk);
-                }
             }
-            var la = new LegalityAnalysis(pk);
-            if (force || la.Valid)
+
+            if (force)
+                return;
+            la = new LegalityAnalysis(pk);
+            if (la.Valid)
                 return;
 
             if (pk is { Generation: 5, MetLocation: 75 })
@@ -81,14 +77,23 @@ namespace PKHeX.Core.AutoMod
 
         public static bool ValidBall(this PKM pk)
         {
-            var rep = new LegalityAnalysis(pk).Report(true);
-            return rep.Contains(LegalityCheckStrings.LBallEnc) || rep.Contains(LegalityCheckStrings.LBallSpeciesPass);
+            var la = new LegalityAnalysis(pk);
+            foreach (var msg in la.Results)
+            {
+                if (msg.Identifier is not CheckIdentifier.Ball)
+                    continue;
+                var line = msg.Comment;
+                if (line == LegalityCheckStrings.LBallEnc || line == LegalityCheckStrings.LBallSpeciesPass)
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>
         /// Sets all ribbon flags according to a legality report.
         /// </summary>
         /// <param name="pk">Pokémon to modify</param>
+        /// <param name="set"></param>
         /// <param name="enc">Encounter matched to</param>
         /// <param name="allValid">Set all valid ribbons only</param>
         public static void SetSuggestedRibbons(this PKM pk, IBattleTemplate set, IEncounterable enc, bool allValid)
@@ -98,13 +103,9 @@ namespace PKHeX.Core.AutoMod
 
             RibbonApplicator.SetAllValidRibbons(pk);
             if (pk is PK8 { Species: not (int)Species.Shedinja } pk8 && pk8.GetRandomValidMark(set, enc, out var mark))
-            {
                 pk8.SetRibbonIndex(mark);
-            }
             if (pk is PK9 { Species: not (int)Species.Shedinja } pk9 && pk9.GetRandomValidMark(set, enc, out var mark9))
-            {
                 pk9.SetRibbonIndex(mark9);
-            }
         }
     }
 }

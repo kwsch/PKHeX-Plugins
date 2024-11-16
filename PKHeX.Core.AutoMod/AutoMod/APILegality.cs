@@ -180,7 +180,7 @@ namespace PKHeX.Core.AutoMod
 
         private static PKM GetPokemonFromEncounter(this IEncounterable enc, ITrainerInfo tr, EncounterCriteria criteria, IBattleTemplate set)
         {
-            if(enc is EncounterGift3 { Species: (ushort)Species.Jirachi })
+            if (enc is EncounterGift3 { Species: (ushort)Species.Jirachi })
             {
                 if (tr.Language == (byte)LanguageID.Japanese)
                     tr = tr.MutateLanguage(LanguageID.English,tr.Version);
@@ -246,8 +246,7 @@ namespace PKHeX.Core.AutoMod
             if (set.Ability == -1 && h.Ability1 == h.AbilityH)
                 return AbilityRequest.PossiblyHidden;
 
-            var default_ability = set.Ability == -1 ? AbilityRequest.Any : AbilityRequest.NotHidden; // Will allow any ability if ability is unspecified
-            return default_ability;
+            return set.Ability == -1 ? AbilityRequest.Any : AbilityRequest.NotHidden; // Will allow any ability if ability is unspecified
         }
 
         private static bool TradebackValid(this PK1 pk1)
@@ -260,7 +259,7 @@ namespace PKHeX.Core.AutoMod
         }
 
         /// <summary>
-        /// Filter down the gamelist to search based on requested sets
+        /// Filter down the game list to search based on requested sets
         /// </summary>
         /// <param name="template">Template Pokémon with basic details set</param>
         /// <param name="destVer">Version in which the Pokémon needs to be imported</param>
@@ -345,8 +344,7 @@ namespace PKHeX.Core.AutoMod
         /// <summary>
         /// Grab a trainer from trainer database with mutated language
         /// </summary>
-        /// <param name="regen">Regenset</param>
-        /// <returns>ITrainerInfo of the trainerdetails</returns>
+        /// <returns>ITrainerInfo of the trainer details</returns>
         private static ITrainerInfo GetTrainer(RegenSet regen, IEncounterable enc, IBattleTemplate set, ITrainerInfo dest)
         {
             var ver = enc.Version;
@@ -379,11 +377,11 @@ namespace PKHeX.Core.AutoMod
         }
 
         /// <summary>
-        /// Gives the currently loaded save priority over other saves in the same generation. Otherwise generational order is preserved
+        /// Gives the currently loaded save priority over other saves in the same generation. Otherwise, generational order is preserved
         /// </summary>
-        /// <param name="gamelist">Array of gameversions which needs to be prioritized</param>
-        /// <param name="game">Gameversion to prioritize</param>
-        /// <returns>A prioritized gameversion list</returns>
+        /// <param name="gamelist">Array of GameVersion which needs to be prioritized</param>
+        /// <param name="game">GameVersion to prioritize</param>
+        /// <returns>A prioritized GameVersion list</returns>
         private static GameVersion[] PrioritizeVersion(GameVersion[] gamelist, GameVersion game)
         {
             var matched = 0;
@@ -517,7 +515,7 @@ namespace PKHeX.Core.AutoMod
             if (!set.Shiny && enc.Shiny.IsShiny())
                 return false;
 
-            // Further shiny filtering if set is regentemplate
+            // Further shiny filtering if set is regen template
             if (set is RegenTemplate { Regen: { HasExtraSettings: true } regen} && enc.Generation != 9)
             {
                 var shinytype = regen.Extra.ShinyType;
@@ -573,6 +571,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="handler">Trainer to handle the Pokémon</param>
         /// <param name="enc">Encounter details matched to the Pokémon</param>
         /// <param name="regen">Regeneration information</param>
+        /// <param name="criteria"></param>
         private static void ApplySetDetails(PKM pk, IBattleTemplate set, ITrainerInfo handler, IEncounterable enc, RegenSet regen, EncounterCriteria criteria)
         {
             var language = regen.Extra.Language;
@@ -661,7 +660,7 @@ namespace PKHeX.Core.AutoMod
         }
 
         /// <summary>
-        /// Comptitive IVs or PKHeX default IVs implementation
+        /// Competitive IVs or PKHeX default IVs implementation
         /// </summary>
         /// <param name="pk"></param>
         /// <param name="apply">boolean to apply or not to apply markings</param>
@@ -692,16 +691,17 @@ namespace PKHeX.Core.AutoMod
         }
 
         /// <summary>
-        /// Proper method to hypertrain based on Showdown Sets. Also handles edge cases like ultrabeasts
+        /// Proper method to hyper train based on Showdown Sets. Also handles edge cases like ultra beasts
         /// </summary>
         /// <param name="pk">passed pkm object</param>
-        /// <param name="set">showdown set to base hypertraining on</param>
+        /// <param name="set">showdown set to base hyper training on</param>
+        /// <param name="enc"></param>
         private static void SetHyperTrainingFlags(this PKM pk, IBattleTemplate set, IEncounterable enc)
         {
             if (pk is not IHyperTrain t || pk.Species == (ushort)Species.Stakataka)
                 return;
 
-            // Game exceptions (IHyperTrain exists because of the field but game disallows hypertraining)
+            // Game exceptions (IHyperTrain exists because of the field but game disallows hyper training)
             if (!t.IsHyperTrainingAvailable(EvolutionChain.GetEvolutionChainsAllGens(pk, enc)))
                 return;
 
@@ -724,7 +724,7 @@ namespace PKHeX.Core.AutoMod
         }
 
         /// <summary>
-        /// Sets past-generation Pokemon as Battle Ready for games that support it
+        /// Sets past-generation Pokémon as Battle Ready for games that support it
         /// </summary>
         /// <param name="pk">Return PKM</param>
         /// <param name="trainer">Trainer to handle the <see cref="pk"/></param>
@@ -750,7 +750,7 @@ namespace PKHeX.Core.AutoMod
         }
 
         /// <summary>
-        /// Set matching colored pokeballs based on the color API in personal table
+        /// Set matching colored Poké Ball based on the color API in PersonalTable
         /// </summary>
         /// <param name="pk">Return PKM</param>
         public static void SetMatchingBall(this PKM pk) => BallApplicator.ApplyBallLegalByColor(pk);
@@ -771,9 +771,7 @@ namespace PKHeX.Core.AutoMod
                 case (int)Species.Furfrou when pk.Form != 0:
                     pk.Form = 0;
                     if (pk is IFormArgument f)
-                    {
                         f.FormArgument = 0;
-                    }
 
                     break;
             }
@@ -805,11 +803,6 @@ namespace PKHeX.Core.AutoMod
         /// <summary>
         /// Set IV Values for the Pokémon
         /// </summary>
-        /// <param name="pk"></param>
-        /// <param name="set"></param>
-        /// <param name="method"></param>
-        /// <param name="hpType"></param>
-        /// <param name="enc"></param>
         private static void SetPINGA(this PKM pk, IBattleTemplate set, PIDType method, int hpType, IEncounterable enc, EncounterCriteria criteria)
         {
             var ivprop = enc.GetType().GetProperty("IVs");
@@ -1152,7 +1145,7 @@ namespace PKHeX.Core.AutoMod
         public static void FindWildPIDIV8(PK8 pk, Shiny shiny, int flawless = 0, uint? fixedseed = null)
         {
             // Modified version of the standard XOROSHIRO algorithm (32 bit seed 0, same const seed 1)
-            // EC -> PID -> Flawless IV rolls -> Non Flawless IVs -> height -> weight
+            // EC -> PID -> Flawless IV rolls -> Non-flawless IVs -> height -> weight
             uint seed;
             Xoroshiro128Plus rng;
             var ivs = new[] { -1, -1, -1, -1, -1, -1 };
@@ -1196,7 +1189,7 @@ namespace PKHeX.Core.AutoMod
                 pk.PID = SimpleEdits.GetShinyPID(pk.TID16, pk.SID16, pk.PID, 0);
             }
 
-            // RNG is fixed now and you have the requested shiny!
+            // RNG is fixed now, and you have the requested shiny!
 
             for (int i = ivs.Count(z => z == 31); i < flawless; i++)
             {
@@ -1234,11 +1227,11 @@ namespace PKHeX.Core.AutoMod
         /// <param name="pk">Pokémon to edit</param>
         /// <param name="shiny">Shinytype requested</param>
         /// <param name="gender"></param>
+        /// <param name="criteria"></param>
         public static void FindEggPIDIV8b(PKM pk, Shiny shiny, byte? gender, EncounterCriteria criteria)
         {
             Span<int> ivs = stackalloc int[6];
-            var IVs = pk.IVs;
-            ReadOnlySpan<int> required_ivs = [IVs[0], IVs[1], IVs[2], IVs[4], IVs[5], IVs[3]];
+            ReadOnlySpan<int> required_ivs = [pk.IV_HP, pk.IV_ATK, pk.IV_DEF, pk.IV_SPA, pk.IV_SPD, pk.IV_SPE];
             var pi = PersonalTable.BDSP.GetFormEntry(pk.Species, pk.Form);
             var ratio = pi.Gender;
             var species = (int)pk.Species;
@@ -1432,7 +1425,7 @@ namespace PKHeX.Core.AutoMod
 
                 if (pk.Gender != EntityGender.GetFromPIDAndRatio(pk.PID, gr))
                     continue;
-                if(enc is EncounterSlot4 s4)
+                if (enc is EncounterSlot4 s4)
                 {
                     var lvl = new SingleLevelRange(enc.LevelMin);
                     if (!LeadFinder.TryGetLeadInfo4(s4, lvl, pk.HGSS, seed, 4, out _))
@@ -1711,85 +1704,41 @@ namespace PKHeX.Core.AutoMod
         /// <summary>
         /// Handle search criteria for very specific encounters.
         /// </summary>
-        ///
         public static EncounterCriteria SetSpecialCriteria(EncounterCriteria criteria, IEncounterable enc, IBattleTemplate set)
         {
+            if (enc is EncounterEgg && enc.Version is not (GameVersion.BD or GameVersion.SP))
+                return criteria;
             if (enc is EncounterStatic8U)
                 criteria = criteria with { Shiny = Shiny.Never };
-            switch (enc.Species)
-            {
-                case (int)Species.Kartana when criteria is { Nature: Nature.Timid, IV_ATK: <= 21 }: // Speed boosting Timid Kartana ATK IVs <= 19
-                    return criteria with
-                    {
-                        IV_HP = -1,
-                        IV_ATK = criteria.IV_ATK,
-                        IV_DEF = -1,
-                        IV_SPA = -1,
-                        IV_SPD = -1,
-                        IV_SPE = -1,
-                    };
 
-                case (int)Species.Stakataka when criteria is { Nature: Nature.Lonely, IV_DEF: <= 17 }: // Atk boosting Lonely Stakataka DEF IVs <= 15
-                    return criteria with
-                    {
-                        IV_HP = -1,
-                        IV_ATK = -1,
-                        IV_DEF = criteria.IV_DEF,
-                        IV_SPA = -1,
-                        IV_SPD = -1,
-                        IV_SPE = criteria.IV_SPE,
-                    };
+            return enc.Species switch
+            {
+                (int)Species.Kartana when criteria is { Nature: Nature.Timid, IV_ATK: <= 21 } => // Beast Boost: Speed
+                    Revise(criteria, atk: criteria.IV_ATK),
+                (int)Species.Stakataka when criteria is { Nature: Nature.Lonely, IV_DEF: <= 17 } => // Beast Boost: Attack
+                    Revise(criteria, def: criteria.IV_DEF, spe: criteria.IV_SPE),
+                (int)Species.Pyukumuku when criteria is { IV_DEF: 0, IV_SPD: 0 } && set.Ability == (int)Ability.InnardsOut =>
+                    Revise(criteria, def: criteria.IV_DEF, spd: criteria.IV_SPD),
+                (int)Species.Unown when enc.Generation is 4 => criteria,
 
-                case (int)Species.Pyukumuku when criteria is { IV_DEF: 0, IV_SPD: 0 } && set.Ability == (int)Ability.InnardsOut: // 0 Def / 0 Spd Pyukumuku with innards out
-                    return criteria with
-                    {
-                        IV_HP = -1,
-                        IV_ATK = -1,
-                        IV_DEF = criteria.IV_DEF,
-                        IV_SPA = -1,
-                        IV_SPD = criteria.IV_SPD,
-                        IV_SPE = -1,
-                    };
-                default:
-                    break;
-            }
-            if(enc is EncounterEgg && !GameVersion.BDSP.Contains(enc.Version))
-            {
-                return criteria with
-                {
-                    IV_ATK = criteria.IV_ATK,
-                    IV_HP = criteria.IV_HP,
-                    IV_DEF = criteria.IV_DEF,
-                    IV_SPA = criteria.IV_SPA,
-                    IV_SPD = criteria.IV_SPD,
-                    IV_SPE = criteria.IV_SPE,
-                };
-            }
-            if(enc is EncounterSlot4 && enc.Species == (ushort)Species.Unown)
-            {
-                return criteria with
-                {
-                    IV_ATK = criteria.IV_ATK,
-                    IV_HP = criteria.IV_HP,
-                    IV_DEF = criteria.IV_DEF,
-                    IV_SPA = criteria.IV_SPA,
-                    IV_SPD = criteria.IV_SPD,
-                    IV_SPE = criteria.IV_SPE,
-                };
-            }
-            return criteria with
-            {
-                IV_ATK = criteria.IV_ATK == 0 ? (sbyte)0 : (sbyte)-1,
-                IV_DEF = -1,
-                IV_HP = -1,
-                IV_SPA = -1,
-                IV_SPD = -1,
-                IV_SPE = criteria.IV_SPE == 0 ? (sbyte)0 : (sbyte)-1,
+                _ => Revise(criteria, atk: criteria.IV_ATK == 0 ? (sbyte)0 : (sbyte)-1, spe: criteria.IV_SPE == 0 ? (sbyte)0 : (sbyte)-1),
             };
         }
 
+        private static EncounterCriteria Revise(EncounterCriteria enc,
+            sbyte hp = -1, sbyte atk = -1, sbyte def = -1, sbyte spa = -1, sbyte spd = -1, sbyte spe = -1)
+            => enc with
+        {
+            IV_HP  = hp,
+            IV_ATK = atk,
+            IV_DEF = def,
+            IV_SPA = spa,
+            IV_SPD = spd,
+            IV_SPE = spe,
+        };
+
         /// <summary>
-        /// Handle edge case vivillon legality if the trainerdata region is invalid
+        /// Handle edge case Vivillon legality if the Trainer Data region is invalid
         /// </summary>
         /// <param name="pk">pkm to fix</param>
         public static void FixVivillonRegion(this PKM pk)
@@ -1800,29 +1749,22 @@ namespace PKHeX.Core.AutoMod
             var valid = Vivillon3DS.IsPatternValid(pk.Form, g.ConsoleRegion);
             if (valid)
                 return;
+
+            var (consoleRegion, region, country) = GetVivillonRegion(pk.Form);
+            g.ConsoleRegion = consoleRegion;
+            g.Region = region;
+            g.Country = country;
+        }
+
+        private static (byte ConsoleRegion, byte Region, byte Country) GetVivillonRegion(int form) => form switch
+        {
             // 5: JP
             // 7, 14: USA
             // else: EUR
-            switch (pk.Form)
-            {
-                case 5:
-                    g.ConsoleRegion = 0;
-                    g.Region = 0;
-                    g.Country = 1;
-                    break;
-                case 7:
-                case 14:
-                    g.ConsoleRegion = 1;
-                    g.Region = 0;
-                    g.Country = 49;
-                    break;
-                default:
-                    g.ConsoleRegion = 2;
-                    g.Region = 0;
-                    g.Country = 105;
-                    break;
-            }
-        }
+            5       => (0, 0, 001),
+            7 or 14 => (1, 0, 049),
+            _       => (2, 0, 105),
+        };
 
         /// <summary>
         /// Wrapper function for GetLegalFromTemplate but with a Timeout
