@@ -299,7 +299,7 @@ public partial class LiveHeXUI : Form, ISlotViewer<PictureBox>
         {
             var msg = $"Unsupported version for {gameName}\n\n"
                       + $"Latest supported version is {versions[0]}.\n"
-                      + $"Earliest supported version is {versions.Last()}.\n"
+                      + $"Earliest supported version is {versions[^1]}.\n"
                       + $"Detected version is {gameVer}.";
             return (LiveHeXValidation.GameVersion, msg, lv);
         }

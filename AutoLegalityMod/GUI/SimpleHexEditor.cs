@@ -78,7 +78,8 @@ public partial class SimpleHexEditor : Form
                 };
                 if (decrypt)
                 {
-                    result = DecryptBlock(block_key, result)[headersize..];
+                    DecryptBlock(block_key, result);
+                    result = result[headersize..];
                 }
             }
 
@@ -107,15 +108,13 @@ public partial class SimpleHexEditor : Form
         }
     }
 
-    private static byte[] DecryptBlock(uint key, byte[] block)
+    private static void DecryptBlock(uint key, Span<byte> block)
     {
         var rng = new SCXorShift32(key);
         for (int i = 0; i < block.Length; i++)
         {
             block[i] = (byte)(block[i] ^ rng.Next());
         }
-
-        return block;
     }
 
     private void Update_Click(object sender, EventArgs e)

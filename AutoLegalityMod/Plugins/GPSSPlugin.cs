@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Windows.Forms;
 using AutoModPlugins.Properties;
 using PKHeX.Core;
+using System.Net.Http;
 
 namespace AutoModPlugins;
 
@@ -37,65 +38,61 @@ public class GPSSPlugin : AutoModPlugin
 
     private async void GPSSUpload(object? sender, EventArgs e)
     {
-        var pk = PKMEditor.PreparePKM();
-        byte[] rawdata = pk.Data;
         try
         {
-            var response = await PKHeX.Core.Enhancements.NetUtil.GPSSPost(rawdata, SaveFileEditor.SAV.Generation, Url);
+            var pk = PKMEditor.PreparePKM();
+            try
+            {
+                var response = await PKHeX.Core.Enhancements.NetUtil.GPSSPost(pk.DecryptedPartyData, pk.Format, Url);
+                var content = await response.Content.ReadAsStringAsync();
+                var decoded = JsonSerializer.Deserialize<JsonNode>(content);
+                if (decoded == null)
+                    return;
 
-            var content = await response.Content.ReadAsStringAsync();
-            var decoded = JsonSerializer.Deserialize<JsonNode>(content);
-            if (decoded == null)
-                return;
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            var error = decoded["error"] == null ? null : (string)decoded["error"];
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-            var msg = "";
-            var copyToClipboard = false;
-            // TODO set proper status codes on FlagBrew side - Allen;
-            if (response.IsSuccessStatusCode)
-            {
-                if (error is { } and not "no errors")
-                {
-                    switch (error)
-                    {
-                        case "your pokemon is being held for manual review":
-                            msg = $"Your Pokémon was uploaded to GPSS, however it is being held for manual review. Once approved it will be available at https://{Url}/gpss/{decoded["code"]} (copied to clipboard)";
-                            copyToClipboard = true;
-                            break;
-                        case "Your Pokemon is already uploaded":
-                            msg = $"Your Pokémon was already uploaded to GPSS, and is available at https://{Url}/gpss/{decoded["code"]} (copied to clipboard)";
-                            copyToClipboard = true;
-                            break;
-                        default:
-                            msg = $"Could not upload your Pokemon to GPSS, please try again later or ask Allen if something seems wrong.\n Error details: {decoded["code"]}";
-                            break;
-                    }
-                }
-                else
-                {
-                    msg = $"Pokemon added to the GPSS database. Here is your URL (has been copied to the clipboard):\n https://{Url}/gpss/{decoded["code"]}";
-                    copyToClipboard = true;
-                }
+                string msg = GetResult(decoded, response, out bool copyToClipboard);
+                if (copyToClipboard)
+                    Clipboard.SetText($"https://{Url}/gpss/{decoded["code"]}");
+                WinFormsUtil.Alert(msg);
             }
-            else if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+            catch (Exception ex)
             {
-                msg = "Uploading to GPSS is currently disabled, please try again later, or check the FlagBrew discord for more information.";
+                WinFormsUtil.Alert($"Something went wrong uploading to GPSS.\nError details: {ex.Message}");
             }
-            else
-            {
-                msg = $"Uploading to GPSS returned an unexpected status code {response.StatusCode}\nError details (if any returned from server): {error}";
-            }
-
-            if (copyToClipboard)
-            {
-                Clipboard.SetText($"https://{Url}/gpss/{decoded["code"]}");
-            }
-            WinFormsUtil.Alert(msg);
         }
-        catch (Exception ex)
+        catch
         {
-            WinFormsUtil.Alert($"Something went wrong uploading to GPSS.\nError details: {ex.Message}");
+            // Ignore.
+        }
+    }
+
+    private static string GetResult(JsonNode decoded, HttpResponseMessage response, out bool copyToClipboard)
+    {
+        var error = decoded["error"] is { } x ? x.ToString() : null;
+        copyToClipboard = false;
+
+        // TODO set proper status codes on FlagBrew side - Allen;
+        if (!response.IsSuccessStatusCode)
+        {
+            if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                return "Uploading to GPSS is currently disabled, please try again later, or check the FlagBrew discord for more information.";
+            return $"Uploading to GPSS returned an unexpected status code {response.StatusCode}\nError details (if any returned from server): {error}";
+        }
+
+        switch (error)
+        {
+            case "" or null or "no errors":
+                return $"Pokemon added to the GPSS database. Here is your URL (has been copied to the clipboard):\n https://{Url}/gpss/{decoded["code"]}";
+
+            case "your pokemon is being held for manual review":
+                copyToClipboard = true;
+                return $"Your Pokémon was uploaded to GPSS, however it is being held for manual review. Once approved it will be available at https://{Url}/gpss/{decoded["code"]} (copied to clipboard)";
+
+            case "Your Pokemon is already uploaded":
+                copyToClipboard = true;
+                return $"Your Pokémon was already uploaded to GPSS, and is available at https://{Url}/gpss/{decoded["code"]} (copied to clipboard)";
+
+            default:
+                return $"Could not upload your Pokemon to GPSS, please try again later or ask Allen if something seems wrong.\n Error details: {decoded["code"]}";
         }
     }
 
