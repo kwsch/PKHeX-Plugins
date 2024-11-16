@@ -61,18 +61,18 @@ public static class PKSMUtil
     /// <param name="bank">PKSM format bank storage</param>
     /// <param name="dir">Folder to export all dumped files to</param>
     /// <param name="previews">Preview data</param>
-    public static int ExportBank(byte[] bank, string dir, out List<PKMPreview> previews)
+    public static int ExportBank(ReadOnlySpan<byte> bank, string dir, out List<PKMPreview> previews)
     {
         Directory.CreateDirectory(dir);
         var ctr = 0;
-        var version = BitConverter.ToUInt32(bank, 8);
+        var version = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bank[8..]);
         var ver = (PKSMBankVersion)(version & 0xFF);
         var pkmsize = GetBankSize(ver);
         var start = GetBankStartIndex(ver);
         previews = [];
         for (int i = start; i < bank.Length; i += pkmsize)
         {
-            var pk = GetPKSMStoredPKM(bank, i);
+            var pk = GetPKSMStoredPKM(bank[i..]);
             if (pk == null)
                 continue;
 
@@ -87,81 +87,83 @@ public static class PKSMUtil
         return ctr;
     }
 
-    private static PKM? GetPKSMStoredPKM(byte[] data, int ofs)
+    private static PKM? GetPKSMStoredPKM(ReadOnlySpan<byte> data)
     {
         // get format
-        var metadata = BitConverter.ToUInt32(data, ofs);
+        var metadata = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(data);
         var format = (PKSMStorageFormat)(metadata & 0xFF);
         if (format >= PKSMStorageFormat.MAX_COUNT)
             return null;
 
+        data = data[4..];
         // gen4+ presence check; won't work for prior gens
-        return !IsPKMPresent(data, ofs + 4) ? null : format switch
-        {
-            PKSMStorageFormat.ONE => new PK1(Slice(data, ofs + 4, 33)),
-            PKSMStorageFormat.TWO => new PK2(Slice(data, ofs + 4, 32)),
-            PKSMStorageFormat.THREE => new PK3(Slice(data, ofs + 4, 80)),
-            PKSMStorageFormat.FOUR => new PK4(Slice(data, ofs + 4, 136)),
-            PKSMStorageFormat.FIVE => new PK5(Slice(data, ofs + 4, 136)),
-            PKSMStorageFormat.SIX => new PK6(Slice(data, ofs + 4, 232)),
-            PKSMStorageFormat.SEVEN => new PK7(Slice(data, ofs + 4, 232)),
-            PKSMStorageFormat.LGPE => new PB7(Slice(data, ofs + 4, 232)),
-            PKSMStorageFormat.EIGHT => new PK8(Slice(data, ofs + 4, 328)),
-            _ => null,
-        };
+        if (!EntityDetection.IsPresent(data))
+            return null;
+        int length = GetLength(format);
+        if (length == 0)
+            return null;
+
+        var raw = data[..length].ToArray();
+        return GetFromFormat(raw, format);
     }
 
-    private static byte[] Slice(byte[] data, int ofs, int len)
+    private static PKM GetFromFormat(byte[] data, PKSMStorageFormat format) => format switch
     {
-        var arr = new byte[len];
-        Array.Copy(data, ofs, arr, 0, len);
-        return arr;
-    }
+        PKSMStorageFormat.ONE => new PK1(data),
+        PKSMStorageFormat.TWO => new PK2(data),
+        PKSMStorageFormat.THREE => new PK3(data),
+        PKSMStorageFormat.FOUR => new PK4(data),
+        PKSMStorageFormat.FIVE => new PK5(data),
+        PKSMStorageFormat.SIX => new PK6(data),
+        PKSMStorageFormat.SEVEN => new PK7(data),
+        PKSMStorageFormat.LGPE => new PB7(data),
+        PKSMStorageFormat.EIGHT => new PK8(data),
+        _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
+    };
 
-    // copied from PKHeX.Core
-    private static bool IsPKMPresent(byte[] data, int offset)
+    private static int GetLength(PKSMStorageFormat format) => format switch
     {
-        return BitConverter.ToUInt32(data, offset) != 0 || BitConverter.ToUInt16(data, offset + 8) != 0;
-    }
+        PKSMStorageFormat.ONE => 33,
+        PKSMStorageFormat.TWO => 32,
+        PKSMStorageFormat.THREE => 80,
+        PKSMStorageFormat.FOUR => 136,
+        PKSMStorageFormat.FIVE => 136,
+        PKSMStorageFormat.SIX => 232,
+        PKSMStorageFormat.SEVEN => 232,
+        PKSMStorageFormat.LGPE => 232,
+        PKSMStorageFormat.EIGHT => 328,
+        _ => 0,
+    };
 
-    private static int GetBankSize(PKSMBankVersion v)
+    private static int GetBankSize(PKSMBankVersion v) => v switch
     {
-        return v switch
-        {
-            PKSMBankVersion.VERSION1 => 264,
-            PKSMBankVersion.VERSION2 => 264,
-            PKSMBankVersion.VERSION3 => 336,
-            _ => 336,
-        };
-    }
+        PKSMBankVersion.VERSION1 => 264,
+        PKSMBankVersion.VERSION2 => 264,
+        PKSMBankVersion.VERSION3 => 336,
+        _ => 336,
+    };
 
-    private static int GetBankStartIndex(PKSMBankVersion v)
+    private static int GetBankStartIndex(PKSMBankVersion v) => v switch
     {
-        return v switch
-        {
-            PKSMBankVersion.VERSION1 => 12,
-            PKSMBankVersion.VERSION2 => 16,
-            PKSMBankVersion.VERSION3 => 16,
-            _ => 16,
-        };
-    }
+        PKSMBankVersion.VERSION1 => 12,
+        PKSMBankVersion.VERSION2 => 16,
+        PKSMBankVersion.VERSION3 => 16,
+        _ => 16,
+    };
 
-    private static PKSMStorageFormat GetPKSMFormat(PKM pk)
+    private static PKSMStorageFormat GetPKSMFormat(PKM pk) => pk switch
     {
-        return pk switch
-        {
-            PK1 => PKSMStorageFormat.ONE,
-            PK2 => PKSMStorageFormat.TWO,
-            PK3 => PKSMStorageFormat.THREE,
-            PK4 => PKSMStorageFormat.FOUR,
-            PK5 => PKSMStorageFormat.FIVE,
-            PK6 => PKSMStorageFormat.SIX,
-            PK7 => PKSMStorageFormat.SEVEN,
-            PB7 => PKSMStorageFormat.LGPE,
-            PK8 => PKSMStorageFormat.EIGHT,
-            _ => PKSMStorageFormat.UNUSED,
-        };
-    }
+        PK1 => PKSMStorageFormat.ONE,
+        PK2 => PKSMStorageFormat.TWO,
+        PK3 => PKSMStorageFormat.THREE,
+        PK4 => PKSMStorageFormat.FOUR,
+        PK5 => PKSMStorageFormat.FIVE,
+        PK6 => PKSMStorageFormat.SIX,
+        PK7 => PKSMStorageFormat.SEVEN,
+        PB7 => PKSMStorageFormat.LGPE,
+        PK8 => PKSMStorageFormat.EIGHT,
+        _ => PKSMStorageFormat.UNUSED,
+    };
 
     private enum PKSMBankVersion
     {
