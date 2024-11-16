@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using static PKHeX.Core.Species;
 
@@ -7,11 +6,8 @@ namespace PKHeX.Core.AutoMod;
 
 public static class SimpleEdits
 {
-    static SimpleEdits()
-    {
-        // Make PKHeX use our own marking method
-        MarkingApplicator.MarkingMethod = FlagIVsAutoMod;
-    }
+    // Make PKHeX use our own marking method
+    static SimpleEdits() => MarkingApplicator.MarkingMethod = FlagIVsAutoMod;
 
     internal static ReadOnlySpan<ushort> RoamingMetLocationBDSP =>
     [
@@ -39,89 +35,33 @@ public static class SimpleEdits
         089, // Muk
     ];
 
-    public static bool IsShinyLockedSpeciesForm(ushort species, byte form)
+    public static bool IsShinyLockedSpeciesForm(ushort species, byte form) => (Species)species switch
     {
-        var tuple = ((Species)species, form);
-        return ShinyLockedSpeciesForm.Contains(tuple);
-    }
+        Pikachu => form is not (0 or 8), // Cap Pikachus, Cosplay
+        Pichu => form is 1, // Spiky-eared
+        Victini or Keldeo => true,
+        Scatterbug or Spewpa or Vivillon => form is 19, // Poké Ball
+        Hoopa or Volcanion or Cosmog or Cosmoem => true,
 
-    private static readonly HashSet<(Species, int)> ShinyLockedSpeciesForm =
-    [
-        // Cap Pikachus
-        (Pikachu, 1),
-        (Pikachu, 2),
-        (Pikachu, 3),
-        (Pikachu, 4),
-        (Pikachu, 5),
-        (Pikachu, 6),
-        (Pikachu, 7),
-        (Pikachu, 9),
-        (Pichu, 1),
-        (Victini, 0),
-        (Keldeo, 0),
-        (Keldeo, 1),
-        (Meloetta, 0),
-        // Vivillons
-        (Scatterbug, 19),
-        (Spewpa, 19),
-        (Vivillon, 19),
-        // Hoopa
-        (Hoopa, 0),
-        (Hoopa, 1),
-        (Volcanion, 0),
-        (Cosmog, 0),
-        (Cosmoem, 0),
-        (Magearna, 0),
-        (Magearna, 1),
-        (Marshadow, 0),
-        (Kubfu, 0),
-        (Urshifu, 0),
-        (Urshifu, 1),
-        (Zarude, 0),
-        (Zarude, 1),
-        (Glastrier, 0),
-        (Spectrier, 0),
-        (Calyrex, 0),
-        (Calyrex, 1),
-        (Calyrex, 2),
-        (Enamorus, 0),
-        (Enamorus, 1),
-        (Gimmighoul, 1),
-        (WoChien, 0),
-        (ChienPao, 0),
-        (TingLu, 0),
-        (ChiYu, 0),
-        (Koraidon, 0),
-        (Koraidon, 1),
-        (Koraidon, 2),
-        (Koraidon, 3),
-        (Koraidon, 4),
-        (Miraidon, 0),
-        (Miraidon, 1),
-        (Miraidon, 2),
-        (Miraidon, 3),
-        (Miraidon, 4),
-        (WalkingWake, 0),
-        (IronLeaves, 0),
-        (Okidogi, 0),
-        (Munkidori, 0),
-        (Fezandipiti, 0),
-        (Ogerpon, 0),
-        (Ogerpon, 1),
-        (Ogerpon, 2),
-        (Ogerpon, 3),
-        (Ogerpon, 4),
-        (Ogerpon, 5),
-        (Ogerpon, 6),
-        (Ogerpon, 7),
-        (GougingFire, 0),
-        (RagingBolt, 0),
-        (IronBoulder, 0),
-        (IronCrown, 0),
-        (Terapagos, 0),
-        (Terapagos, 1),
-        (Terapagos, 2),
-    ];
+        Magearna => true, // Even though a shiny is available via HOME, can't generate as legal.
+
+        Kubfu or Urshifu or Zarude => true,
+        Glastrier or Spectrier or Calyrex => true,
+        Enamorus => true,
+        Gimmighoul => form is 1,
+
+        WoChien or ChienPao or TingLu or ChiYu => true,
+        Koraidon or Miraidon => true,
+
+        WalkingWake or IronLeaves => true,
+        Okidogi or Munkidori or Fezandipiti => true,
+        Ogerpon => true,
+        GougingFire or RagingBolt or IronBoulder or IronCrown => true,
+        Terapagos => true,
+        Pecharunt => true,
+
+        _ => false,
+    };
 
     private static Func<int, int, int> FlagIVsAutoMod(PKM pk)
     {
