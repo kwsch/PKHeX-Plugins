@@ -356,20 +356,19 @@ public sealed class NTR
         }
     }
 
+    private static string[] pnamestr =
+    [
+        "kujira-1",
+        "kujira-2",
+        "sango-1",
+        "sango-2",
+        "salmon",
+        "niji_loc",
+        "momiji",
+    ];
+
     private void GetGame(object? sender, InfoReadyEventArgs e)
     {
-        var pnamestr = new[]
-        {
-            "kujira-1",
-            "kujira-2",
-            "sango-1",
-            "sango-2",
-            "salmon",
-            "niji_loc",
-            "niji_loc",
-            "momiji",
-            "momiji",
-        };
         string? pname;
         string log = e.Info;
         if ((pname = Array.Find(pnamestr, log.Contains)) == null)
