@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 
@@ -37,18 +38,10 @@ public static class BattleTemplateLegality
             return analysis; // Species does not exist in the game
 
         // Species exists -- check if it has at least one move.
-        // If it has no moves and it didn't generate, that makes the mon still illegal in game (moves are set to legal ones)
+        // If it has no moves, and it didn't generate, that makes the mon still illegal in game (moves are set to legal ones)
         var moves = set.Moves.Where(z => z != 0).ToArray();
-        var count = set.Moves.Count(z => z != 0);
 
         // Reusable data
-        var batchedit = false;
-        IReadOnlyList<StringInstruction>? filters = null;
-        if (set is RegenTemplate r)
-        {
-            filters = r.Regen.Batch.Filters;
-            batchedit = APILegality.AllowBatchCommands && r.Regen.HasBatchSettings;
-        }
         var destVer = sav.Version;
         if (destVer <= 0 && sav is SaveFile s)
             destVer = s.Version;
@@ -56,25 +49,22 @@ public static class BattleTemplateLegality
         var gamelist = APILegality.FilteredGameList(failed, destVer, APILegality.AllowBatchCommands, set);
 
         // Move checks
-        List<IEnumerable<ushort>> move_combinations = [];
-        for (int i = count; i >= 1; i--)
-            move_combinations.AddRange(GetKCombs(moves, i));
-
-        ushort[] original_moves = new ushort[4];
-        set.Moves.CopyTo(original_moves, 0);
-        ushort[] successful_combination = GetValidMoves(set, sav, move_combinations, failed, gamelist);
-        if (!new HashSet<ushort>(original_moves.Where(z => z != 0)).SetEquals(successful_combination))
+        var bestCombination = GetValidMovesetWithMostPresent(set, sav, moves, failed, gamelist);
+        if (bestCombination.Length != moves.Length)
         {
-            var invalid_moves = string.Join(", ", original_moves.Where(z => !successful_combination.Contains(z) && z != 0).Select(z => $"{(Move)z}"));
-            return successful_combination.Length > 0 ? string.Format(INVALID_MOVES, species_name, invalid_moves) : ALL_MOVES_INVALID;
+            if (bestCombination.Length == 0)
+                return ALL_MOVES_INVALID;
+            var sb = new StringBuilder();
+            AddMovesNotPresentIn(moves, bestCombination, sb);
+            return string.Format(INVALID_MOVES, species_name, sb);
         }
 
         // All moves possible, get encounters
+        failed.SetMoves(moves);
         failed.ApplySetDetails(set);
-        failed.SetMoves(original_moves);
         failed.SetRecordFlags([]);
 
-        var encounters = EncounterMovesetGenerator.GenerateEncounters(pk: failed, moves: original_moves, gamelist).ToList();
+        var encounters = EncounterMovesetGenerator.GenerateEncounters(pk: failed, moves, gamelist).ToList();
         var initialcount = encounters.Count;
         if (set is RegenTemplate { Regen.EncounterFilters: { } x })
             encounters.RemoveAll(enc => !BatchEditing.IsFilterMatch(x, enc));
@@ -134,43 +124,86 @@ public static class BattleTemplateLegality
             encounters.RemoveAll(enc => !APILegality.IsRequestedBallValid(set, enc));
         }
 
-        return string.Format( EXHAUSTED_ENCOUNTERS, initialcount - encounters.Count, initialcount);
+        return string.Format(EXHAUSTED_ENCOUNTERS, initialcount - encounters.Count, initialcount);
     }
 
-    private static ushort[] GetValidMoves(IBattleTemplate set, ITrainerInfo sav, List<IEnumerable<ushort>> move_combinations, PKM blank, GameVersion[] gamelist)
+    private static void AddMovesNotPresentIn(ReadOnlySpan<ushort> check, ReadOnlySpan<ushort> set, StringBuilder sb)
     {
-        ushort[] successful_combination = [];
-        foreach (var c in move_combinations)
+        foreach (var move in check)
         {
-            var combination = c.ToArray();
-            if (combination.Length <= successful_combination.Length)
+            if (set.Contains(move))
                 continue;
-
-            var new_moves = combination.Concat(Enumerable.Repeat<ushort>(0, 4 - combination.Length)).ToArray();
-            blank.ApplySetDetails(set);
-            blank.SetMoves(new_moves);
-            blank.SetRecordFlags([]);
-
-            if (sav.Generation <= 2)
-                blank.EXP = 0; // no relearn moves in gen 1/2 so pass level 1 to generator
-
-            var encounters = EncounterMovesetGenerator.GenerateEncounters(pk: blank, moves: new_moves, gamelist);
-            if (set is RegenTemplate { Regen.EncounterFilters: { } x })
-                encounters = encounters.Where(enc => BatchEditing.IsFilterMatch(x, enc));
-
-            if (encounters.Any())
-                successful_combination = [.. combination];
+            if (move == 0)
+                continue;
+            if (sb.Length > 0)
+                sb.Append(", ");
+            sb.Append($"{(Move)move}");
         }
-        return successful_combination;
     }
 
-    private static IEnumerable<IEnumerable<T>> GetKCombs<T>(IEnumerable<T> list, int length) where T : IComparable
+    private static ReadOnlySpan<ushort> GetValidMovesetWithMostPresent(IBattleTemplate set, ITrainerInfo sav, ushort[] moves, PKM blank, GameVersion[] gamelist)
     {
-        if (length == 1)
-            return list.Select(t => new[] { t });
+        // Reset the blank template as best we can. The inner loop only modifies the moves.
+        blank.ApplySetDetails(set);
+        blank.SetRecordFlags([]);
+        if (sav.Generation <= 2)
+            blank.EXP = 0; // no relearn moves in gen 1/2 so pass level 1 to generator
 
-        var temp = list.ToArray();
-        return GetKCombs(temp, length - 1).SelectMany(collectionSelector: t => temp.Where(o => o.CompareTo(t.Last()) > 0), resultSelector: (t1, t2) => t1.Concat(
-            [t2]));
+        // Eager check: current moveset is valid
+        if (HasAnyEncounterForMoves(set, blank, moves, gamelist))
+            return moves;
+
+        // Okay, at least one move is invalid. Recursively permute combinations to find the moveset with most moves valid.
+        moves = moves.ToArray(); // copy to not disturb the original array.
+        var count = Recurse(set, moves, blank, gamelist, [..moves]);
+        // The moves array is now the most-populated combination of moves that are valid.
+        return moves.AsSpan(0, count);
+    }
+
+    private static int Recurse(IBattleTemplate set, Memory<ushort> request, PKM blank, GameVersion[] gamelist, List<ushort> moves)
+    {
+        if (moves.Count == 1)
+            return 0;
+
+        // Breadth first search to find the most valid moveset -- remove one move and check, and restore if not.
+        request = request[..(moves.Count - 1)];
+        for (int i = 0; i < moves.Count; i++)
+        {
+            // Original order doesn't matter, skip an array copy shift when reinserting
+            // This essentially cycles them like a queue
+            var move = moves[i];
+            moves.RemoveAt(0);
+            moves.CopyTo(request.Span);
+            if (HasAnyEncounterForMoves(set, blank, request, gamelist))
+                return moves.Count;
+            moves.Add(move);
+        }
+
+        // If above failed, recurse the same as above with more moves removed.
+        for (int i = 0; i < moves.Count; i++)
+        {
+            var move = moves[i];
+            moves.Remove(0);
+            var count = Recurse(set, request, blank, gamelist, moves);
+            if (count != 0) // ignore 0, the removed move might be valid in a different combination
+                return count;
+            moves.Add(move);
+        }
+        return 0;
+    }
+
+    private static bool HasAnyEncounterForMoves(IBattleTemplate set, PKM blank,
+        ReadOnlyMemory<ushort> moves, GameVersion[] gamelist)
+    {
+        // Do we even need to set the moves to the template?
+        Span<ushort> tmp = stackalloc ushort[4];
+        moves.Span.CopyTo(tmp);
+        blank.SetMoves(tmp);
+
+        var encounters = EncounterMovesetGenerator.GenerateEncounters(blank, moves, gamelist);
+        if (set is not RegenTemplate { Regen.EncounterFilters: { Count: not 0 } x })
+            return encounters.Any();
+        encounters = encounters.Where(enc => BatchEditing.IsFilterMatch(x, enc));
+        return encounters.Any();
     }
 }

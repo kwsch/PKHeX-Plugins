@@ -12,7 +12,7 @@ public class RegenSet
     public RegenSetting Extra { get; }
     public ITrainerInfo? Trainer { get; }
     public StringInstructionSet Batch { get; }
-    public IEnumerable<StringInstruction> EncounterFilters { get; }
+    public IReadOnlyList<StringInstruction> EncounterFilters { get; }
     public IReadOnlyList<StringInstruction> VersionFilters { get; }
 
     public readonly bool HasExtraSettings;
