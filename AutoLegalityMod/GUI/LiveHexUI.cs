@@ -137,10 +137,7 @@ namespace AutoModPlugins
                 return;
 
             var data = tdata(Remote.Bot);
-            if (data is null)
-                return;
-
-            data.CopyTo(dest);
+            data?.CopyTo(dest);
         }
 
         private void ChangeBox(object? sender, EventArgs e)
@@ -168,22 +165,21 @@ namespace AutoModPlugins
                 {
                     if (!communicator.Connected)
                     {
-                        var errorstr = "Unable to Connect. Click the \"Wiki\" button to troubleshoot.";
+                        const string errorstr = "Unable to Connect. Click the \"Wiki\" button to troubleshoot.";
 
                         var error = WinFormsUtil.ALMErrorBasic(errorstr);
                         error.ShowDialog();
 
                         var res = error.DialogResult;
-                        if (res == DialogResult.Retry)
-                        {
-                            Process.Start(
-                                new ProcessStartInfo
-                                {
-                                    FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/Installing-LiveHeX",
-                                    UseShellExecute = true,
-                                });
-                        }
+                        if (res != DialogResult.Retry)
+                            return;
 
+                        var info = new ProcessStartInfo
+                        {
+                            FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/Installing-LiveHeX",
+                            UseShellExecute = true,
+                        };
+                        Process.Start(info);
                         return;
                     }
                     (validation, msg, lv) = Connect_NTR(communicator, versions);
@@ -233,16 +229,15 @@ namespace AutoModPlugins
                 error.ShowDialog();
 
                 var res = error.DialogResult;
-                if (res == DialogResult.Retry)
-                {
-                    Process.Start(
-                        new ProcessStartInfo
-                        {
-                            FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/FAQ-and-Troubleshooting#troubleshooting",
-                            UseShellExecute = true,
-                        });
-                }
+                if (res != DialogResult.Retry)
+                    return;
 
+                var info = new ProcessStartInfo
+                {
+                    FileName = "https://github.com/architdate/PKHeX-Plugins/wiki/FAQ-and-Troubleshooting#troubleshooting",
+                    UseShellExecute = true,
+                };
+                Process.Start(info);
                 return;
             }
 
@@ -320,7 +315,10 @@ namespace AutoModPlugins
             {
                 pkm = SAV.SAV.GetDecryptedPKM(data);
             }
-            catch { }
+            catch
+            {
+                // Ignore.
+            }
 
             bool valid = pkm is not null && pkm.Species <= pkm.MaxSpeciesID && pkm.ChecksumValid &&
                          pkm is { Species: 0, EncryptionConstant: 0 }
@@ -818,7 +816,7 @@ namespace AutoModPlugins
 
             if (Remote.Bot.Injector is LPBDSP)
             {
-                Remote.Bot.Injector.WriteBlockFromString(Remote.Bot, txt, GetBlockDataRaw(sb!, data[0]),sb!);
+                Remote.Bot.Injector.WriteBlockFromString(Remote.Bot, txt, GetBlockDataRaw(sb, data[0]), sb);
             }
             else
             {
@@ -874,7 +872,7 @@ namespace AutoModPlugins
                 }
                 else
                 {
-                    sb = Activator.CreateInstance(LPBDSP.types.First(t => t.Name == display),customdata);
+                    sb = Activator.CreateInstance(LPBDSP.types.First(t => t.Name == display), customdata);
                 }
             }
             else

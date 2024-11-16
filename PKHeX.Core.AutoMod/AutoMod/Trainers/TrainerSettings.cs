@@ -74,6 +74,7 @@ namespace PKHeX.Core.AutoMod
         /// Gets a possible Trainer Data for the requested <see cref="generation"/>.
         /// </summary>
         /// <param name="generation">Generation of origin requested.</param>
+        /// <param name="ver"></param>
         /// <param name="fallback">Fallback trainer data if no new parent is found.</param>
         /// <param name="lang">Language to request for</param>
         /// <returns>Parent trainer data that originates from the <see cref="PKM.Version"/>. If none found, will return the <see cref="fallback"/>.</returns>
@@ -130,7 +131,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="pk">Pok�mon that will receive the trainer details.</param>
         /// <param name="template_save">Fallback trainer data if no new parent is found.</param>
         /// <param name="lang">Language to request for</param>
-        /// <returns>Parent trainer data that originates from the <see cref="PKM.Version"/>. If none found, will return the <see cref="fallback"/>.</returns>
+        /// <returns>Parent trainer data that originates from the <see cref="PKM.Version"/>. If none found, will return the <see cref="template_save"/>.</returns>
         public static ITrainerInfo GetSavedTrainerData(PKM pk, ITrainerInfo template_save, LanguageID? lang = null)
         {
             int origin = pk.Generation;

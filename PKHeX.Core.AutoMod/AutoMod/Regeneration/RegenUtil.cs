@@ -65,7 +65,7 @@ namespace PKHeX.Core.AutoMod
             return CleanFilters(valid);
         }
 
-        private static StringInstruction[] CleanFilters(List<String> lines)
+        private static StringInstruction[] CleanFilters(List<string> lines)
         {
             if (lines.Count == 0)
                 return [];
@@ -155,7 +155,7 @@ namespace PKHeX.Core.AutoMod
             }
             if (tr is SimpleTrainerInfo s)
             {
-                var version = Array.Find(GameUtil.GameVersions,z => ver.Contains(z) && z != GameVersion.BU);
+                var version = Array.Find(GameUtil.GameVersions, z => ver.Contains(z) && z != GameVersion.BU);
                 return new SimpleTrainerInfo(version)
                 {
                     OT = MutateOT(s.OT, lang, version),
@@ -210,31 +210,30 @@ namespace PKHeX.Core.AutoMod
             var pi = GameData.GetPersonal(GetGameVersionFromGen(gen))[species];
             var abils_ct = pi.AbilityCount;
             return pi is not IPersonalAbility12 a ? -1 : ar switch
-                {
-                    AbilityRequest.Any => -1,
-                    AbilityRequest.First => a.Ability1,
-                    AbilityRequest.Second => a.Ability2,
-                    AbilityRequest.NotHidden => a.Ability1,
-                    AbilityRequest.PossiblyHidden => a.Ability1,
-                    AbilityRequest.Hidden
-                        => abils_ct > 2 && pi is IPersonalAbility12H h ? h.AbilityH : -1,
-                    _ => throw new Exception($"Invalid AbilityRequest: {ar}"),
-                };
+            {
+                AbilityRequest.Any => -1,
+                AbilityRequest.First => a.Ability1,
+                AbilityRequest.Second => a.Ability2,
+                AbilityRequest.NotHidden => a.Ability1,
+                AbilityRequest.PossiblyHidden => a.Ability1,
+                AbilityRequest.Hidden
+                    => abils_ct > 2 && pi is IPersonalAbility12H h ? h.AbilityH : -1,
+                _ => throw new Exception($"Invalid AbilityRequest: {ar}"),
+            };
         }
 
-        public static GameVersion GetGameVersionFromGen(int gen) =>
-            gen switch
-            {
-                1 => GameVersion.RB,
-                2 => GameVersion.C,
-                3 => GameVersion.E,
-                4 => GameVersion.Pt,
-                5 => GameVersion.B2W2,
-                6 => GameVersion.ORAS,
-                7 => GameVersion.USUM,
-                8 => GameVersion.SWSH,
-                9 => GameVersion.SV,
-                _ => throw new Exception($"Invalid generation: {gen}"),
-            };
+        public static GameVersion GetGameVersionFromGen(int gen) => gen switch
+        {
+            1 => GameVersion.RB,
+            2 => GameVersion.C,
+            3 => GameVersion.E,
+            4 => GameVersion.Pt,
+            5 => GameVersion.B2W2,
+            6 => GameVersion.ORAS,
+            7 => GameVersion.USUM,
+            8 => GameVersion.SWSH,
+            9 => GameVersion.SV,
+            _ => throw new Exception($"Invalid generation: {gen}"),
+        };
     }
 }

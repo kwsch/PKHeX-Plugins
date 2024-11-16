@@ -2,11 +2,9 @@
 
 namespace PKHeX.Core.Injection
 {
-    public abstract class PointerCache(LiveHeXVersion version, bool useCache = false)
+    public abstract class PointerCache(LiveHeXVersion Version, bool UseCache = false)
     {
-        private readonly LiveHeXVersion Version = version;
         private readonly Dictionary<LiveHeXVersion, Dictionary<string, ulong>> Cache = [];
-        private readonly bool UseCache = useCache;
 
         public ulong GetCachedPointer(ICommunicatorNX com, string ptr, bool relative = true)
         {
@@ -21,13 +19,9 @@ namespace PKHeX.Core.Injection
                 return pointer;
 
             if (!hasEntry)
-            {
                 Cache.Add(Version, new() { { ptr, pointer } });
-            }
             else
-            {
                 Cache[Version].Add(ptr, pointer);
-            }
 
             return pointer;
         }

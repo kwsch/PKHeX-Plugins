@@ -257,7 +257,7 @@ namespace PKHeX.Core.AutoMod
             }
 
             pk.SetShinySID(); // no mg = no lock
-            if (isShiny && enc.Generation is (1 or 2))
+            if (isShiny && enc.Generation is 1 or 2)
                 pk.SetShiny();
             if (pk.Generation != 5)
                 return;
@@ -527,15 +527,15 @@ namespace PKHeX.Core.AutoMod
 
         private static int GetBaseFriendship(EntityContext context, ushort species, byte form) => context switch
         {
-            EntityContext.Gen1 => PersonalTable.USUM[species].BaseFriendship,
-            EntityContext.Gen2 => PersonalTable.USUM[species].BaseFriendship,
-            EntityContext.Gen6 => PersonalTable.AO[species].BaseFriendship,
-            EntityContext.Gen7 => PersonalTable.USUM[species].BaseFriendship,
-            EntityContext.Gen7b => PersonalTable.GG[species].BaseFriendship,
-            EntityContext.Gen8 => PersonalTable.SWSH.GetFormEntry(species, form).BaseFriendship,
-            EntityContext.Gen8a => PersonalTable.LA.GetFormEntry(species, form).BaseFriendship,
-            EntityContext.Gen8b => PersonalTable.BDSP.GetFormEntry(species, form).BaseFriendship,
-            EntityContext.Gen9 => PersonalTable.SV.GetFormEntry(species, form).BaseFriendship,
+            EntityContext.Gen1  => PersonalTable.USUM[species].BaseFriendship,
+            EntityContext.Gen2  => PersonalTable.USUM[species].BaseFriendship,
+            EntityContext.Gen6  => PersonalTable.AO  [species].BaseFriendship,
+            EntityContext.Gen7  => PersonalTable.USUM[species].BaseFriendship,
+            EntityContext.Gen7b => PersonalTable.GG  [species].BaseFriendship,
+            EntityContext.Gen8  => PersonalTable.SWSH[species, form].BaseFriendship,
+            EntityContext.Gen8a => PersonalTable.LA  [species, form].BaseFriendship,
+            EntityContext.Gen8b => PersonalTable.BDSP[species, form].BaseFriendship,
+            EntityContext.Gen9  => PersonalTable.SV  [species, form].BaseFriendship,
             _ => throw new IndexOutOfRangeException(),
         };
 

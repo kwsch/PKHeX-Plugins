@@ -83,7 +83,7 @@ namespace AutoModPlugins.GUI
             var pdl = new List<PropertyDescriptor>(pdc.Count + 1);
 
             foreach (PropertyDescriptor pd in pdc)
-                pdl.Add(overridePds.TryGetValue(pd.Name, out var value) ? value : pd);
+                pdl.Add(overridePds.GetValueOrDefault(pd.Name, pd));
 
             return new PropertyDescriptorCollection([.. pdl]);
         }
@@ -101,11 +101,6 @@ namespace AutoModPlugins.GUI
 
     public class TypeDescriptorOverridingProvider(ICustomTypeDescriptor ctd) : TypeDescriptionProvider
     {
-        private readonly ICustomTypeDescriptor ctd = ctd;
-
-        public override ICustomTypeDescriptor GetTypeDescriptor(Type? objectType, object? instance)
-        {
-            return ctd;
-        }
+        public override ICustomTypeDescriptor GetTypeDescriptor(Type? objectType, object? instance) => ctd;
     }
 }

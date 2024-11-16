@@ -27,7 +27,7 @@ namespace PKHeX.Core.AutoMod
             }
 
             /// <summary>
-            /// Downloads a string response with hard-coded <see cref="HttpWebRequest"/> parameters.
+            /// Downloads a string response with hard-coded address parameters.
             /// </summary>
             /// <param name="address">Address to fetch from</param>
             /// <returns>Page response</returns>

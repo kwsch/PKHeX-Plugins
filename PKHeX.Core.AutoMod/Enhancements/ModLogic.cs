@@ -186,6 +186,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="form">Form to generate; if left null, picks first encounter</param>
         /// <param name="shiny"></param>
         /// <param name="alpha"></param>
+        /// <param name="nativeOnly"></param>
         /// <param name="pk">Result legal pkm</param>
         /// <returns>True if a valid result was generated, false if the result should be ignored.</returns>
         public static bool GetRandomEncounter(this SaveFile sav, ushort species, byte form, bool shiny, bool alpha, bool nativeOnly, out PKM? pk) => ((ITrainerInfo)sav).GetRandomEncounter(species, form, shiny, alpha, nativeOnly, out pk);
@@ -198,6 +199,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="form">Form to generate; if left null, picks first encounter</param>
         /// <param name="shiny"></param>
         /// <param name="alpha"></param>
+        /// <param name="nativeOnly"></param>
         /// <param name="pk">Result legal pkm</param>
         /// <returns>True if a valid result was generated, false if the result should be ignored.</returns>
         public static bool GetRandomEncounter(this ITrainerInfo tr, ushort species, byte form, bool shiny, bool alpha, bool nativeOnly, out PKM? pk)
@@ -220,6 +222,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="form">Form to generate; if left null, picks first encounter</param>
         /// <param name="shiny"></param>
         /// <param name="alpha"></param>
+        /// <param name="nativeOnly"></param>
         /// <returns>Result legal pkm, null if data should be ignored.</returns>
         private static PKM? GetRandomEncounter(PKM blank, ITrainerInfo tr, ushort species, byte form, bool shiny, bool alpha, bool nativeOnly)
         {

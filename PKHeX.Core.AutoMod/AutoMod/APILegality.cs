@@ -42,6 +42,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="template">rough pkm that has all the <see cref="set"/> values entered</param>
         /// <param name="set">Showdown set object</param>
         /// <param name="satisfied">If the final result is legal or not</param>
+        /// <param name="nativeOnly"></param>
         public static PKM GetLegalFromTemplate(this ITrainerInfo dest, PKM template, IBattleTemplate set, out LegalizationResult satisfied, bool nativeOnly = false)
         {
             RegenSet regen;
@@ -133,7 +134,7 @@ namespace PKHeX.Core.AutoMod
                     continue;
 
                 // Apply final details
-                ApplySetDetails(pk, set, dest, enc, regen,criteria);
+                ApplySetDetails(pk, set, dest, enc, regen, criteria);
 
                 // Apply final tweaks to the data.
                 if (pk is IGigantamax gmax && gmax.CanGigantamax != set.CanGigantamax)
@@ -183,7 +184,7 @@ namespace PKHeX.Core.AutoMod
             if (enc is EncounterGift3 { Species: (ushort)Species.Jirachi })
             {
                 if (tr.Language == (byte)LanguageID.Japanese)
-                    tr = tr.MutateLanguage(LanguageID.English,tr.Version);
+                    tr = tr.MutateLanguage(LanguageID.English, tr.Version);
             }
             var basepkm = enc.ConvertToPKM(tr, criteria);
 
@@ -266,6 +267,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="batchEdit">Whether settings currently allow batch commands</param>
         /// <param name="set">Set information to be used to filter the game list</param>
         /// <param nativeOnly="set">Whether to only return encounters from the current version</param>
+        /// <param name="nativeOnly"></param>
         /// <returns>List of filtered games to check encounters for</returns>
         internal static GameVersion[] FilteredGameList(PKM template, GameVersion destVer, bool batchEdit, IBattleTemplate set, bool nativeOnly = false)
         {
@@ -899,6 +901,7 @@ namespace PKHeX.Core.AutoMod
         /// <param name="pk">Pokemon to be edited</param>
         /// <param name="enc">Raid encounter encounterable</param>
         /// <param name="set">Set to pass in requested IVs</param>
+        /// <param name="criteria"></param>
         private static void PreSetPIDIV(this PKM pk, IEncounterable enc, IBattleTemplate set, EncounterCriteria criteria)
         {
             if (enc is ITeraRaid9)
@@ -1124,7 +1127,7 @@ namespace PKHeX.Core.AutoMod
                 {
                     EncounterMight9 m => m.ScaleType.GetSizeValue(m.Scale, ref rand),
                     EncounterDist9 d => d.ScaleType.GetSizeValue(d.Scale, ref rand),
-                    _ => SizeType9Extensions.GetSizeValue(0,0,ref rand),
+                    _ => SizeType9Extensions.GetSizeValue(0, 0, ref rand),
                 };
                 finalseed = (uint)seed;
                 break;
@@ -1355,6 +1358,8 @@ namespace PKHeX.Core.AutoMod
         /// <param name="HPType">HPType INT for preserving Hidden powers</param>
         /// <param name="shiny">Only used for CHANNEL RNG type</param>
         /// <param name="enc"></param>
+        /// <param name="set"></param>
+        /// <param name="criteria"></param>
         private static void FindPIDIV(PKM pk, PIDType Method, int HPType, bool shiny, IEncounterable enc, IBattleTemplate set, EncounterCriteria criteria)
         {
             if (enc.Generation == 4 && pk.Species == (ushort)Species.Unown)

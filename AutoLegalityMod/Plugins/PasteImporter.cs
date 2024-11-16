@@ -30,11 +30,8 @@ namespace AutoModPlugins
             ToolStripItem parent = modmenu.OwnerItem?? ctrl;
             var currparent = parent.GetCurrentParent()??throw new Exception("Parent not found");
             var form = (currparent.Parent ?? throw new Exception("Parent not found")).FindForm() ?? throw new Exception("Form not found");
-            if (form is not null)
-            {
-                form.Icon = Resources.icon;
-                form.KeyDown += Downkey;
-            }
+            form.Icon = Resources.icon;
+            form.KeyDown += Downkey;
             ShowdownSetLoader.PKMEditor = PKMEditor;
             ShowdownSetLoader.SaveFileEditor = SaveFileEditor;
         }
@@ -56,16 +53,14 @@ namespace AutoModPlugins
             }
         }
 
-        private void ImportPaste(object? sender, EventArgs e)
+        private static void ImportPaste(object? sender, EventArgs e)
         {
             // Check for showdown data in clipboard
             var text = GetTextShowdownData();
             if (string.IsNullOrWhiteSpace(text))
-            {
                 return;
-            }
 
-            ShowdownSetLoader.Import(text!);
+            ShowdownSetLoader.Import(text);
         }
 
         /// <summary>

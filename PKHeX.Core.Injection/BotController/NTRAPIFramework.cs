@@ -193,12 +193,11 @@ namespace PKHeX.Core.Injection
 
         private void HandleReadMem(uint seq, byte[] dataBuf)
         {
-            if (!_pendingReadMem.TryGetValue(seq, out var requestDetails))
+            if (!_pendingReadMem.Remove(seq, out var requestDetails))
             {
                 Log("seq not in pending readmems, ignored");
                 return;
             }
-            _pendingReadMem.Remove(seq);
 
             if (requestDetails.FileName != null)
             {
