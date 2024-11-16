@@ -48,18 +48,18 @@ namespace PKHeX.Core.Injection
         private const int MYSTATUS_BLOCK_SIZE_RAM = 0x34;
 
         public static readonly Dictionary<string, (Func<PokeSysBotMini, byte[]?>, Action<PokeSysBotMini, byte[]>)> FunctionMap = new()
-            {
-                { "Items", (GetItemBlock, SetItemBlock) },
-                { "MyStatus", (GetMyStatusBlock, SetMyStatusBlock) },
-                { "Underground", (GetUGItemBlock, SetUGItemBlock) },
-                { "Daycare", (GetDaycareBlock, SetDaycareBlock) },
-            };
+        {
+            { "Items", (GetItemBlock, SetItemBlock) },
+            { "MyStatus", (GetMyStatusBlock, SetMyStatusBlock) },
+            { "Underground", (GetUGItemBlock, SetUGItemBlock) },
+            { "Daycare", (GetDaycareBlock, SetDaycareBlock) },
+        };
 
         public override Dictionary<string, string> SpecialBlocks { get; } = new()
-            {
-                { "Items", "B_OpenItemPouch_Click" },
-                { "Underground", "B_OpenUGSEditor_Click" },
-            };
+        {
+            { "Items", "B_OpenItemPouch_Click" },
+            { "Underground", "B_OpenUGSEditor_Click" },
+        };
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
         public static readonly IEnumerable<Type> types = Assembly.GetAssembly(typeof(ICustomBlock)).GetTypes().Where(t => typeof(ICustomBlock).IsAssignableFrom(t) && !t.IsInterface);
@@ -81,68 +81,56 @@ namespace PKHeX.Core.Injection
         }
 
         // relative to: PlayerWork.SaveData_TypeInfo
-        private static string? GetTrainerPointer(LiveHeXVersion lv)
+        private static string? GetTrainerPointer(LiveHeXVersion lv) => lv switch
         {
-            return lv switch
-            {
-                LiveHeXVersion.BD_v130 => "[[[main+4C64DC0]+B8]+10]+E0",
-                LiveHeXVersion.SP_v130 => "[[[main+4E7BE98]+B8]+10]+E0",
-                LiveHeXVersion.BDSP_v120 => "[[[main+4E36C58]+B8]+10]+E0",
-                LiveHeXVersion.BDSP_v113 => "[[[main+4E59E60]+B8]+10]+E0",
-                LiveHeXVersion.BDSP_v112 => "[[[main+4E34DD0]+B8]+10]+E0",
-                LiveHeXVersion.BD_v111 => "[[[main+4C1DCF8]+B8]+10]+E0",
-                LiveHeXVersion.SP_v111 => "[[[main+4E34DD0]+B8]+10]+E0",
-                _ => null,
-            };
-        }
+            LiveHeXVersion.BD_v130   => "[[[main+4C64DC0]+B8]+10]+E0",
+            LiveHeXVersion.SP_v130   => "[[[main+4E7BE98]+B8]+10]+E0",
+            LiveHeXVersion.BDSP_v120 => "[[[main+4E36C58]+B8]+10]+E0",
+            LiveHeXVersion.BDSP_v113 => "[[[main+4E59E60]+B8]+10]+E0",
+            LiveHeXVersion.BDSP_v112 => "[[[main+4E34DD0]+B8]+10]+E0",
+            LiveHeXVersion.BD_v111   => "[[[main+4C1DCF8]+B8]+10]+E0",
+            LiveHeXVersion.SP_v111   => "[[[main+4E34DD0]+B8]+10]+E0",
+            _ => null,
+        };
 
         // relative to: PlayerWork.SaveData_TypeInfo
-        private static string? GetItemPointers(LiveHeXVersion lv)
+        private static string? GetItemPointers(LiveHeXVersion lv) => lv switch
         {
-            return lv switch
-            {
-                LiveHeXVersion.BD_v130 => "[[[[main+4C64DC0]+B8]+10]+48]+20",
-                LiveHeXVersion.SP_v130 => "[[[[main+4E7BE98]+B8]+10]+48]+20",
-                LiveHeXVersion.BDSP_v120 => "[[[[main+4E36C58]+B8]+10]+48]+20",
-                LiveHeXVersion.BDSP_v113 => "[[[[main+4E59E60]+B8]+10]+48]+20",
-                LiveHeXVersion.BDSP_v112 => "[[[[main+4E34DD0]+B8]+10]+48]+20",
-                LiveHeXVersion.BD_v111 => "[[[[main+4C1DCF8]+B8]+10]+48]+20",
-                LiveHeXVersion.SP_v111 => "[[[[main+4E34DD0]+B8]+10]+48]+20",
-                _ => null,
-            };
-        }
+            LiveHeXVersion.BD_v130   => "[[[[main+4C64DC0]+B8]+10]+48]+20",
+            LiveHeXVersion.SP_v130   => "[[[[main+4E7BE98]+B8]+10]+48]+20",
+            LiveHeXVersion.BDSP_v120 => "[[[[main+4E36C58]+B8]+10]+48]+20",
+            LiveHeXVersion.BDSP_v113 => "[[[[main+4E59E60]+B8]+10]+48]+20",
+            LiveHeXVersion.BDSP_v112 => "[[[[main+4E34DD0]+B8]+10]+48]+20",
+            LiveHeXVersion.BD_v111   => "[[[[main+4C1DCF8]+B8]+10]+48]+20",
+            LiveHeXVersion.SP_v111   => "[[[[main+4E34DD0]+B8]+10]+48]+20",
+            _ => null,
+        };
 
         // relative to: PlayerWork.SaveData_TypeInfo
-        private static string? GetUndergroundPointers(LiveHeXVersion lv)
+        private static string? GetUndergroundPointers(LiveHeXVersion lv) => lv switch
         {
-            return lv switch
-            {
-                LiveHeXVersion.BD_v130 => "[[[[main+4C64DC0]+B8]+10]+50]+20",
-                LiveHeXVersion.SP_v130 => "[[[[main+4E7BE98]+B8]+10]+50]+20",
-                LiveHeXVersion.BDSP_v120 => "[[[[main+4E36C58]+B8]+10]+50]+20",
-                LiveHeXVersion.BDSP_v113 => "[[[[main+4E59E60]+B8]+10]+50]+20",
-                LiveHeXVersion.BDSP_v112 => "[[[[main+4E34DD0]+B8]+10]+50]+20",
-                LiveHeXVersion.BD_v111 => "[[[[main+4C1DCF8]+B8]+10]+50]+20",
-                LiveHeXVersion.SP_v111 => "[[[[main+4E34DD0]+B8]+10]+50]+20",
-                _ => null,
-            };
-        }
+            LiveHeXVersion.BD_v130   => "[[[[main+4C64DC0]+B8]+10]+50]+20",
+            LiveHeXVersion.SP_v130   => "[[[[main+4E7BE98]+B8]+10]+50]+20",
+            LiveHeXVersion.BDSP_v120 => "[[[[main+4E36C58]+B8]+10]+50]+20",
+            LiveHeXVersion.BDSP_v113 => "[[[[main+4E59E60]+B8]+10]+50]+20",
+            LiveHeXVersion.BDSP_v112 => "[[[[main+4E34DD0]+B8]+10]+50]+20",
+            LiveHeXVersion.BD_v111   => "[[[[main+4C1DCF8]+B8]+10]+50]+20",
+            LiveHeXVersion.SP_v111   => "[[[[main+4E34DD0]+B8]+10]+50]+20",
+            _ => null,
+        };
 
         // relative to: PlayerWork.SaveData_TypeInfo
-        private static string? GetDaycarePointers(LiveHeXVersion lv)
+        private static string? GetDaycarePointers(LiveHeXVersion lv) => lv switch
         {
-            return lv switch
-            {
-                LiveHeXVersion.BD_v130 => "[[[main+4C64DC0]+B8]+10]+450",
-                LiveHeXVersion.SP_v130 => "[[[main+4E7BE98]+B8]+10]+450",
-                LiveHeXVersion.BDSP_v120 => "[[[main+4E36C58]+B8]+10]+450",
-                LiveHeXVersion.BDSP_v113 => "[[[main+4E59E60]+B8]+10]+450",
-                LiveHeXVersion.BDSP_v112 => "[[[main+4E34DD0]+B8]+10]+450",
-                LiveHeXVersion.BD_v111 => "[[[main+4C1DCF8]+B8]+10]+450",
-                LiveHeXVersion.SP_v111 => "[[[main+4E34DD0]+B8]+10]+450",
-                _ => null,
-            };
-        }
+            LiveHeXVersion.BD_v130   => "[[[main+4C64DC0]+B8]+10]+450",
+            LiveHeXVersion.SP_v130   => "[[[main+4E7BE98]+B8]+10]+450",
+            LiveHeXVersion.BDSP_v120 => "[[[main+4E36C58]+B8]+10]+450",
+            LiveHeXVersion.BDSP_v113 => "[[[main+4E59E60]+B8]+10]+450",
+            LiveHeXVersion.BDSP_v112 => "[[[main+4E34DD0]+B8]+10]+450",
+            LiveHeXVersion.BD_v111   => "[[[main+4C1DCF8]+B8]+10]+450",
+            LiveHeXVersion.SP_v111   => "[[[main+4E34DD0]+B8]+10]+450",
+            _ => null,
+        };
 
         public override byte[] ReadBox(PokeSysBotMini psb, int box, int _, List<byte[]> allpkm)
         {
@@ -230,15 +218,15 @@ namespace PKHeX.Core.Injection
 
             var item_blk = psb.com.ReadBytes(addr, ITEM_BLOCK_SIZE_RAM);
             var items = ArrayUtil.EnumerateSplit(item_blk, 0xC).Select(z =>
-                {
-                    var retval = new byte[0x10];
-                    var zSpan = z.AsSpan();
-                    var rSpan = retval.AsSpan();
-                    zSpan[..0x5].CopyTo(rSpan);
-                    zSpan[0x5..0x6].CopyTo(rSpan[0x8..]);
-                    zSpan[0xA..].CopyTo(rSpan[0xC..]);
-                    return retval;
-                }).ToArray();
+            {
+                var retval = new byte[0x10];
+                var zSpan = z.AsSpan();
+                var rSpan = retval.AsSpan();
+                zSpan[..0x5].CopyTo(rSpan);
+                zSpan[0x5..0x6].CopyTo(rSpan[0x8..]);
+                zSpan[0xA..].CopyTo(rSpan[0xC..]);
+                return retval;
+            }).ToArray();
             return ArrayUtil.ConcatAll(items);
         }
 
@@ -255,15 +243,15 @@ namespace PKHeX.Core.Injection
 
             data = data.AsSpan(0, ITEM_BLOCK_SIZE).ToArray();
             var items = ArrayUtil.EnumerateSplit(data, 0x10).Select(z =>
-                {
-                    var retval = new byte[0xC];
-                    var zSpan = z.AsSpan();
-                    var rSpan = retval.AsSpan();
-                    zSpan[..0x5].CopyTo(rSpan);
-                    zSpan[0x8..0x9].CopyTo(rSpan[0x5..]);
-                    zSpan[0xC..0xE].CopyTo(rSpan[0xA..]);
-                    return retval;
-                }).ToArray();
+            {
+                var retval = new byte[0xC];
+                var zSpan = z.AsSpan();
+                var rSpan = retval.AsSpan();
+                zSpan[..0x5].CopyTo(rSpan);
+                zSpan[0x8..0x9].CopyTo(rSpan[0x5..]);
+                zSpan[0xC..0xE].CopyTo(rSpan[0xA..]);
+                return retval;
+            }).ToArray();
             var payload = ArrayUtil.ConcatAll(items);
             psb.com.WriteBytes(payload, addr);
         }
@@ -436,7 +424,7 @@ namespace PKHeX.Core.Injection
                 return;
             }
             var setter = value.Item2;
-            setter.Invoke(psb, data.AsSpan().ToArray());
+            setter.Invoke(psb, [.. data]);
         }
     }
 }

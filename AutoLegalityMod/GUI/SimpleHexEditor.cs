@@ -45,7 +45,7 @@ namespace AutoModPlugins.GUI
             block_key = decrypt_key;
             headersize = header;
             psb = bot;
-            CB_CopyMethod.DataSource = Enum.GetValues<CopyMethod>().Cast<CopyMethod>();
+            CB_CopyMethod.DataSource = Enum.GetValues<CopyMethod>();
             CB_CopyMethod.SelectedItem = CopyMethod.Bytes;
             RTB_RAM.Text = string.Join(" ", originalBytes.Select(z => $"{z:X2}"));
             Bytes = originalBytes;

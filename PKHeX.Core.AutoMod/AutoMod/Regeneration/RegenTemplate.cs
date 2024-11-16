@@ -103,7 +103,7 @@ namespace PKHeX.Core.AutoMod
             return copy;
         }
 
-        private static void SanitizeMoves(IBattleTemplate set, ushort[] moves)
+        private static void SanitizeMoves<T>(T set, ushort[] moves) where T : IBattleTemplate
         {
             // Specified moveset, no need to sanitize
             if (moves[0] != 0)

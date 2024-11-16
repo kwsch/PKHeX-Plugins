@@ -97,25 +97,25 @@ namespace PKHeX.Core.AutoMod
         /// </summary>
         /// <param name="pk">PKM to modify</param>
         /// <param name="set">Set to use as reference</param>
-        /// <param name="Form">Form to apply</param>
+        /// <param name="form">Form to apply</param>
         /// <param name="enc">Encounter detail</param>
         /// <param name="lang">Language to apply</param>
-        public static void SetSpeciesLevel(this PKM pk, IBattleTemplate set, byte Form, IEncounterable enc, LanguageID? lang)
+        public static void SetSpeciesLevel(this PKM pk, IBattleTemplate set, byte form, IEncounterable enc, LanguageID? lang)
         {
             var currentlang = (LanguageID)pk.Language;
             pk.ApplySetGender(set);
             pk.SetRecordFlags(set.Moves); // Set record flags before evolution (TODO: what if middle evolution has exclusive record moves??)
 
             var evolutionRequired = enc.Species != set.Species;
-            var formchange = Form != pk.Form;
+            var formchange = form != pk.Form;
             var UnownFormSet = pk.Species == (ushort)Species.Unown && enc.Generation is 3 or 4;
             if (evolutionRequired)
                 pk.Species = set.Species;
 
             if (formchange && !UnownFormSet)
-                pk.Form = Form;
+                pk.Form = form;
             if (enc.Version is GameVersion.BD or GameVersion.SP && pk.Species == (ushort)Species.Unown)
-                pk.MetLocation = GetBDSPUnownMetLocation(Form);
+                pk.MetLocation = GetBDSPUnownMetLocation(form);
             if ((evolutionRequired || formchange) && pk is IScaledSizeValue sv)
             {
                 sv.HeightAbsolute = sv.CalcHeightAbsolute;

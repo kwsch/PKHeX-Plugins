@@ -510,7 +510,7 @@ namespace PKHeX.Core.AutoMod
             if (enc is MysteryGift { CardID: >= 9000 })
                 return true;
 
-            // Don't process if shiny value doesnt match
+            // Don't process if shiny value doesn't match
             if (set.Shiny && enc.Shiny == Shiny.Never)
                 return false;
 
@@ -518,12 +518,11 @@ namespace PKHeX.Core.AutoMod
                 return false;
 
             // Further shiny filtering if set is regentemplate
-            if (set is RegenTemplate { Regen.HasExtraSettings: true } regent && enc.Generation != 9)
+            if (set is RegenTemplate { Regen: { HasExtraSettings: true } regen} && enc.Generation != 9)
             {
-                var shinytype = regent.Regen.Extra.ShinyType;
+                var shinytype = regen.Extra.ShinyType;
                 if (shinytype == Shiny.AlwaysStar && enc.Shiny == Shiny.AlwaysSquare)
                     return false;
-
                 if (shinytype == Shiny.AlwaysSquare && enc.Shiny == Shiny.AlwaysStar)
                     return false;
             }
@@ -531,28 +530,21 @@ namespace PKHeX.Core.AutoMod
         }
 
         /// <summary>
-        /// Method to check if PIDIV has already set
+        /// Method to check if PID/IV has already set
         /// </summary>
         /// <param name="pk">pkm to check</param>
         /// <param name="enc">enc to check</param>
         /// <returns></returns>
-        public static bool IsPIDIVSet(PKM pk, IEncounterable enc)
+        public static bool IsPIDIVSet(PKM pk, IEncounterable enc) => enc switch
         {
             // If PID and IV is handled in PreSetPIDIV, don't set it here again and return out
-            if (enc is ITeraRaid9 or EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND or EncounterStatic8U)
-                return true;
-
-            if (enc is IOverworldCorrelation8 o && o.GetRequirement(pk) == OverworldCorrelation8Requirement.MustHave)
-                return true;
-
-            if (enc is IStaticCorrelation8b s && s.GetRequirement(pk) == StaticCorrelation8bRequirement.MustHave)
-                return true;
-            // if (enc is EncounterSlot4 && pk.Species == (ushort)Species.Unown)
-               // return true;
-            if (enc is EncounterSlot3 && pk.Species == (ushort)Species.Unown)
-                return true;
-            return enc is EncounterEgg && GameVersion.BDSP.Contains(enc.Version);
-        }
+            ITeraRaid9 or EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND or EncounterStatic8U => true,
+            IOverworldCorrelation8 o when o.GetRequirement(pk) == OverworldCorrelation8Requirement.MustHave => true,
+            IStaticCorrelation8b s when s.GetRequirement(pk) == StaticCorrelation8bRequirement.MustHave => true,
+            EncounterSlot3 when pk.Species == (ushort)Species.Unown => true,
+            EncounterEgg when GameVersion.BDSP.Contains(enc.Version) => true,
+            _ => false,
+        };
 
         /// <summary>
         /// Sanity checking locations before passing them into ApplySetDetails.
@@ -583,12 +575,11 @@ namespace PKHeX.Core.AutoMod
         /// <param name="regen">Regeneration information</param>
         private static void ApplySetDetails(PKM pk, IBattleTemplate set, ITrainerInfo handler, IEncounterable enc, RegenSet regen, EncounterCriteria criteria)
         {
-            byte Form = set.Form;
             var language = regen.Extra.Language;
             var pidiv = MethodFinder.Analyze(pk);
 
             pk.SetPINGA(set, pidiv.Type, set.HiddenPowerType, enc, criteria);
-            pk.SetSpeciesLevel(set, Form, enc, language);
+            pk.SetSpeciesLevel(set, set.Form, enc, language);
             pk.SetDateLocks(enc);
             pk.SetHeldItem(set);
 
@@ -601,7 +592,7 @@ namespace PKHeX.Core.AutoMod
             pk.SetMovesEVs(set, enc);
             pk.SetCorrectMetLevel();
             pk.SetGVs();
-            pk.SetHyperTrainingFlags(set, enc); // Hypertrain
+            pk.SetHyperTrainingFlags(set, enc);
             pk.SetEncryptionConstant(enc);
             pk.SetShinyBoolean(set.Shiny, enc, regen.Extra.ShinyType);
             pk.FixGender(set);
@@ -625,7 +616,8 @@ namespace PKHeX.Core.AutoMod
         /// Validate and Set the gender if needed
         /// </summary>
         /// <param name="pk">PKM to modify</param>
-        private static void ValidateGender(PKM pk)
+        /// <param name="enc"></param>
+        private static void ValidateGender(PKM pk, IEncounterable enc)
         {
             bool genderValid = pk.IsGenderValid();
             if (!genderValid)
@@ -640,15 +632,15 @@ namespace PKHeX.Core.AutoMod
                 else if (pk is { Format: > 5, Species: (ushort)Species.Marill or (ushort)Species.Azumarill })
                 {
                     var gv = pk.PID & 0xFF;
-                    if (gv > 63 && pk.Gender == 1) // evolved from azurill after transferring to keep gender
+                    if (gv > 63 && pk.Gender == 1) // evolved from Azurill after transferring to keep gender
                         genderValid = true;
                 }
             }
             else
             {
                 // check for mixed->fixed gender incompatibility by checking the gender of the original species
-                if (SpeciesCategory.IsFixedGenderFromDual(pk.Species) && pk.Gender != 2) // shedinja
-                    pk.Gender = EntityGender.GetFromPID(new LegalInfo(pk, []).EncounterMatch.Species, pk.EncryptionConstant);
+                if (SpeciesCategory.IsFixedGenderFromDual(pk.Species) && pk.Gender != 2) // Shedinja
+                    pk.Gender = EntityGender.GetFromPID(enc.Species, pk.EncryptionConstant);
                     // genderValid = true; already true if we reach here
             }
             if (genderValid)
@@ -692,11 +684,11 @@ namespace PKHeX.Core.AutoMod
 
             static int GetSimpleMarking(int val, int _) => val == 31 ? 1 : 0;
             static int GetComplexMarking(int val, int _) => val switch
-                {
-                    31 => 1,
-                    30 => 2,
-                    _ => 0,
-                };
+            {
+                31 => 1,
+                30 => 2,
+                _ => 0,
+            };
         }
 
         /// <summary>
@@ -878,8 +870,8 @@ namespace PKHeX.Core.AutoMod
                     pk.SetEncounterTradeIVs();
                     return; // Fixed PID, no need to mutate
                 default:
-                    FindPIDIV(pk, method, hpType, set.Shiny, enc, set,criteria);
-                    ValidateGender(pk);
+                    FindPIDIV(pk, method, hpType, set.Shiny, enc, set, criteria);
+                    ValidateGender(pk, enc);
                     break;
             }
 
