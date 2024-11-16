@@ -2,6 +2,7 @@
 using System.Linq;
 using FluentAssertions;
 using PKHeX.Core;
+using PKHeX.Core.AutoMod;
 using PKHeX.Core.Enhancements;
 using Xunit;
 
@@ -21,7 +22,7 @@ public static class WebSetFetch
         blank.Species = species;
         blank.Form = form;
 
-        var smogon = new SmogonSetList(blank);
+        var smogon = new SmogonSetGenerator(blank);
         smogon.Valid.Should().BeTrue("Sets should exist for this setup");
         var count = smogon.Sets.Count;
         count.Should().BeGreaterThan(0, "At least one set should exist");

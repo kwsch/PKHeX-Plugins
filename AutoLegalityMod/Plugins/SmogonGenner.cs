@@ -2,6 +2,7 @@ using System;
 using System.Windows.Forms;
 using AutoModPlugins.Properties;
 using PKHeX.Core;
+using PKHeX.Core.AutoMod;
 using PKHeX.Core.Enhancements;
 
 namespace AutoModPlugins;
@@ -31,10 +32,10 @@ public class SmogonGenner : AutoModPlugin
 
     private static void GenSmogonSets(PKM rough)
     {
-        SmogonSetList info;
+        SmogonSetGenerator info;
         try
         {
-            info = new SmogonSetList(rough);
+            info = new SmogonSetGenerator(rough);
         }
         catch (Exception ex)
         {

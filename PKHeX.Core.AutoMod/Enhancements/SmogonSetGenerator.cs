@@ -5,6 +5,9 @@ using System.Text;
 
 namespace PKHeX.Core.AutoMod;
 
+/// <summary>
+/// Parser for Smogon webpage <see cref="ShowdownSet"/> data.
+/// </summary>
 public class SmogonSetGenerator
 {
     public readonly bool Valid;
@@ -69,18 +72,15 @@ public class SmogonSetGenerator
         var format = "";
         for (int i = 1; i < split1.Length; i++)
         {
-            var shiny = split1[i - 1].Contains("\"shiny\":true");
-            if (split1[i - 1].Contains("\"format\":\""))
+            var w = split1[i - 1];
+            var shiny = w.Contains("\"shiny\":true");
+            if (w.Contains("\"format\":\""))
             {
-                format = split1[i - 1][
-                    (
-                        split1[i - 1].IndexOf("\"format\":\"", StringComparison.Ordinal)
-                        + "\"format\":\"".Length
-                    )..
-                ].Split('\"')[0];
+                var len = w.IndexOf("\"format\":\"", StringComparison.Ordinal) + "\"format\":\"".Length;
+                format = w[len..].Split('\"')[0];
             }
 
-            if (IllegalFormats.Any(s => s.Equals(format, StringComparison.OrdinalIgnoreCase)))
+            if (IllegalFormats.Any(xs => xs.Equals(format, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
             if (LetsGo != format.StartsWith("LGPE", StringComparison.OrdinalIgnoreCase))
@@ -90,32 +90,17 @@ public class SmogonSetGenerator
                 continue;
 
             var level = format.StartsWith("LC") ? 5 : 100;
-            if (!split1[i - 1].Contains("\"name\":"))
+            if (!w.Contains("\"name\":"))
                 continue;
 
-            var name = split1[i - 1][
-                (
-                    split1[i - 1].LastIndexOf("\"name\":\"", StringComparison.Ordinal)
-                    + "\"name\":\"".Length
-                )..
-            ].Split('\"')[0];
-            var setSpecies = split1[i - 1][
-                (
-                    split1[i - 1].LastIndexOf("\"pokemon\":\"", StringComparison.Ordinal)
-                    + "\"pokemon\":\"".Length
-                )..
-            ].Split('\"')[0];
+            var name = w[(w.LastIndexOf("\"name\":\"", StringComparison.Ordinal) + "\"name\":\"".Length)..].Split('\"')[0];
+            var setSpecies = w[(w.LastIndexOf("\"pokemon\":\"", StringComparison.Ordinal) + "\"pokemon\":\"".Length)..].Split('\"')[0];
             SetFormat.Add(format);
             SetName.Add(name);
 
-            if (!split1[i - 1].Contains("\"level\":0,") && split1[i - 1].Contains("\"level\":"))
+            if (!w.Contains("\"level\":0,") && w.Contains("\"level\":"))
             {
-                _ = int.TryParse(
-                    split1[i - 1].Split("\"level\":")[
-                        1
-                    ].Split(',')[0],
-                    out level
-                );
+                _ = int.TryParse(w.Split("\"level\":")[1].Split(',')[0], out level);
             }
 
             var split2 = split1[i].Split("\"]}");
@@ -161,7 +146,7 @@ public class SmogonSetGenerator
         TryGetToken(set, "\"natures\":[\"", "\"", out var nature);
         TryGetToken(set, "\"teratypes\":[\"", "\"", out var teratype);
 
-        if (teratype?.StartsWith(']') == true)
+        if (teratype.StartsWith(']'))
             teratype = null;
 
         var evs = ParseEVIVs(evstr, false);
@@ -250,15 +235,17 @@ public class SmogonSetGenerator
                 break;
         }
 
-        static string GetMove(string s) => s.Split('"')[0];
         return moves;
+
+        static string GetMove(string s) => s.Split('"')[0];
     }
 
-    private static string[] ParseEVIVs(string liststring, bool iv)
+    private static readonly string[] ivdefault = ["31", "31", "31", "31", "31", "31"];
+    private static readonly string[] evdefault = ["0", "0", "0", "0", "0", "0"];
+
+    private static string[] ParseEVIVs(string liststring, bool isParseIV)
     {
-        string[] ivdefault = ["31", "31", "31", "31", "31", "31"];
-        string[] evdefault = ["0", "0", "0", "0", "0", "0"];
-        var val = iv ? ivdefault : evdefault;
+        var val = isParseIV ? ivdefault : evdefault;
         if (string.IsNullOrWhiteSpace(liststring))
             return val;
 
@@ -300,7 +287,7 @@ public class SmogonSetGenerator
         _ => form,
     };
 
-    private static string ConvertFormToShowdown(string form, int spec)
+    private static string ConvertFormToShowdown(string form, ushort spec)
     {
         if (form.Length == 0)
         {
@@ -342,36 +329,17 @@ public class SmogonSetGenerator
                 return form == "Antique" ? form : string.Empty;
 
             default:
-                if (Totem_USUM.Contains(spec) && form == "Large")
-                {
-                    return Totem_Alolan.Contains(spec) && spec != (int)Core.Species.Mimikyu ? "Alola-Totem" : "Totem";
-                }
+                if (FormInfo.HasTotemForm(spec) && form == "Large")
+                    return IsTotemAlolan(spec) && spec != (int)Core.Species.Mimikyu ? "Alola-Totem" : "Totem";
 
                 return form.Replace(' ', '-');
         }
     }
 
-    internal static readonly HashSet<int> Totem_Alolan =
-    [
-        020, // Raticate (Normal, Alolan, Totem)
-        105, // Marowak (Normal, Alolan, Totem)
-        778, // Mimikyu (Normal, Busted, Totem, Totem_Busted)
-    ];
-
-    internal static readonly HashSet<int> Totem_USUM =
-    [
-        020, // Raticate
-        735, // Gumshoos
-        758, // Salazzle
-        754, // Lurantis
-        738, // Vikavolt
-        778, // Mimikyu
-        784, // Kommo-o
-        105, // Marowak
-        752, // Araquanid
-        777, // Togedemaru
-        743, // Ribombee
-    ];
+    // Raticate (Normal, Alolan, Totem)
+    // Marowak (Normal, Alolan, Totem)
+    // Mimikyu (Normal, Busted, Totem, Totem_Busted)
+    private static bool IsTotemAlolan(ushort species) => species is 20 or 105 or 778; // 0, Alolan, Totem
 
     private static string GetURL(string speciesName, string form, string baseURL)
     {
@@ -423,7 +391,7 @@ public class SmogonSetGenerator
 
     public static bool IsInvalidForm(string form) => form.Contains("Mega") || InvalidFormes.Contains(form);
 
-    private static string[] InvalidFormes =>
+    private static readonly string[] InvalidFormes =
     [
         "Primal",
         "Busted",

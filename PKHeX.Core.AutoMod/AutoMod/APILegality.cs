@@ -385,7 +385,7 @@ public static class APILegality
     /// <param name="gamelist">Array of GameVersion which needs to be prioritized</param>
     /// <param name="game">GameVersion to prioritize</param>
     /// <returns>A prioritized GameVersion list</returns>
-    private static GameVersion[] PrioritizeVersion(GameVersion[] gamelist, GameVersion game)
+    private static GameVersion[] PrioritizeVersion(ReadOnlySpan<GameVersion> gamelist, GameVersion game)
     {
         var matched = 0;
         var retval = new List<GameVersion>();
@@ -424,7 +424,7 @@ public static class APILegality
         if (!IsRequestedBallValid(set, enc))
             return false;
 
-        // Don't process if encounter and set shinies dont match
+        // Don't process if encounter and set shinies don't match
         if (!IsRequestedShinyValid(set, enc))
             return false;
 
@@ -1857,6 +1857,6 @@ public static class APILegality
         };
 
         var res = group.GetVersionsWithinRange(versionlist.ToArray());
-        return res.Length > 0 ? res : ([version]);
+        return res.Length > 0 ? res : [version];
     }
 }
