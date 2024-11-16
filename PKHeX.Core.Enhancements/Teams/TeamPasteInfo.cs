@@ -28,17 +28,17 @@ namespace PKHeX.Core.Enhancements
         private void GetFromPokePaste(string url)
         {
             var htmldoc = NetUtil.GetPageText(url);
-            var pastedata = htmldoc.Split(new[] { "<aside>" }, StringSplitOptions.None)[1].Split(new[] { "</aside>" }, StringSplitOptions.None)[0];
+            var pastedata = htmldoc.Split("<aside>")[1].Split("</aside>")[0];
 
-            var title = pastedata.Split(new[] { "<h1>" }, StringSplitOptions.None);
+            var title = pastedata.Split("<h1>");
             if (title.Length > 1)
                 Title = GetVal(title[1]);
 
-            var auth = pastedata.Split(new[] { "<h2>&nbsp;by" }, StringSplitOptions.None);
+            var auth = pastedata.Split("<h2>&nbsp;by");
             if (auth.Length > 1)
                 Author = GetVal(auth[1]);
 
-            var desc = pastedata.Split(new[] { "<p>" }, StringSplitOptions.None);
+            var desc = pastedata.Split("<p>");
             if (desc.Length > 1)
                 Description = GetVal(desc[1]);
         }
@@ -47,10 +47,10 @@ namespace PKHeX.Core.Enhancements
         {
             var page = NetUtil.GetPageText(url);
 
-            var title = page.Split(new[] { "<h1>" }, StringSplitOptions.None)[1];
+            var title = page.Split("<h1>")[1];
             Title = GetVal(title);
 
-            var auth = page.Split(new[] { "<div class=\"username\">" }, StringSplitOptions.None)[1].Split('>');
+            var auth = page.Split("<div class=\"username\">")[1].Split('>');
             Author = GetVal(auth[0]);
 
             var datestr = auth[3];

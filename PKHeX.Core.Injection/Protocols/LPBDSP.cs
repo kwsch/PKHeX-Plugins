@@ -392,7 +392,7 @@ namespace PKHeX.Core.Injection
                     if (m is null)
                         return false;
 
-                    var funcout = (byte[]?)m.Invoke(null, new object[] { psb });
+                    var funcout = (byte[]?)m.Invoke(null, [psb]);
                     if (funcout is not null)
                         read = [funcout];
 

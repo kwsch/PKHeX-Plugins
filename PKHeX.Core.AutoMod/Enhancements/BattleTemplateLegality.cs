@@ -167,7 +167,8 @@ namespace PKHeX.Core.AutoMod
                 return list.Select(t => new[] { t });
 
             var temp = list.ToArray();
-            return GetKCombs(temp, length - 1).SelectMany(collectionSelector: t => temp.Where(o => o.CompareTo(t.Last()) > 0), resultSelector: (t1, t2) => t1.Concat(new[] { t2 }));
+            return GetKCombs(temp, length - 1).SelectMany(collectionSelector: t => temp.Where(o => o.CompareTo(t.Last()) > 0), resultSelector: (t1, t2) => t1.Concat(
+                [t2]));
         }
     }
 }

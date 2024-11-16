@@ -122,7 +122,7 @@ namespace PKHeX.Core.AutoMod
             bool hasRegen = !string.IsNullOrWhiteSpace(regen);
 
             // Add Showdown content except moves
-            var split = text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+            var split = text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
             var group = split.Where(z => !IsIgnored(z, Regen)).GroupBy(z => z.StartsWith("- ")).ToArray();
             if (group.Length == 0)
                 return sb.ToString();

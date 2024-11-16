@@ -21,7 +21,7 @@ namespace PKHeX.Core.Injection
                 finadd = Util.GetHexValue(ptr.Split('+').Last());
                 ptr = ptr[..ptr.LastIndexOf('+')];
             }
-            var jumps = ptr.Replace("main", "").Replace("[", "").Replace("]", "").Split(new[] { "+" }, StringSplitOptions.RemoveEmptyEntries);
+            var jumps = ptr.Replace("main", "").Replace("[", "").Replace("]", "").Split("+", StringSplitOptions.RemoveEmptyEntries);
             if (jumps.Length == 0)
                 return INVALID_PTR;
 

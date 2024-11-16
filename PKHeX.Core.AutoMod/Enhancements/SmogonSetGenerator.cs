@@ -65,7 +65,7 @@ namespace PKHeX.Core.AutoMod
 
         private void LoadSetsFromPage()
         {
-            var split1 = Page.Split(new[] { "\",\"abilities\":" }, StringSplitOptions.None);
+            var split1 = Page.Split("\",\"abilities\":");
             var format = "";
             for (int i = 1; i < split1.Length; i++)
             {
@@ -111,14 +111,14 @@ namespace PKHeX.Core.AutoMod
                 if (!split1[i - 1].Contains("\"level\":0,") && split1[i - 1].Contains("\"level\":"))
                 {
                     _ = int.TryParse(
-                        split1[i - 1].Split(new[] { "\"level\":" }, StringSplitOptions.None)[
+                        split1[i - 1].Split("\"level\":")[
                             1
                         ].Split(',')[0],
                         out level
                     );
                 }
 
-                var split2 = split1[i].Split(new[] { "\"]}" }, StringSplitOptions.None);
+                var split2 = split1[i].Split("\"]}");
                 var tmp = split2[0];
                 SetConfig.Add(tmp);
 
@@ -130,25 +130,19 @@ namespace PKHeX.Core.AutoMod
             }
         }
 
-        private static string GetBaseURL(string type)
+        private static string GetBaseURL(string type) => type switch
         {
-            return type switch
-            {
-                nameof(PK1) => "https://www.smogon.com/dex/rb/pokemon",
-                nameof(PK2) or nameof(SK2) => "https://www.smogon.com/dex/gs/pokemon",
-                nameof(PK3)
-                or nameof(CK3)
-                or nameof(XK3)
-                    => "https://www.smogon.com/dex/rs/pokemon",
-                nameof(PK4) or nameof(BK4) => "https://www.smogon.com/dex/dp/pokemon",
-                nameof(PK5) => "https://www.smogon.com/dex/bw/pokemon",
-                nameof(PK6) => "https://www.smogon.com/dex/xy/pokemon",
-                nameof(PK7) or nameof(PB7) => "https://www.smogon.com/dex/sm/pokemon",
-                nameof(PK8) or nameof(PB8) => "https://www.smogon.com/dex/ss/pokemon",
-                nameof(PK9) => "https://www.smogon.com/dex/sv/pokemon",
-                _ => string.Empty,
-            };
-        }
+            nameof(PK1)                               => "https://www.smogon.com/dex/rb/pokemon",
+            nameof(PK2) or nameof(SK2)                => "https://www.smogon.com/dex/gs/pokemon",
+            nameof(PK3) or nameof(CK3) or nameof(XK3) => "https://www.smogon.com/dex/rs/pokemon",
+            nameof(PK4) or nameof(BK4) or nameof(RK4) => "https://www.smogon.com/dex/dp/pokemon",
+            nameof(PK5)                               => "https://www.smogon.com/dex/bw/pokemon",
+            nameof(PK6)                               => "https://www.smogon.com/dex/xy/pokemon",
+            nameof(PK7) or nameof(PB7)                => "https://www.smogon.com/dex/sm/pokemon",
+            nameof(PK8) or nameof(PB8)                => "https://www.smogon.com/dex/ss/pokemon",
+            nameof(PK9)                               => "https://www.smogon.com/dex/sv/pokemon",
+            _ => string.Empty,
+        };
 
         private static string ConvertSetToShowdown(string set, string species, bool shiny, int level)
         {
@@ -235,10 +229,10 @@ namespace PKHeX.Core.AutoMod
         private static List<string> GetMoves(string movesets)
         {
             var moves = new List<string>();
-            var slots = movesets.Split(new[] { "],[" }, StringSplitOptions.None);
+            var slots = movesets.Split("],[");
             foreach (var slot in slots)
             {
-                var choices = slot.Split(new[] { "\"move\":\"" }, StringSplitOptions.None).Skip(1).ToArray();
+                var choices = slot.Split("\"move\":\"")[1..];
                 foreach (var choice in choices)
                 {
                     var move = GetMove(choice);
@@ -246,7 +240,7 @@ namespace PKHeX.Core.AutoMod
                         continue;
 
                     if (move.Equals("Hidden Power", StringComparison.OrdinalIgnoreCase))
-                        move = $"{move} [{choice.Split(new[] { "\"type\":\"" }, StringSplitOptions.None)[1].Split('\"')[0]}]";
+                        move = $"{move} [{choice.Split("\"type\":\"")[1].Split('\"')[0]}]";
 
                     moves.Add(move);
                     break;
@@ -268,7 +262,7 @@ namespace PKHeX.Core.AutoMod
             if (string.IsNullOrWhiteSpace(liststring))
                 return val;
 
-            string getStat(string v) => liststring.Split(new[] { v }, StringSplitOptions.None)[1].Split(',')[0];
+            string getStat(string v) => liststring.Split(v)[1].Split(',')[0];
             val[0] = getStat("\"hp\":");
             val[1] = getStat("\"atk\":");
             val[2] = getStat("\"def\":");
@@ -280,37 +274,31 @@ namespace PKHeX.Core.AutoMod
         }
 
         // Smogon Quirks
-        private static string ConvertSpeciesToURLSpecies(string spec)
+        private static string ConvertSpeciesToURLSpecies(string spec) => spec switch
         {
-            return spec switch
-            {
-                "Nidoran♂" => "nidoran-m",
-                "Nidoran♀" => "nidoran-f",
-                "Farfetch’d" => "farfetchd",
-                "Flabébé" => "flabebe",
-                "Sirfetch’d" => "sirfetchd",
-                _ => spec,
-            };
-        }
+            "Nidoran♂" => "nidoran-m",
+            "Nidoran♀" => "nidoran-f",
+            "Farfetch’d" => "farfetchd",
+            "Flabébé" => "flabebe",
+            "Sirfetch’d" => "sirfetchd",
+            _ => spec,
+        };
 
         // Smogon Quirks
-        private static string ConvertFormToURLForm(string form, string spec)
+        private static string ConvertFormToURLForm(string form, string spec) => spec switch
         {
-            return spec switch
-            {
-                "Necrozma" when form == "Dusk" => "dusk_mane",
-                "Necrozma" when form == "Dawn" => "dawn_wings",
-                "Oricorio" when form == "Pa’u" => "pau",
-                "Darmanitan" when form == "Galarian Standard" => "galar",
-                "Meowstic" when form.Length == 0 => "m",
-                "Gastrodon" => "",
-                "Vivillon" => "",
-                "Sawsbuck" => "",
-                "Deerling" => "",
-                "Furfrou" => "",
-                _ => form,
-            };
-        }
+            "Necrozma" when form == "Dusk" => "dusk_mane",
+            "Necrozma" when form == "Dawn" => "dawn_wings",
+            "Oricorio" when form == "Pa’u" => "pau",
+            "Darmanitan" when form == "Galarian Standard" => "galar",
+            "Meowstic" when form.Length == 0 => "m",
+            "Gastrodon" => "",
+            "Vivillon" => "",
+            "Sawsbuck" => "",
+            "Deerling" => "",
+            "Furfrou" => "",
+            _ => form,
+        };
 
         private static string ConvertFormToShowdown(string form, int spec)
         {
@@ -364,26 +352,26 @@ namespace PKHeX.Core.AutoMod
         }
 
         internal static readonly HashSet<int> Totem_Alolan =
-            [
-                020, // Raticate (Normal, Alolan, Totem)
-                105, // Marowak (Normal, Alolan, Totem)
-                778, // Mimikyu (Normal, Busted, Totem, Totem_Busted)
-            ];
+        [
+            020, // Raticate (Normal, Alolan, Totem)
+            105, // Marowak (Normal, Alolan, Totem)
+            778, // Mimikyu (Normal, Busted, Totem, Totem_Busted)
+        ];
 
         internal static readonly HashSet<int> Totem_USUM =
-            [
-                020, // Raticate
-                735, // Gumshoos
-                758, // Salazzle
-                754, // Lurantis
-                738, // Vikavolt
-                778, // Mimikyu
-                784, // Kommo-o
-                105, // Marowak
-                752, // Araquanid
-                777, // Togedemaru
-                743, // Ribombee
-            ];
+        [
+            020, // Raticate
+            735, // Gumshoos
+            758, // Salazzle
+            754, // Lurantis
+            738, // Vikavolt
+            778, // Mimikyu
+            784, // Kommo-o
+            105, // Marowak
+            752, // Araquanid
+            777, // Togedemaru
+            743, // Ribombee
+        ];
 
         private static string GetURL(string speciesName, string form, string baseURL)
         {
@@ -409,13 +397,9 @@ namespace PKHeX.Core.AutoMod
                 var format = SetFormat[i];
                 var name = SetName[i];
                 if (titles.TryGetValue(format, out var list))
-                {
                     list.Add(name);
-                }
                 else
-                {
                     titles.Add(format, [name]);
-                }
             }
 
             return titles;
@@ -436,20 +420,21 @@ namespace PKHeX.Core.AutoMod
             sb.Append(count).Append(" sets generated for ").Append(showdownSpec);
             return sb.ToString();
         }
+
         public static bool IsInvalidForm(string form) => form.Contains("Mega") || InvalidFormes.Contains(form);
+
         private static string[] InvalidFormes =>
-           new[]
-           {
-                "Primal",
-                "Busted",
-                "Crowned",
-                "Noice",
-                "Gulping",
-                "Gorging",
-                "Zen",
-                "Galar-Zen",
-                "Hangry",
-                "Complete",
-           };
+        [
+            "Primal",
+            "Busted",
+            "Crowned",
+            "Noice",
+            "Gulping",
+            "Gorging",
+            "Zen",
+            "Galar-Zen",
+            "Hangry",
+            "Complete",
+        ];
     }
 }

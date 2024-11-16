@@ -883,7 +883,7 @@ namespace AutoModPlugins
                 {
                     LPBasic => LPBasic.SCBlocks[version].Where(z => z.Display == display).ToArray(),
                     LPPointer => LPPointer.SCBlocks[version].Where(z => z.Display == display).ToArray(),
-                    _ => Array.Empty<BlockData>(),
+                    _ => [],
                 };
 
                 if (subblocks.Length == 0)

@@ -36,7 +36,7 @@ namespace AutoModPlugins
 
         private static void Export()
         {
-            if (!WinFormsUtil.OpenSAVPKMDialog(new[] { ".bnk" }, out var path))
+            if (!WinFormsUtil.OpenSAVPKMDialog([".bnk"], out var path))
                 return;
 
             var bank = File.ReadAllBytes(path!);

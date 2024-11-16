@@ -63,7 +63,7 @@ namespace AutoModPlugins
         /// <returns>Result of whether or not a file is to be loaded from the output path.</returns>
         public static bool OpenSAVPKMDialog(IEnumerable<string> Extensions, out string? path)
         {
-            string supported = string.Join(";", Extensions.Select(s => $"*.{s}").Concat(new[] { "*.pkm" }));
+            string supported = string.Join(";", Extensions.Select(s => $"*.{s}").Concat(["*.pkm"]));
             using var ofd = new OpenFileDialog
             {
                 Filter =

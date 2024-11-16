@@ -28,64 +28,52 @@ namespace PKHeX.Core.Injection
         private static readonly Dictionary<string, LiveHeXVersion[]> SupportedTitleVersions =
             new()
             {
-                { LetsGoPikachu_ID, new[] { LiveHeXVersion.LGPE_v102 } },
-                { LetsGoEevee_ID, new[] { LiveHeXVersion.LGPE_v102 } },
+                { LetsGoPikachu_ID, [LiveHeXVersion.LGPE_v102] },
+                { LetsGoEevee_ID, [LiveHeXVersion.LGPE_v102] },
                 {
-                    Sword_ID,
-                    new[]
-                    {
+                    Sword_ID, [
                         LiveHeXVersion.SWSH_v111,
                         LiveHeXVersion.SWSH_v121,
                         LiveHeXVersion.SWSH_v132,
-                    }
+                    ]
                 },
                 {
-                    Shield_ID,
-                    new[]
-                    {
+                    Shield_ID, [
                         LiveHeXVersion.SWSH_v111,
                         LiveHeXVersion.SWSH_v121,
                         LiveHeXVersion.SWSH_v132,
-                    }
+                    ]
                 },
                 {
-                    ShiningPearl_ID,
-                    new[]
-                    {
+                    ShiningPearl_ID, [
                         LiveHeXVersion.SP_v100,
                         LiveHeXVersion.SP_v110,
                         LiveHeXVersion.BDSP_v112,
                         LiveHeXVersion.BDSP_v113,
                         LiveHeXVersion.BDSP_v120,
                         LiveHeXVersion.SP_v130,
-                    }
+                    ]
                 },
                 {
-                    BrilliantDiamond_ID,
-                    new[]
-                    {
+                    BrilliantDiamond_ID, [
                         LiveHeXVersion.BD_v100,
                         LiveHeXVersion.BD_v110,
                         LiveHeXVersion.BDSP_v112,
                         LiveHeXVersion.BDSP_v113,
                         LiveHeXVersion.BDSP_v120,
                         LiveHeXVersion.BD_v130,
-                    }
+                    ]
                 },
                 {
-                    LegendsArceus_ID,
-                    new[]
-                    {
+                    LegendsArceus_ID, [
                         LiveHeXVersion.LA_v100,
                         LiveHeXVersion.LA_v101,
                         LiveHeXVersion.LA_v102,
                         LiveHeXVersion.LA_v111,
-                    }
+                    ]
                 },
                 {
-                    Scarlet_ID,
-                    new[]
-                    {
+                    Scarlet_ID, [
                         LiveHeXVersion.SV_v101,
                         LiveHeXVersion.SV_v110,
                         LiveHeXVersion.SV_v120,
@@ -96,12 +84,10 @@ namespace PKHeX.Core.Injection
                         LiveHeXVersion.SV_v202,
                         LiveHeXVersion.SV_v300,
                         LiveHeXVersion.SV_v301,
-                    }
+                    ]
                 },
                 {
-                    Violet_ID,
-                    new[]
-                    {
+                    Violet_ID, [
                         LiveHeXVersion.SV_v101,
                         LiveHeXVersion.SV_v110,
                         LiveHeXVersion.SV_v120,
@@ -112,7 +98,7 @@ namespace PKHeX.Core.Injection
                         LiveHeXVersion.SV_v202,
                         LiveHeXVersion.SV_v300,
                         LiveHeXVersion.SV_v301,
-                    }
+                    ]
                 },
             };
 

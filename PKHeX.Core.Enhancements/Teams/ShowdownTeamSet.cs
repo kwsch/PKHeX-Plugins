@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace PKHeX.Core.Enhancements
@@ -19,7 +18,7 @@ namespace PKHeX.Core.Enhancements
 
         public static List<ShowdownTeamSet> GetTeams(string paste)
         {
-            string[] lines = paste.Split(new[] { "\n" }, StringSplitOptions.None);
+            string[] lines = paste.Split('\n');
             var result = new List<ShowdownTeamSet>();
             for (int i = 0; i < lines.Length; i++)
             {
@@ -30,7 +29,7 @@ namespace PKHeX.Core.Enhancements
                 if (!IsLineShowdownTeam(line))
                     continue;
 
-                var split = line.Split(new[] { "===" }, 0);
+                var split = line.Split("===", 0);
                 if (split.Length != 3)
                     continue;
 

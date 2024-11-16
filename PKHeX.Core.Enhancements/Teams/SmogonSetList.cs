@@ -68,7 +68,7 @@ namespace PKHeX.Core.Enhancements
 
         private void LoadSetsFromPage()
         {
-            var split1 = Page.Split(new[] { "\",\"abilities\":" }, StringSplitOptions.None);
+            var split1 = Page.Split("\",\"abilities\":");
             var format = "";
             for (int i = 1; i < split1.Length; i++)
             {
@@ -114,14 +114,14 @@ namespace PKHeX.Core.Enhancements
                 if (!split1[i - 1].Contains("\"level\":0,") && split1[i - 1].Contains("\"level\":"))
                 {
                     _ = int.TryParse(
-                        split1[i - 1].Split(new[] { "\"level\":" }, StringSplitOptions.None)[
+                        split1[i - 1].Split("\"level\":")[
                             1
                         ].Split(',')[0],
                         out level
                     );
                 }
 
-                var split2 = split1[i].Split(new[] { "\"]}" }, StringSplitOptions.None);
+                var split2 = split1[i].Split("\"]}");
                 var tmp = split2[0];
                 SetConfig.Add(tmp);
 
@@ -238,10 +238,10 @@ namespace PKHeX.Core.Enhancements
         private static List<string> GetMoves(string movesets)
         {
             var moves = new List<string>();
-            var slots = movesets.Split(new[] { "],[" }, StringSplitOptions.None);
+            var slots = movesets.Split("],[");
             foreach (var slot in slots)
             {
-                var choices = slot.Split(new[] { "\"move\":\"" }, StringSplitOptions.None).Skip(1).ToArray();
+                var choices = slot.Split("\"move\":\"")[1..];
                 foreach (var choice in choices)
                 {
                     var move = GetMove(choice);
@@ -249,7 +249,7 @@ namespace PKHeX.Core.Enhancements
                         continue;
 
                     if (move.Equals("Hidden Power", StringComparison.OrdinalIgnoreCase))
-                        move = $"{move} [{choice.Split(new[] { "\"type\":\"" }, StringSplitOptions.None)[1].Split('\"')[0]}]";
+                        move = $"{move} [{choice.Split("\"type\":\"")[1].Split('\"')[0]}]";
 
                     moves.Add(move);
                     break;
@@ -271,7 +271,7 @@ namespace PKHeX.Core.Enhancements
             if (string.IsNullOrWhiteSpace(liststring))
                 return val;
 
-            string getStat(string v) => liststring.Split(new[] { v }, StringSplitOptions.None)[1].Split(',')[0];
+            string getStat(string v) => liststring.Split(v)[1].Split(',')[0];
             val[0] = getStat("\"hp\":");
             val[1] = getStat("\"atk\":");
             val[2] = getStat("\"def\":");
@@ -283,37 +283,31 @@ namespace PKHeX.Core.Enhancements
         }
 
         // Smogon Quirks
-        private static string ConvertSpeciesToURLSpecies(string spec)
+        private static string ConvertSpeciesToURLSpecies(string spec) => spec switch
         {
-            return spec switch
-            {
-                "Nidoran♂" => "nidoran-m",
-                "Nidoran♀" => "nidoran-f",
-                "Farfetch’d" => "farfetchd",
-                "Flabébé" => "flabebe",
-                "Sirfetch’d" => "sirfetchd",
-                _ => spec,
-            };
-        }
+            "Nidoran♂" => "nidoran-m",
+            "Nidoran♀" => "nidoran-f",
+            "Farfetch’d" => "farfetchd",
+            "Flabébé" => "flabebe",
+            "Sirfetch’d" => "sirfetchd",
+            _ => spec,
+        };
 
         // Smogon Quirks
-        private static string ConvertFormToURLForm(string form, string spec)
+        private static string ConvertFormToURLForm(string form, string spec) => spec switch
         {
-            return spec switch
-            {
-                "Necrozma" when form == "Dusk" => "dusk_mane",
-                "Necrozma" when form == "Dawn" => "dawn_wings",
-                "Oricorio" when form == "Pa’u" => "pau",
-                "Darmanitan" when form == "Galarian Standard" => "galar",
-                "Meowstic" when form.Length == 0 => "m",
-                "Gastrodon" => "",
-                "Vivillon" => "",
-                "Sawsbuck" => "",
-                "Deerling" => "",
-                "Furfrou" => "",
-                _ => form,
-            };
-        }
+            "Necrozma" when form == "Dusk" => "dusk_mane",
+            "Necrozma" when form == "Dawn" => "dawn_wings",
+            "Oricorio" when form == "Pa’u" => "pau",
+            "Darmanitan" when form == "Galarian Standard" => "galar",
+            "Meowstic" when form.Length == 0 => "m",
+            "Gastrodon" => "",
+            "Vivillon" => "",
+            "Sawsbuck" => "",
+            "Deerling" => "",
+            "Furfrou" => "",
+            _ => form,
+        };
 
         private static string ConvertFormToShowdown(string form, int spec)
         {

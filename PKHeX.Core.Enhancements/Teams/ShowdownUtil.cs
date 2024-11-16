@@ -18,19 +18,18 @@ namespace PKHeX.Core.Enhancements
 
         // TODO: Update form list with possibly invalid Calyrex forms (non battle)??
         private static string[] InvalidFormes =>
-            new[]
-            {
-                "Primal",
-                "Busted",
-                "Crowned",
-                "Noice",
-                "Gulping",
-                "Gorging",
-                "Zen",
-                "Galar-Zen",
-                "Hangry",
-                "Complete",
-            };
+        [
+            "Primal",
+            "Busted",
+            "Crowned",
+            "Noice",
+            "Gulping",
+            "Gorging",
+            "Zen",
+            "Galar-Zen",
+            "Hangry",
+            "Complete",
+        ];
 
         private static readonly string[] separator = ["\n"];
 

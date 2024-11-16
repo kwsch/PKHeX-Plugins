@@ -81,7 +81,7 @@ namespace AutoModPlugins
                 if (ShowdownUtil.IsTextShowdownData(txt))
                     return txt;
             }
-            if (!WinFormsUtil.OpenSAVPKMDialog(new[] { "txt" }, out var path))
+            if (!WinFormsUtil.OpenSAVPKMDialog(["txt"], out var path))
             {
                 WinFormsUtil.Alert("No data provided.");
                 return null;
