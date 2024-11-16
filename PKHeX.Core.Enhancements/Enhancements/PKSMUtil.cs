@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace PKHeX.Core.Enhancements;
 
@@ -14,16 +15,15 @@ public static class PKSMUtil
     public static int CreateBank(string dir)
     {
         var files = Directory.GetFiles(dir, "*.p??", SearchOption.TopDirectoryOnly);
-        var ver = Enum.GetValues<PKSMBankVersion>().Cast<int>().Max();
-        var version = BitConverter.GetBytes(ver + 1); // Latest bank version
-        var pksmsize = GetBankSize((PKSMBankVersion)ver);
+        var version = Enum.GetValues<PKSMBankVersion>().Max(); // Latest bank version
+        var pksmsize = GetBankSize(version);
         var boxcount = (files.Length / 30) + 1;
         var bank = new byte[8 + 4 + 4 + (boxcount * pksmsize * 30)].AsSpan();
         var ctr = 0;
         var magic = "PKSMBANK"u8; // PKSMBANK
         magic.CopyTo(bank);
-        version.CopyTo(bank[8..]);
-        BitConverter.GetBytes(boxcount).CopyTo(bank[12..]); // Number of bank boxes.
+        WriteInt32LittleEndian(bank[8..], (int)version);
+        WriteInt32LittleEndian(bank[12..], boxcount);
         foreach (var f in files)
         {
             var prefer = EntityFileExtension.GetContextFromExtension(f, EntityContext.None);
@@ -168,9 +168,9 @@ public static class PKSMUtil
 
     private enum PKSMBankVersion
     {
-        VERSION1,
-        VERSION2,
-        VERSION3,
+        VERSION1 = 1,
+        VERSION2 = 2,
+        VERSION3 = 3,
     }
 
     private enum PKSMStorageFormat

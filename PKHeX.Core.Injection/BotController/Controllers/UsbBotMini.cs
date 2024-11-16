@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
+using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace PKHeX.Core.Injection;
 
@@ -152,14 +153,14 @@ public class UsbBotMini : ICommunicatorNX, IPokeBlocks
         SendInternal(cmd);
         var buffer = new byte[(8 * 2) + 1];
         _ = ReadInternal(buffer);
-        return BitConverter.ToUInt64(buffer, 0);
+        return ReadUInt64LittleEndian(buffer);
     }
 
     public string GetTitleID()
     {
         SendInternal(SwitchCommand.GetTitleID(false));
         byte[] baseBytes = ReadBulkUSB();
-        return BitConverter.ToUInt64(baseBytes, 0).ToString("X16").Trim();
+        return ReadUInt64LittleEndian(baseBytes).ToString("X16").Trim();
     }
 
     public string GetBotbaseVersion()
@@ -204,7 +205,9 @@ public class UsbBotMini : ICommunicatorNX, IPokeBlocks
             throw new Exception("USB writer is null, you may have disconnected the device during previous function");
 
         uint pack = (uint)buffer.Length + 2;
-        var ec = writer.Write(BitConverter.GetBytes(pack), 2000, out _);
+        byte[] msg = new byte[4];
+        WriteUInt32LittleEndian(msg, pack);
+        var ec = writer.Write(msg, 2000, out _);
         if (ec != ErrorCode.None)
         {
             Disconnect();
@@ -266,7 +269,7 @@ public class UsbBotMini : ICommunicatorNX, IPokeBlocks
         byte[] sizeOfReturn = new byte[4];
         reader.Read(sizeOfReturn, 5000, out _);
 
-        int size = BitConverter.ToInt32(sizeOfReturn, 0);
+        int size = ReadInt32LittleEndian(sizeOfReturn);
         byte[] buffer = new byte[size];
 
         // Loop until we have read everything.

@@ -43,17 +43,17 @@ public abstract class InjectionBase(LiveHeXVersion lv, bool useCache) : PointerC
 
     protected static InjectionBase GetInjector(LiveHeXVersion version, bool useCache)
     {
-        if (LPLGPE.GetVersions().Contains(version))
+        if (LPLGPE.SupportedVersions.Contains(version))
             return new LPLGPE(version, useCache);
 
-        if (LPBDSP.GetVersions().Contains(version))
+        if (LPBDSP.SupportedVersions.Contains(version))
             return new LPBDSP(version, useCache);
 
         if (LPPointer.SupportedVersions.Contains(version))
             return new LPPointer(version, useCache);
 
         if (!LPBasic.SupportedVersions.Contains(version))
-            throw new NotImplementedException("Unknown LiveHeXVersion.");
+            throw new ArgumentOutOfRangeException(nameof(version), version, $"Unknown {nameof(LiveHeXVersion)}.");
 
         return new LPBasic(version, useCache);
     }

@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using static PKHeX.Core.Injection.LiveHeXVersion;
 
 namespace PKHeX.Core.Injection;
 
 public class LPLGPE(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, useCache)
 {
-    private static readonly LiveHeXVersion[] SupportedVersions = [LiveHeXVersion.LGPE_v102];
-
-    public static LiveHeXVersion[] GetVersions() => SupportedVersions;
+    public static ReadOnlySpan<LiveHeXVersion> SupportedVersions => [LGPE_v102];
 
     public override byte[] ReadBox(PokeSysBotMini psb, int box, int len, List<byte[]> allpkm)
     {

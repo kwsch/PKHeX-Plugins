@@ -45,7 +45,7 @@ public class LPBasic(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, useCa
     // LiveHexVersion -> Blockname -> List of <SCBlock Keys, OffsetValues>
     public static readonly Dictionary<LiveHeXVersion, BlockData[]> SCBlocks = new()
     {
-        { LiveHeXVersion.SWSH_v132, Blocks_Rigel2 },
+        { SWSH_v132, Blocks_Rigel2 },
     };
 
     public override Dictionary<string, string> SpecialBlocks { get; } = new()

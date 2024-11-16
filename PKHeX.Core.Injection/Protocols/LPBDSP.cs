@@ -3,37 +3,30 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using static System.Buffers.Binary.BinaryPrimitives;
+using static PKHeX.Core.Injection.LiveHeXVersion;
 
 namespace PKHeX.Core.Injection;
 
 public class LPBDSP(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, useCache)
 {
-    private static readonly LiveHeXVersion[] BrilliantDiamond =
+    public static ReadOnlySpan<LiveHeXVersion> SupportedVersions =>
     [
-        LiveHeXVersion.BD_v100,
-        LiveHeXVersion.BD_v110,
-        LiveHeXVersion.BD_v111,
-        LiveHeXVersion.BDSP_v112,
-        LiveHeXVersion.BDSP_v113,
-        LiveHeXVersion.BDSP_v120,
-        LiveHeXVersion.BD_v130,
+        BD_v100,
+        BD_v110,
+        BD_v111,
+        BDSP_v112,
+        BDSP_v113,
+        BDSP_v120,
+        BD_v130,
+        SP_v100,
+        SP_v110,
+        SP_v111,
+        BDSP_v112,
+        BDSP_v113,
+        BDSP_v120,
+        SP_v130,
     ];
-    private static readonly LiveHeXVersion[] ShiningPearl =
-    [
-        LiveHeXVersion.SP_v100,
-        LiveHeXVersion.SP_v110,
-        LiveHeXVersion.SP_v111,
-        LiveHeXVersion.BDSP_v112,
-        LiveHeXVersion.BDSP_v113,
-        LiveHeXVersion.BDSP_v120,
-        LiveHeXVersion.SP_v130,
-    ];
-    private static readonly LiveHeXVersion[] SupportedVersions = ArrayUtil.ConcatAll(
-        BrilliantDiamond,
-        ShiningPearl
-    );
-
-    public static LiveHeXVersion[] GetVersions() => SupportedVersions;
 
     private const int ITEM_BLOCK_SIZE = 0xBB80;
     private const int ITEM_BLOCK_SIZE_RAM = (0xBB80 / 0x10) * 0xC;
@@ -73,62 +66,62 @@ public class LPBDSP(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, useCac
             throw new Exception("Invalid Pointer string.");
 
         var b = psb.com.ReadBytes(addr, count * 8);
-        var boxptr = ArrayUtil.EnumerateSplit(b, 8).Select(z => BitConverter.ToUInt64(z, 0)).ToArray()[box] + 0x20; // add 0x20 to remove vtable bytes
+        var boxptr = ArrayUtil.EnumerateSplit(b, 8).Select(z => ReadUInt64LittleEndian(z)).ToArray()[box] + 0x20; // add 0x20 to remove vtable bytes
         b = sb.ReadBytesAbsolute(boxptr, psb.SlotCount * 8);
 
-        var pkmptrs = ArrayUtil.EnumerateSplit(b, 8).Select(z => BitConverter.ToUInt64(z, 0)).ToArray();
+        var pkmptrs = ArrayUtil.EnumerateSplit(b, 8).Select(z => ReadUInt64LittleEndian(z)).ToArray();
         return pkmptrs;
     }
 
     // relative to: PlayerWork.SaveData_TypeInfo
     private static string? GetTrainerPointer(LiveHeXVersion lv) => lv switch
     {
-        LiveHeXVersion.BD_v130   => "[[[main+4C64DC0]+B8]+10]+E0",
-        LiveHeXVersion.SP_v130   => "[[[main+4E7BE98]+B8]+10]+E0",
-        LiveHeXVersion.BDSP_v120 => "[[[main+4E36C58]+B8]+10]+E0",
-        LiveHeXVersion.BDSP_v113 => "[[[main+4E59E60]+B8]+10]+E0",
-        LiveHeXVersion.BDSP_v112 => "[[[main+4E34DD0]+B8]+10]+E0",
-        LiveHeXVersion.BD_v111   => "[[[main+4C1DCF8]+B8]+10]+E0",
-        LiveHeXVersion.SP_v111   => "[[[main+4E34DD0]+B8]+10]+E0",
+        BD_v130   => "[[[main+4C64DC0]+B8]+10]+E0",
+        SP_v130   => "[[[main+4E7BE98]+B8]+10]+E0",
+        BDSP_v120 => "[[[main+4E36C58]+B8]+10]+E0",
+        BDSP_v113 => "[[[main+4E59E60]+B8]+10]+E0",
+        BDSP_v112 => "[[[main+4E34DD0]+B8]+10]+E0",
+        BD_v111   => "[[[main+4C1DCF8]+B8]+10]+E0",
+        SP_v111   => "[[[main+4E34DD0]+B8]+10]+E0",
         _ => null,
     };
 
     // relative to: PlayerWork.SaveData_TypeInfo
     private static string? GetItemPointers(LiveHeXVersion lv) => lv switch
     {
-        LiveHeXVersion.BD_v130   => "[[[[main+4C64DC0]+B8]+10]+48]+20",
-        LiveHeXVersion.SP_v130   => "[[[[main+4E7BE98]+B8]+10]+48]+20",
-        LiveHeXVersion.BDSP_v120 => "[[[[main+4E36C58]+B8]+10]+48]+20",
-        LiveHeXVersion.BDSP_v113 => "[[[[main+4E59E60]+B8]+10]+48]+20",
-        LiveHeXVersion.BDSP_v112 => "[[[[main+4E34DD0]+B8]+10]+48]+20",
-        LiveHeXVersion.BD_v111   => "[[[[main+4C1DCF8]+B8]+10]+48]+20",
-        LiveHeXVersion.SP_v111   => "[[[[main+4E34DD0]+B8]+10]+48]+20",
+        BD_v130   => "[[[[main+4C64DC0]+B8]+10]+48]+20",
+        SP_v130   => "[[[[main+4E7BE98]+B8]+10]+48]+20",
+        BDSP_v120 => "[[[[main+4E36C58]+B8]+10]+48]+20",
+        BDSP_v113 => "[[[[main+4E59E60]+B8]+10]+48]+20",
+        BDSP_v112 => "[[[[main+4E34DD0]+B8]+10]+48]+20",
+        BD_v111   => "[[[[main+4C1DCF8]+B8]+10]+48]+20",
+        SP_v111   => "[[[[main+4E34DD0]+B8]+10]+48]+20",
         _ => null,
     };
 
     // relative to: PlayerWork.SaveData_TypeInfo
     private static string? GetUndergroundPointers(LiveHeXVersion lv) => lv switch
     {
-        LiveHeXVersion.BD_v130   => "[[[[main+4C64DC0]+B8]+10]+50]+20",
-        LiveHeXVersion.SP_v130   => "[[[[main+4E7BE98]+B8]+10]+50]+20",
-        LiveHeXVersion.BDSP_v120 => "[[[[main+4E36C58]+B8]+10]+50]+20",
-        LiveHeXVersion.BDSP_v113 => "[[[[main+4E59E60]+B8]+10]+50]+20",
-        LiveHeXVersion.BDSP_v112 => "[[[[main+4E34DD0]+B8]+10]+50]+20",
-        LiveHeXVersion.BD_v111   => "[[[[main+4C1DCF8]+B8]+10]+50]+20",
-        LiveHeXVersion.SP_v111   => "[[[[main+4E34DD0]+B8]+10]+50]+20",
+        BD_v130   => "[[[[main+4C64DC0]+B8]+10]+50]+20",
+        SP_v130   => "[[[[main+4E7BE98]+B8]+10]+50]+20",
+        BDSP_v120 => "[[[[main+4E36C58]+B8]+10]+50]+20",
+        BDSP_v113 => "[[[[main+4E59E60]+B8]+10]+50]+20",
+        BDSP_v112 => "[[[[main+4E34DD0]+B8]+10]+50]+20",
+        BD_v111   => "[[[[main+4C1DCF8]+B8]+10]+50]+20",
+        SP_v111   => "[[[[main+4E34DD0]+B8]+10]+50]+20",
         _ => null,
     };
 
     // relative to: PlayerWork.SaveData_TypeInfo
     private static string? GetDaycarePointers(LiveHeXVersion lv) => lv switch
     {
-        LiveHeXVersion.BD_v130   => "[[[main+4C64DC0]+B8]+10]+450",
-        LiveHeXVersion.SP_v130   => "[[[main+4E7BE98]+B8]+10]+450",
-        LiveHeXVersion.BDSP_v120 => "[[[main+4E36C58]+B8]+10]+450",
-        LiveHeXVersion.BDSP_v113 => "[[[main+4E59E60]+B8]+10]+450",
-        LiveHeXVersion.BDSP_v112 => "[[[main+4E34DD0]+B8]+10]+450",
-        LiveHeXVersion.BD_v111   => "[[[main+4C1DCF8]+B8]+10]+450",
-        LiveHeXVersion.SP_v111   => "[[[main+4E34DD0]+B8]+10]+450",
+        BD_v130   => "[[[main+4C64DC0]+B8]+10]+450",
+        SP_v130   => "[[[main+4E7BE98]+B8]+10]+450",
+        BDSP_v120 => "[[[main+4E36C58]+B8]+10]+450",
+        BDSP_v113 => "[[[main+4E59E60]+B8]+10]+450",
+        BDSP_v112 => "[[[main+4E34DD0]+B8]+10]+450",
+        BD_v111   => "[[[main+4C1DCF8]+B8]+10]+450",
+        SP_v111   => "[[[main+4E34DD0]+B8]+10]+450",
         _ => null,
     };
 
