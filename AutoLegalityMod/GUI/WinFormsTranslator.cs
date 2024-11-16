@@ -218,10 +218,7 @@ public static class WinFormsTranslator
             var argCount = constructors[0].GetParameters().Length;
             try
             {
-                var _ = (Form)(
-                    Activator.CreateInstance(t, new object[argCount])
-                    ?? throw new Exception("Null Activator instance")
-                );
+                _ = (Form)(Activator.CreateInstance(t, new object[argCount]) ?? throw new Exception("Null Activator instance"));
             }
             catch
             {

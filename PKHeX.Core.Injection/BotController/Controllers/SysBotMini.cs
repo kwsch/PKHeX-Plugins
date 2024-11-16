@@ -138,7 +138,7 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
         var size = (length * 2) + 1;
         var rent = ArrayPool<byte>.Shared.Rent(size);
         var buffer = rent.AsSpan(size);
-        var _ = ReadInternal(buffer);
+        _ = ReadInternal(buffer);
         Decoder.ConvertHexByteStringToBytes(buffer, result);
         buffer.Clear();
         ArrayPool<byte>.Shared.Return(rent);
@@ -225,7 +225,7 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
         SendInternal(cmd);
 
         Span<byte> buffer = stackalloc byte[17];
-        var _ = ReadInternal(buffer);
+        _ = ReadInternal(buffer);
         return Encoding.ASCII.GetString(buffer).Trim();
     }
 
@@ -253,7 +253,7 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
         SendInternal(cmd);
 
         Span<byte> buffer = stackalloc byte[17];
-        var _ = ReadInternal(buffer);
+        _ = ReadInternal(buffer);
         return ulong.TryParse(Encoding.ASCII.GetString(buffer).Trim(), out var value) && value == 1;
     }
 

@@ -18,15 +18,6 @@ public static class ShowdownSetLoader
     public static ISaveFileProvider SaveFileEditor { private get; set; } = null!;
     public static IPKMView PKMEditor { private get; set; } = null!;
 
-    private static readonly EncounterTypeGroup[] EncounterPriority =
-    [
-        EncounterTypeGroup.Egg,
-        EncounterTypeGroup.Static,
-        EncounterTypeGroup.Trade,
-        EncounterTypeGroup.Slot,
-        EncounterTypeGroup.Mystery,
-    ];
-
     /// <summary>
     /// Imports <see cref="ShowdownSet"/> list(s) originating from a concatenated list.
     /// </summary>
@@ -273,13 +264,10 @@ public static class ShowdownSetLoader
             APILegality.LatestAllowedVersion = settings.LatestAllowedVersion;
         }
 
-        settings.PrioritizeEncounters ??= [.. EncounterPriority];
-        foreach (var ep in EncounterPriority)
+        foreach (var ep in Enum.GetValues<EncounterTypeGroup>())
         {
             if (!settings.PrioritizeEncounters.Contains(ep))
-            {
                 settings.PrioritizeEncounters.Add(ep);
-            }
         }
 
         settings.PrioritizeEncounters = settings.PrioritizeEncounters.Distinct().ToList();

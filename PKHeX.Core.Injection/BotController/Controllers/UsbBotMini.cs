@@ -151,7 +151,7 @@ public class UsbBotMini : ICommunicatorNX, IPokeBlocks
         var cmd = SwitchCommand.GetHeapBase();
         SendInternal(cmd);
         var buffer = new byte[(8 * 2) + 1];
-        var _ = ReadInternal(buffer);
+        _ = ReadInternal(buffer);
         return BitConverter.ToUInt64(buffer, 0);
     }
 

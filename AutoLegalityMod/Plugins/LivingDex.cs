@@ -1,10 +1,10 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 using AutoModPlugins.Properties;
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
+using System.Collections.Generic;
 
 namespace AutoModPlugins;
 
@@ -28,35 +28,56 @@ public class LivingDex : AutoModPlugin
             return;
 
         var sav = SaveFileEditor.SAV;
-        Span<PKM> pkms = sav.GenerateLivingDex().ToArray();
-        Span<PKM> bd = sav.BoxData.ToArray();
-        Span<PKM> ExtraPkms = [];
-        if (pkms.Length > bd.Length)
-        {
-            ExtraPkms = pkms[bd.Length..];
-            pkms = pkms[..bd.Length];
-        }
-
-        pkms.CopyTo(bd);
-        sav.BoxData = bd.ToArray();
+        var dex = sav.GenerateLivingDex();
+        List<PKM> extra = [];
+        int generated = IngestToBoxes(sav, dex, extra);
+        System.Diagnostics.Debug.WriteLine($"Generated Living Dex with {generated} entries.");
         SaveFileEditor.ReloadSlots();
-        if (ExtraPkms.Length > 0)
-        {
-            prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "This Living Dex does not fit in all boxes. Save the extra pkms to a folder?");
+        if (extra.Count == 0)
+            return;
 
-            if (prompt == DialogResult.Yes)
+        prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "This Living Dex does not fit in all boxes. Save the extra to a folder?");
+        if (prompt != DialogResult.Yes)
+            return;
+
+        using var ofd = new FolderBrowserDialog();
+        if (ofd.ShowDialog() != DialogResult.OK)
+            return;
+
+        foreach (var f in extra)
+            File.WriteAllBytes($"{ofd.SelectedPath}/{f.FileName}", f.DecryptedPartyData);
+    }
+
+    private static int IngestToBoxes(SaveFile sav, IEnumerable<PKM> list, IList<PKM> extra, int slot = 0)
+    {
+        int generated = 0;
+        foreach (var pk in list)
+        {
+            generated++;
+            if (TryAdd(sav, extra, pk, ref slot))
+                continue;
+            while (true)
             {
-                using var ofd = new FolderBrowserDialog();
-                if (ofd.ShowDialog() == DialogResult.OK)
-                {
-                    if (ofd.SelectedPath != null)
-                    {
-                        foreach (var f in ExtraPkms)
-                            File.WriteAllBytes($"{ofd.SelectedPath}/{f.FileName}", f.EncryptedPartyData);
-                    }
-                }
+                slot++;
+                if (TryAdd(sav, extra, pk, ref slot))
+                    break;
             }
         }
-        System.Diagnostics.Debug.WriteLine($"Generated Living Dex with {pkms.Length} entries.");
+        return generated;
+    }
+
+    private static bool TryAdd(SaveFile sav, IList<PKM> extra, PKM pk, ref int slot)
+    {
+        if (slot >= sav.BoxSlotCount)
+        {
+            extra.Add(pk);
+            return true;
+        }
+        if (!sav.IsBoxSlotOverwriteProtected(slot))
+        {
+            sav.SetBoxSlotAtIndex(pk, slot++);
+            return true;
+        }
+        return false;
     }
 }
