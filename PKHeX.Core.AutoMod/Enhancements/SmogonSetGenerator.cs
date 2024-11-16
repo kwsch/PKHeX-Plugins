@@ -25,7 +25,7 @@ namespace PKHeX.Core.AutoMod
         [
             "Almost Any Ability", // Generates illegal abilities
             "BH", // Balanced Hackmons
-            "Mix and Mega", // Assumes pokemon can mega evolve that cannot
+            "Mix and Mega", // Assumes Pokémon can mega evolve that cannot
             "STABmons", // Generates illegal movesets
             "National Dex", // Adds Megas to Generation VIII
             "National Dex AG", // Adds Megas to Generation VIII

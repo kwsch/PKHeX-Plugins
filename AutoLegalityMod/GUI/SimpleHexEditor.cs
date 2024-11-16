@@ -128,7 +128,7 @@ namespace AutoModPlugins.GUI
 
         private void ChangeCopyMethod(object sender, EventArgs e)
         {
-            if(CB_CopyMethod.SelectedItem is not null)
+            if (CB_CopyMethod.SelectedItem is not null)
                 RTB_RAM.method = (CopyMethod)CB_CopyMethod.SelectedItem;
         }
 

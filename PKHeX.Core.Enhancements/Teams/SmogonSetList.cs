@@ -28,7 +28,7 @@ namespace PKHeX.Core.Enhancements
         [
             "Almost Any Ability", // Generates illegal abilities
             "BH", // Balanced Hackmons
-            "Mix and Mega", // Assumes pokemon can mega evolve that cannot
+            "Mix and Mega", // Assumes Pokémon can mega evolve that cannot
             "STABmons", // Generates illegal movesets
             "National Dex", // Adds Megas to Generation VIII
             "National Dex AG", // Adds Megas to Generation VIII
@@ -75,12 +75,8 @@ namespace PKHeX.Core.Enhancements
                 var shiny = split1[i - 1].Contains("\"shiny\":true");
                 if (split1[i - 1].Contains("\"format\":\""))
                 {
-                    format = split1[i - 1][
-                        (
-                            split1[i - 1].IndexOf("\"format\":\"", StringComparison.Ordinal)
-                            + "\"format\":\"".Length
-                        )..
-                    ].Split('\"')[0];
+                    var start = (split1[i - 1].IndexOf("\"format\":\"", StringComparison.Ordinal) + "\"format\":\"".Length);
+                    format = split1[i - 1][start..].Split('\"')[0];
                 }
 
                 if (IllegalFormats.Any(s => s.Equals(format, StringComparison.OrdinalIgnoreCase)))
@@ -96,29 +92,14 @@ namespace PKHeX.Core.Enhancements
                 if (!split1[i - 1].Contains("\"name\":"))
                     continue;
 
-                var name = split1[i - 1][
-                    (
-                        split1[i - 1].LastIndexOf("\"name\":\"", StringComparison.Ordinal)
-                        + "\"name\":\"".Length
-                    )..
-                ].Split('\"')[0];
-                var setSpecies = split1[i - 1][
-                    (
-                        split1[i - 1].LastIndexOf("\"pokemon\":\"", StringComparison.Ordinal)
-                        + "\"pokemon\":\"".Length
-                    )..
-                ].Split('\"')[0];
+                var name = split1[i - 1][(split1[i - 1].LastIndexOf("\"name\":\"", StringComparison.Ordinal) + "\"name\":\"".Length)..].Split('\"')[0];
+                var setSpecies = split1[i - 1][(split1[i - 1].LastIndexOf("\"pokemon\":\"", StringComparison.Ordinal) + "\"pokemon\":\"".Length)..].Split('\"')[0];
                 SetFormat.Add(format);
                 SetName.Add(name);
 
                 if (!split1[i - 1].Contains("\"level\":0,") && split1[i - 1].Contains("\"level\":"))
                 {
-                    _ = int.TryParse(
-                        split1[i - 1].Split("\"level\":")[
-                            1
-                        ].Split(',')[0],
-                        out level
-                    );
+                    _ = int.TryParse(split1[i - 1].Split("\"level\":")[1].Split(',')[0], out level);
                 }
 
                 var split2 = split1[i].Split("\"]}");
@@ -133,25 +114,19 @@ namespace PKHeX.Core.Enhancements
             }
         }
 
-        private static string GetBaseURL(string type)
+        private static string GetBaseURL(string type) => type switch
         {
-            return type switch
-            {
-                nameof(PK1) => "https://www.smogon.com/dex/rb/pokemon",
-                nameof(PK2) or nameof(SK2) => "https://www.smogon.com/dex/gs/pokemon",
-                nameof(PK3)
-                or nameof(CK3)
-                or nameof(XK3)
-                    => "https://www.smogon.com/dex/rs/pokemon",
-                nameof(PK4) or nameof(BK4) => "https://www.smogon.com/dex/dp/pokemon",
-                nameof(PK5) => "https://www.smogon.com/dex/bw/pokemon",
-                nameof(PK6) => "https://www.smogon.com/dex/xy/pokemon",
-                nameof(PK7) or nameof(PB7) => "https://www.smogon.com/dex/sm/pokemon",
-                nameof(PK8) or nameof(PB8) => "https://www.smogon.com/dex/ss/pokemon",
-                nameof(PK9) => "https://www.smogon.com/dex/sv/pokemon",
-                _ => string.Empty,
-            };
-        }
+            nameof(PK1)                               => "https://www.smogon.com/dex/rb/pokemon",
+            nameof(PK2) or nameof(SK2)                => "https://www.smogon.com/dex/gs/pokemon",
+            nameof(PK3) or nameof(CK3) or nameof(XK3) => "https://www.smogon.com/dex/rs/pokemon",
+            nameof(PK4) or nameof(BK4) or nameof(RK4) => "https://www.smogon.com/dex/dp/pokemon",
+            nameof(PK5)                               => "https://www.smogon.com/dex/bw/pokemon",
+            nameof(PK6)                               => "https://www.smogon.com/dex/xy/pokemon",
+            nameof(PK7) or nameof(PB7)                => "https://www.smogon.com/dex/sm/pokemon",
+            nameof(PK8) or nameof(PB8)                => "https://www.smogon.com/dex/ss/pokemon",
+            nameof(PK9)                               => "https://www.smogon.com/dex/sv/pokemon",
+            _ => string.Empty,
+        };
 
         private static string ConvertSetToShowdown(string set, string species, bool shiny, int level)
         {
@@ -361,26 +336,26 @@ namespace PKHeX.Core.Enhancements
         }
 
         internal static readonly HashSet<int> Totem_Alolan =
-            [
-                020, // Raticate (Normal, Alolan, Totem)
-                105, // Marowak (Normal, Alolan, Totem)
-                778, // Mimikyu (Normal, Busted, Totem, Totem_Busted)
-            ];
+        [
+            020, // Raticate (Normal, Alolan, Totem)
+            105, // Marowak (Normal, Alolan, Totem)
+            778, // Mimikyu (Normal, Busted, Totem, Totem_Busted)
+        ];
 
         internal static readonly HashSet<int> Totem_USUM =
-            [
-                020, // Raticate
-                735, // Gumshoos
-                758, // Salazzle
-                754, // Lurantis
-                738, // Vikavolt
-                778, // Mimikyu
-                784, // Kommo-o
-                105, // Marowak
-                752, // Araquanid
-                777, // Togedemaru
-                743, // Ribombee
-            ];
+        [
+            020, // Raticate
+            735, // Gumshoos
+            758, // Salazzle
+            754, // Lurantis
+            738, // Vikavolt
+            778, // Mimikyu
+            784, // Kommo-o
+            105, // Marowak
+            752, // Araquanid
+            777, // Togedemaru
+            743, // Ribombee
+        ];
 
         private static string GetURL(string speciesName, string form, string baseURL)
         {

@@ -164,7 +164,7 @@ namespace AutoModPlugins
         /// Function that generates legal PKM objects from ShowdownSets and views them/sets them in boxes
         /// </summary>
         /// <param name="sets">A list of ShowdownSet(s) that need to be generated</param>
-        /// <param name="replace">A boolean that determines if current pokemon will be replaced or not</param>
+        /// <param name="replace">A boolean that determines if current Pokémon will be replaced or not</param>
         private static AutoModErrorCode ImportSetsToBoxes(IReadOnlyList<ShowdownSet> sets, bool replace)
         {
             var timer = Stopwatch.StartNew();
