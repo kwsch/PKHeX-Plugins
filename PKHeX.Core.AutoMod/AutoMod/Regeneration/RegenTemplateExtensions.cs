@@ -26,14 +26,14 @@ public static class RegenTemplateExtensions
             case (ushort)Species.Zamazenta:
                 {
                     // Behemoth Blade and Behemoth Bash -> Iron Head
-                    if (!set.Moves.Contains((ushort)781) && !set.Moves.Contains((ushort)782))
-                        return;
-
-                    for (int i = 0; i < set.Moves.Length; i++)
-                    {
-                        if (set.Moves[i] is 781 or 782)
-                            set.Moves[i] = 442;
-                    }
+                    // Duplicate moves aren't worth considering, so just replace once for each.
+                    var moves = set.Moves.AsSpan();
+                    var indexBlade = moves.IndexOf<ushort>(781);
+                    if (indexBlade != -1)
+                        moves[indexBlade] = 442;
+                    var indexBash = moves.IndexOf<ushort>(782);
+                    if (indexBash != -1)
+                        moves[indexBash] = 442;
                     break;
                 }
         }
@@ -42,7 +42,6 @@ public static class RegenTemplateExtensions
     /// <summary>
     /// TeraType restrictions being fixed before the set is even generated
     /// </summary>
-    /// <param name="set"></param>
     public static void SanitizeTeraTypes(this RegenTemplate set)
     {
         if (set.Species == (int)Species.Ogerpon && !TeraTypeUtil.IsValidOgerpon((byte)set.TeraType, set.Form))
@@ -57,17 +56,11 @@ public static class RegenTemplateExtensions
     public static void FixGender(this RegenTemplate set, PersonalInfo personal)
     {
         if (personal.OnlyFemale && set.Gender != 1)
-        {
             set.Gender = 1;
-        }
         else if (personal.OnlyMale && set.Gender != 0)
-        {
             set.Gender = 0;
-        }
         else if (personal.Genderless && set.Gender != 2)
-        {
             set.Gender = 2;
-        }
     }
 
     public static string GetRegenText(this PKM pk) => pk.Species == 0 ? string.Empty : new RegenTemplate(pk).Text;

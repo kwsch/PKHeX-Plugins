@@ -17,9 +17,9 @@ public static class GlyphLegality
             CharDictionary.Add(half[i], full[i]);
     }
 
-    public static bool ContainsFullWidth(string val) => val.Any(z => CharDictionary.ContainsValue(z));
+    public static bool ContainsFullWidth(string val) => val.Any(CharDictionary.ContainsValue);
 
-    public static bool ContainsHalfWidth(string val) => val.Any(z => CharDictionary.ContainsKey(z));
+    public static bool ContainsHalfWidth(string val) => val.Any(CharDictionary.ContainsKey);
 
     public static string StringConvert(string val, StringConversionType type) => type switch
     {

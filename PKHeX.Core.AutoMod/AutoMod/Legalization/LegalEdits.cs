@@ -67,20 +67,6 @@ public static class LegalEdits
         }
     }
 
-    public static bool ValidBall(this PKM pk)
-    {
-        var la = new LegalityAnalysis(pk);
-        foreach (var msg in la.Results)
-        {
-            if (msg.Identifier is not CheckIdentifier.Ball)
-                continue;
-            var line = msg.Comment;
-            if (line == LegalityCheckStrings.LBallEnc || line == LegalityCheckStrings.LBallSpeciesPass)
-                return true;
-        }
-        return false;
-    }
-
     /// <summary>
     /// Sets all ribbon flags according to a legality report.
     /// </summary>

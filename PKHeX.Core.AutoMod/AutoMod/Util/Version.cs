@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace PKHeX.Core.AutoMod;
 
-public static partial class ALMVersion
+public static class ALMVersion
 {
     private static readonly Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
     public static readonly AssemblyVersions Versions = new();

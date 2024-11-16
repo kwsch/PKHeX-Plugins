@@ -34,7 +34,7 @@ public sealed class RegenTemplate : IBattleTemplate
 
     private readonly string ParentLines;
 
-    private RegenTemplate(ShowdownSet set, byte gen = PKX.Generation, string text = "")
+    private RegenTemplate(ShowdownSet set, byte gen = PKX.Generation, string _ = "")
     {
         Species = set.Species;
         Context = set.Context;

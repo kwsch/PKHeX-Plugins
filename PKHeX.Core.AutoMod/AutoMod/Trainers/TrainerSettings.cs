@@ -11,7 +11,7 @@ public static class TrainerSettings
 {
     private static readonly string ProcessPath = Environment.ProcessPath ?? string.Empty;
     private static readonly TrainerDatabase Database = new();
-    public static readonly string TrainerPath = Path.Combine(Path.GetDirectoryName(ProcessPath) ?? string.Empty , "trainers");
+    private static readonly string TrainerPath = Path.Combine(Path.GetDirectoryName(ProcessPath) ?? string.Empty , "trainers");
     private static readonly SimpleTrainerInfo DefaultFallback8 = new(GameVersion.SW) { Generation = 8 };
     private static readonly SimpleTrainerInfo DefaultFallback7 = new(GameVersion.UM) { Generation = 7 };
     private static ReadOnlySpan<GameVersion> FringeVersions =>
@@ -49,7 +49,6 @@ public static class TrainerSettings
     /// <summary>
     /// Loads possible <see cref="PKM"/> data from the path, and registers them to the <see cref="Database"/>.
     /// </summary>
-    /// <param name="path"></param>
     public static void LoadTrainerDatabaseFromPath(string path)
     {
         if (!Directory.Exists(path))

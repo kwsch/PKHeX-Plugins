@@ -57,17 +57,11 @@ public class RegenSetting
             result.Add($"Ball: {Ball} Ball");
 
         if (ShinyType == Shiny.AlwaysStar)
-        {
             result.Add("Shiny: Star");
-        }
         else if (ShinyType == Shiny.AlwaysSquare)
-        {
             result.Add("Shiny: Square");
-        }
         else if (ShinyType == Shiny.Always)
-        {
             result.Add("Shiny: Yes");
-        }
 
         if (Language != null)
             result.Add($"Language: {Language}");

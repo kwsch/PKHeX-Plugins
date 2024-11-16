@@ -68,8 +68,7 @@ public abstract class InjectionBase(LiveHeXVersion lv, bool useCache) : PointerC
 
     public virtual void WriteBlocksFromSAV(PokeSysBotMini psb, string block, SaveFile sav) { }
 
-    public virtual void WriteBlockFromString(PokeSysBotMini psb, string block, ReadOnlySpan<byte> data, object sb)
-    { }
+    public virtual void WriteBlockFromString(PokeSysBotMini psb, string block, ReadOnlySpan<byte> data, object sb) { }
 
     public virtual bool ReadBlockFromString(PokeSysBotMini psb, SaveFile sav, string block, out List<byte[]>? read)
     {
