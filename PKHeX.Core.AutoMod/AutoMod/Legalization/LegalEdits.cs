@@ -33,17 +33,12 @@ public static class LegalEdits
         if (enc is MysteryGift)
             return;
 
-        var la = new LegalityAnalysis(pk);
-        var legal = la.Valid;
-
         if (ball != Ball.None)
         {
             if (pk.LA && ReplaceBallPrefixLA)
                 ball = GetBallLA(ball);
 
             pk.Ball = (byte)ball;
-            if (!force && !pk.ValidBall())
-                pk.Ball = orig;
         }
         else if (matching)
         {
@@ -51,12 +46,12 @@ public static class LegalEdits
                 pk.SetMatchingBall();
             else
                 Aesthetics.ApplyShinyBall(pk);
+
+            if (force || new LegalityAnalysis(pk).Valid)
+                return;
         }
 
-        if (force)
-            return;
-        la = new LegalityAnalysis(pk);
-        if (la.Valid)
+        if (force || new LegalityAnalysis(pk).Valid)
             return;
 
         if (pk is { Generation: 5, MetLocation: 75 })
@@ -70,9 +65,6 @@ public static class LegalEdits
         {
             pk.Ball = orig;
         }
-
-        if (legal && !la.Valid)
-            pk.Ball = orig;
     }
 
     public static bool ValidBall(this PKM pk)
