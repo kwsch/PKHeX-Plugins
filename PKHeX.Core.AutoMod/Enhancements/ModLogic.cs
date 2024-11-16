@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using static PKHeX.Core.Species;
 
 namespace PKHeX.Core.AutoMod;
 
@@ -75,14 +76,14 @@ public static class ModLogic
             var str = GameInfo.Strings;
             if (num_forms == 1 && cfg.IncludeForms) // Validate through form lists
                 num_forms = (byte)FormConverter.GetFormList(s, str.types, str.forms, GameInfo.GenderSymbolUnicode, sav.Context).Length;
-            if (s == (ushort)Species.Alcremie)
+            if (s == (ushort)Alcremie)
                 num_forms = (byte)(num_forms * 6);
             uint formarg = 0;
             byte acform = 0;
             for (byte f = 0; f < num_forms; f++)
             {
-                var form = cfg.IncludeForms ? f : GetBaseForm(s, f, sav);
-                if (s == (ushort)Species.Alcremie)
+                var form = cfg.IncludeForms ? f : GetBaseForm((Species)s, f, sav);
+                if (s == (ushort)Alcremie)
                 {
                     form = acform;
                     if (f % 6 == 0)
@@ -99,7 +100,7 @@ public static class ModLogic
                 var pk = AddPKM(sav, tr, s, form, cfg.SetShiny, cfg.SetAlpha, cfg.NativeOnly);
                 if (pk is not null && !pklist.Any(x => x.Species == pk.Species && x.Form == pk.Form && x.Species !=869))
                 {
-                    if (s == (ushort)Species.Alcremie) pk.ChangeFormArgument(formarg);
+                    if (s == (ushort)Alcremie) pk.ChangeFormArgument(formarg);
                     pklist.Add(pk);
                     if (!cfg.IncludeForms)
                         break;
@@ -132,7 +133,7 @@ public static class ModLogic
             {
                 if (!DestinationSave.Personal.IsPresentInGame(s, f) || FormInfo.IsLordForm(s, f, sav.Context) || FormInfo.IsBattleOnlyForm(s, f, sav.Generation) || FormInfo.IsFusedForm(s, f, sav.Generation) || (FormInfo.IsTotemForm(s, f) && sav.Context is not EntityContext.Gen7))
                     continue;
-                var form = cfg.IncludeForms ? f : GetBaseForm(s, f, sav);
+                var form = cfg.IncludeForms ? f : GetBaseForm((Species)s, f, sav);
                 var pk = AddPKM(sav, tr, s, form, cfg.SetShiny, cfg.SetAlpha, cfg.NativeOnly);
                 if (pk is not null && !pklist.Any(x => x.Species == pk.Species && x.Form == pk.Form))
                 {
@@ -144,23 +145,25 @@ public static class ModLogic
         });
         return pklist.OrderBy(z => z.Species);
     }
-    public static byte GetBaseForm(ushort s, byte f, SaveFile sav)
+
+    private static bool IsRegionalSV(Species s) => s is Tauros or Wooper;
+    private static bool IsRegionalLA(Species s) => s is Growlithe or Arcanine or Voltorb or Electrode or Typhlosion or Qwilfish or Sneasel or Samurott or Lilligant or Zorua or Zoroark or Braviary or Sliggoo or Goodra or Avalugg or Decidueye;
+    private static bool IsRegionalSH(Species s) => s is Meowth or Slowpoke or Ponyta or Rapidash or Slowbro or Slowking or Farfetchd or Weezing or MrMime or Articuno or Moltres or Zapdos or Corsola or Zigzagoon or Linoone or Darumaka or Darmanitan or Yamask or Stunfisk;
+    private static bool IsRegionalSM(Species s) => s is Rattata or Raticate or Raichu or Sandshrew or Sandslash or Vulpix or Ninetales or Diglett or Dugtrio or Meowth or Persian or Geodude or Graveler or Golem or Grimer or Muk or Marowak;
+
+    public static byte GetBaseForm(Species s, byte f, SaveFile sav)
     {
-        List<Species> SV = [Species.Tauros, Species.Wooper];
-        List<Species> LA = [Species.Growlithe, Species.Arcanine, Species.Voltorb, Species.Electrode, Species.Typhlosion, Species.Qwilfish, Species.Sneasel, Species.Samurott, Species.Lilligant, Species.Zorua, Species.Zoroark, Species.Braviary, Species.Sliggoo, Species.Goodra, Species.Avalugg, Species.Decidueye];
-        List<Species> SH = [Species.Meowth, Species.Slowpoke, Species.Ponyta, Species.Rapidash, Species.Slowbro, Species.Slowking, Species.Farfetchd, Species.Weezing, Species.MrMime, Species.Articuno, Species.Moltres, Species.Zapdos, Species.Corsola, Species.Zigzagoon, Species.Linoone, Species.Darumaka, Species.Darmanitan, Species.Yamask, Species.Stunfisk];
-        List<Species> SM = [Species.Rattata, Species.Raticate, Species.Raichu, Species.Sandshrew, Species.Sandslash, Species.Vulpix, Species.Ninetales, Species.Diglett, Species.Dugtrio, Species.Meowth, Species.Persian, Species.Geodude, Species.Graveler, Species.Golem, Species.Grimer, Species.Muk, Species.Marowak];
         var HasRegionalForm = sav.Version switch
         {
-            GameVersion.VL or GameVersion.SL => SV.Contains((Species)s),
-            GameVersion.PLA => LA.Contains((Species)s),
-            GameVersion.SH or GameVersion.SW => SH.Contains((Species)s),
-            GameVersion.SN or GameVersion.MN or GameVersion.UM or GameVersion.US => SM.Contains((Species)s),
+            GameVersion.VL or GameVersion.SL => IsRegionalSV(s),
+            GameVersion.PLA => IsRegionalLA(s),
+            GameVersion.SH or GameVersion.SW => IsRegionalSH(s),
+            GameVersion.SN or GameVersion.MN or GameVersion.UM or GameVersion.US => IsRegionalSM(s),
             _ => false,
         };
         if (HasRegionalForm)
         {
-            if (sav.Version is GameVersion.SW or GameVersion.SH && ((Species)s == Species.Slowbro || (Species)s == Species.Meowth || (Species)s == Species.Darmanitan))
+            if (sav.Version is GameVersion.SW or GameVersion.SH && s is Slowbro or Meowth or Darmanitan)
                 return 2;
             return 1;
         }
@@ -227,7 +230,7 @@ public static class ModLogic
     {
         blank.Species = species;
         blank.Gender = blank.GetSaneGender();
-        if (species is ((ushort)Species.Meowstic) or ((ushort)Species.Indeedee))
+        if (species is ((ushort)Meowstic) or ((ushort)Indeedee))
         {
             blank.Gender = form;
             blank.Form = blank.Gender;
@@ -242,14 +245,14 @@ public static class ModLogic
         if (item is not null)
             blank.HeldItem = (int)item;
 
-        if (blank is { Species: (ushort)Species.Keldeo, Form: 1 })
+        if (blank is { Species: (ushort)Keldeo, Form: 1 })
             blank.Move1 = (ushort)Move.SecretSword;
 
         if (blank.GetIsFormInvalid(tr, blank.Form))
             return null;
 
         var setText = new ShowdownSet(blank).Text.Split('\r')[0];
-        if ((shiny && !SimpleEdits.IsShinyLockedSpeciesForm(blank.Species, blank.Form))||(shiny && tr.Generation!=6 && blank.Species != (ushort)Species.Vivillon && blank.Form !=18))
+        if ((shiny && !SimpleEdits.IsShinyLockedSpeciesForm(blank.Species, blank.Form))||(shiny && tr.Generation!=6 && blank.Species != (ushort)Vivillon && blank.Form !=18))
             setText += Environment.NewLine + "Shiny: Yes";
 
         if (template is IAlphaReadOnly && alpha && tr.Version == GameVersion.PLA)
@@ -275,7 +278,7 @@ public static class ModLogic
         almres = tr.TryAPIConvert(set, t, nativeOnly);
         pk = almres.Created;
         success = almres.Status;
-        if (pk.Species is (ushort)Species.Gholdengo)
+        if (pk.Species is (ushort)Gholdengo)
         {
             pk.SetSuggestedFormArgument();
             pk.SetSuggestedMoves();
@@ -291,15 +294,13 @@ public static class ModLogic
         var species = pk.Species;
         switch ((Species)species)
         {
-            case Species.Floette when form == 5:
+            case Floette when form == 5:
                 return true;
-            case Species.Shaymin
-                or Species.Furfrou
-                or Species.Hoopa when form != 0 && generation <= 6:
+            case Shaymin or Furfrou or Hoopa when form != 0 && generation <= 6:
                 return true;
-            case Species.Arceus when generation == 4 && form == 9: // ??? form
+            case Arceus when generation == 4 && form == 9: // ??? form
                 return true;
-            case Species.Scatterbug or Species.Spewpa when form == 19:
+            case Scatterbug or Spewpa when form == 19:
                 return true;
         }
         if (FormInfo.IsBattleOnlyForm(pk.Species, form, generation))
@@ -325,12 +326,12 @@ public static class ModLogic
         var generation = ((GameVersion)game).GetGeneration();
         return species switch
         {
-            (ushort)Species.Arceus => generation != 4 || form < 9 ? SimpleEdits.GetArceusHeldItemFromForm(form) : SimpleEdits.GetArceusHeldItemFromForm(form - 1),
-            (ushort)Species.Silvally => SimpleEdits.GetSilvallyHeldItemFromForm(form),
-            (ushort)Species.Genesect => SimpleEdits.GetGenesectHeldItemFromForm(form),
-            (ushort)Species.Giratina => form == 1 && generation < 9 ? 112 : form == 1 ? 1779 : null, // Griseous Orb
-            (ushort)Species.Zacian => form == 1 ? 1103 : null, // Rusted Sword
-            (ushort)Species.Zamazenta => form == 1 ? 1104 : null, // Rusted Shield
+            (ushort)Arceus => generation != 4 || form < 9 ? SimpleEdits.GetArceusHeldItemFromForm(form) : SimpleEdits.GetArceusHeldItemFromForm(form - 1),
+            (ushort)Silvally => SimpleEdits.GetSilvallyHeldItemFromForm(form),
+            (ushort)Genesect => SimpleEdits.GetGenesectHeldItemFromForm(form),
+            (ushort)Giratina => form == 1 && generation < 9 ? 112 : form == 1 ? 1779 : null, // Griseous Orb
+            (ushort)Zacian => form == 1 ? 1103 : null, // Rusted Sword
+            (ushort)Zamazenta => form == 1 ? 1104 : null, // Rusted Shield
             _ => null,
         };
     }
@@ -437,7 +438,7 @@ public static class ModLogic
             }
             while (!sav.Personal.IsPresentInGame(rough.Species, rough.Form) || FormInfo.IsLordForm(rough.Species, rough.Form, sav.Context) || FormInfo.IsBattleOnlyForm(rough.Species, rough.Form, sav.Generation) || FormInfo.IsFusedForm(rough.Species, rough.Form, sav.Generation) || (FormInfo.IsTotemForm(rough.Species, rough.Form) && sav.Context is not EntityContext.Gen7));
 
-            if (rough.Species is ((ushort)Species.Meowstic) or ((ushort)Species.Indeedee))
+            if (rough.Species is ((ushort)Meowstic) or ((ushort)Indeedee))
             {
                 rough.Gender = rough.Form;
                 rough.Form = rough.Gender;
@@ -447,7 +448,7 @@ public static class ModLogic
             if (item is not null)
                 rough.HeldItem = (int)item;
 
-            if (rough is { Species: (ushort)Species.Keldeo, Form: 1 })
+            if (rough is { Species: (ushort)Keldeo, Form: 1 })
                 rough.Move1 = (ushort)Move.SecretSword;
 
             if (GetIsFormInvalid(rough, sav, rough.Form))

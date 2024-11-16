@@ -18,7 +18,6 @@ public static class RegenTemplateExtensions
     /// <summary>
     /// Showdown quirks lets you have battle only moves in battle only forms. Transform back to base move.
     /// </summary>
-    /// <param name="set"></param>
     public static void SanitizeBattleMoves(this IBattleTemplate set)
     {
         switch (set.Species)
