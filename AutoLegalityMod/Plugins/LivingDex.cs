@@ -28,7 +28,7 @@ public class LivingDex : AutoModPlugin
             return;
 
         var sav = SaveFileEditor.SAV;
-        var dex = sav.GenerateLivingDex();
+        var dex = sav.GenerateLivingDex(sav.Personal);
         List<PKM> extra = [];
         int generated = IngestToBoxes(sav, dex, extra);
         System.Diagnostics.Debug.WriteLine($"Generated Living Dex with {generated} entries.");

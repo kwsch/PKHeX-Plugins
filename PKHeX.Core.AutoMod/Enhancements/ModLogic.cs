@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -54,28 +53,29 @@ public static class ModLogic
     /// </summary>
     /// <param name="sav">Save File to receive the generated <see cref="PKM"/>.</param>
     /// <returns>Consumable list of newly generated <see cref="PKM"/> data.</returns>
-    public static IEnumerable<PKM> GenerateLivingDex(this SaveFile sav) => sav.GenerateLivingDex(Config);
+    public static IEnumerable<PKM> GenerateLivingDex(this ITrainerInfo sav, IPersonalTable personal) => sav.GenerateLivingDex(personal, Config);
 
     /// <summary>
     /// Gets a living dex (one per species, not every form)
     /// </summary>
     /// <param name="sav">Save File to receive the generated <see cref="PKM"/>.</param>
     /// <returns>Consumable list of newly generated <see cref="PKM"/> data.</returns>
-    public static IEnumerable<PKM> GenerateLivingDex(this SaveFile sav, LivingDexConfig cfg)
+    public static IEnumerable<PKM> GenerateLivingDex(this ITrainerInfo sav, IPersonalTable personal, LivingDexConfig cfg)
     {
         var pklist = new ConcurrentBag<PKM>();
         var tr = APILegality.UseTrainerData ? TrainerSettings.GetSavedTrainerData(sav.Generation) : sav;
-        var pt = sav.Personal;
-        var species = Enumerable.Range(1, sav.MaxSpeciesID).Select(x => (ushort)x);
-        Parallel.ForEach(species, s =>
+        var context = sav.Context;
+        var generation = sav.Generation;
+        Parallel.For(1, personal.MaxSpeciesID, id =>
         {
-            if (!pt.IsSpeciesInGame(s))
+            var s = (ushort)id;
+            if (!personal.IsSpeciesInGame(s))
                 return;
 
-            var num_forms = pt[s].FormCount;
+            var num_forms = personal[s].FormCount;
             var str = GameInfo.Strings;
             if (num_forms == 1 && cfg.IncludeForms) // Validate through form lists
-                num_forms = (byte)FormConverter.GetFormList(s, str.types, str.forms, GameInfo.GenderSymbolUnicode, sav.Context).Length;
+                num_forms = (byte)FormConverter.GetFormList(s, str.types, str.forms, GameInfo.GenderSymbolUnicode, context).Length;
             if (s == (ushort)Alcremie)
                 num_forms = (byte)(num_forms * 6);
             uint formarg = 0;
@@ -97,52 +97,59 @@ public static class ModLogic
                     }
                 }
 
-                if (!sav.Personal.IsPresentInGame(s, form) || FormInfo.IsLordForm(s, form, sav.Context) || FormInfo.IsBattleOnlyForm(s, form, sav.Generation) || FormInfo.IsFusedForm(s, form, sav.Generation) || (FormInfo.IsTotemForm(s, form) && sav.Context is not EntityContext.Gen7))
+                if (!personal.IsPresentInGame(s, form) || FormInfo.IsLordForm(s, form, context) || FormInfo.IsBattleOnlyForm(s, form, generation) || FormInfo.IsFusedForm(s, form, generation) || (FormInfo.IsTotemForm(s, form) && context is not EntityContext.Gen7))
                     continue;
                 var pk = AddPKM(sav, tr, s, form, cfg.SetShiny, cfg.SetAlpha, cfg.NativeOnly);
-                if (pk is not null && !pklist.Any(x => x.Species == pk.Species && x.Form == pk.Form && x.Species !=869))
-                {
-                    if (s == (ushort)Alcremie) pk.ChangeFormArgument(formarg);
-                    pklist.Add(pk);
-                    if (!cfg.IncludeForms)
-                        break;
-                }
+                if (pk is null || pklist.Any(x => x.Species == pk.Species && x.Form == pk.Form && x.Species != 869))
+                    continue;
+
+                if (s == (ushort)Alcremie)
+                    pk.ChangeFormArgument(formarg);
+                pklist.Add(pk);
+                if (!cfg.IncludeForms)
+                    break;
             }
         });
-        return pklist.OrderBy(z=>z.Species);
+        return pklist.OrderBy(z => z.Species);
     }
-    public static IEnumerable<PKM> GenerateTransferLivingDex(this SaveFile sav) => sav.GenerateTransferLivingDex(Config);
-    public static IEnumerable<PKM> GenerateTransferLivingDex(this SaveFile sav, LivingDexConfig cfg)
+
+    public static IEnumerable<PKM> GenerateTransferLivingDex(this ITrainerInfo src) => src.GenerateTransferLivingDex(Config);
+    public static IEnumerable<PKM> GenerateTransferLivingDex(this ITrainerInfo src, LivingDexConfig cfg)
     {
-        var resetevent = new ManualResetEvent(false);
-        var DestinationSave = SaveUtil.GetBlankSAV(cfg.TransferVersion, "ALM");
+        var srcPersonal = GameData.GetPersonal(src.Version);
+
+        // Destination restrictions
+        var destPersonal = GameData.GetPersonal(cfg.TransferVersion);
+        var context = cfg.TransferVersion.GetContext();
+        var generation = cfg.TransferVersion.GetGeneration();
+
         ConcurrentBag<PKM> pklist = [];
-        var tr = APILegality.UseTrainerData ? TrainerSettings.GetSavedTrainerData(sav.Version, sav.Generation, fallback: sav, lang: (LanguageID)sav.Language) : sav;
-        var pt = sav.Personal;
-        var species = Enumerable.Range(1, sav.MaxSpeciesID).Select(x => (ushort)x);
-        Parallel.ForEach(species, s =>
+        var tr = APILegality.UseTrainerData ? TrainerSettings.GetSavedTrainerData(src.Version, src.Generation, fallback: src, lang: (LanguageID)src.Language) : src;
+
+        Parallel.For(1, srcPersonal.MaxSpeciesID, id =>
         {
-            if (!pt.IsSpeciesInGame(s))
+            var s = (ushort)id;
+            if (!srcPersonal.IsSpeciesInGame(s))
                 return;
-            if (!DestinationSave.Personal.IsSpeciesInGame(s))
+            if (!destPersonal.IsSpeciesInGame(s))
                 return;
-            var num_forms = pt[s].FormCount;
+            var num_forms = srcPersonal[s].FormCount;
             var str = GameInfo.Strings;
             if (num_forms == 1 && cfg.IncludeForms) // Validate through form lists
-                num_forms = (byte)FormConverter.GetFormList(s, str.types, str.forms, GameInfo.GenderSymbolUnicode, sav.Context).Length;
+                num_forms = (byte)FormConverter.GetFormList(s, str.types, str.forms, GameInfo.GenderSymbolUnicode, context).Length;
 
             for (byte f = 0; f < num_forms; f++)
             {
-                if (!DestinationSave.Personal.IsPresentInGame(s, f) || FormInfo.IsLordForm(s, f, sav.Context) || FormInfo.IsBattleOnlyForm(s, f, sav.Generation) || FormInfo.IsFusedForm(s, f, sav.Generation) || (FormInfo.IsTotemForm(s, f) && sav.Context is not EntityContext.Gen7))
+                if (!destPersonal.IsPresentInGame(s, f) || FormInfo.IsLordForm(s, f, context) || FormInfo.IsBattleOnlyForm(s, f, generation) || FormInfo.IsFusedForm(s, f, generation) || (FormInfo.IsTotemForm(s, f) && context is not EntityContext.Gen7))
                     continue;
-                var form = cfg.IncludeForms ? f : GetBaseForm((Species)s, f, sav);
-                var pk = AddPKM(sav, tr, s, form, cfg.SetShiny, cfg.SetAlpha, cfg.NativeOnly);
-                if (pk is not null && !pklist.Any(x => x.Species == pk.Species && x.Form == pk.Form))
-                {
-                    pklist.Add(pk);
-                    if (!cfg.IncludeForms)
-                        break;
-                }
+                var form = cfg.IncludeForms ? f : GetBaseForm((Species)s, f, src);
+                var pk = AddPKM(src, tr, s, form, cfg.SetShiny, cfg.SetAlpha, cfg.NativeOnly);
+                if (pk is null || pklist.Any(x => x.Species == pk.Species && x.Form == pk.Form))
+                    continue;
+
+                pklist.Add(pk);
+                if (!cfg.IncludeForms)
+                    break;
             }
         });
         return pklist.OrderBy(z => z.Species);
@@ -153,7 +160,7 @@ public static class ModLogic
     private static bool IsRegionalSH(Species s) => s is Meowth or Slowpoke or Ponyta or Rapidash or Slowbro or Slowking or Farfetchd or Weezing or MrMime or Articuno or Moltres or Zapdos or Corsola or Zigzagoon or Linoone or Darumaka or Darmanitan or Yamask or Stunfisk;
     private static bool IsRegionalSM(Species s) => s is Rattata or Raticate or Raichu or Sandshrew or Sandslash or Vulpix or Ninetales or Diglett or Dugtrio or Meowth or Persian or Geodude or Graveler or Golem or Grimer or Muk or Marowak;
 
-    public static byte GetBaseForm(Species s, byte f, SaveFile sav)
+    public static byte GetBaseForm(Species s, byte f, ITrainerInfo sav)
     {
         var HasRegionalForm = sav.Version switch
         {
@@ -172,7 +179,7 @@ public static class ModLogic
 
         return f;
     }
-    private static PKM? AddPKM(SaveFile sav, ITrainerInfo tr, ushort species, byte form, bool shiny, bool alpha, bool nativeOnly)
+    private static PKM? AddPKM(ITrainerInfo sav, ITrainerInfo tr, ushort species, byte form, bool shiny, bool alpha, bool nativeOnly)
     {
         if (sav.GetRandomEncounter(species, form, shiny, alpha, nativeOnly, out var pk) && pk?.Species > 0)
         {
@@ -190,19 +197,6 @@ public static class ModLogic
             return pk1.ConvertToPK2();
         return null;
     }
-
-    /// <summary>
-    /// Gets a legal <see cref="PKM"/> from a random in-game encounter's data.
-    /// </summary>
-    /// <param name="sav">Save File to receive the generated <see cref="PKM"/>.</param>
-    /// <param name="species">Species ID to generate</param>
-    /// <param name="form">Form to generate; if left null, picks first encounter</param>
-    /// <param name="shiny"></param>
-    /// <param name="alpha"></param>
-    /// <param name="nativeOnly"></param>
-    /// <param name="pk">Result legal pkm</param>
-    /// <returns>True if a valid result was generated, false if the result should be ignored.</returns>
-    public static bool GetRandomEncounter(this SaveFile sav, ushort species, byte form, bool shiny, bool alpha, bool nativeOnly, out PKM? pk) => ((ITrainerInfo)sav).GetRandomEncounter(species, form, shiny, alpha, nativeOnly, out pk);
 
     /// <summary>
     /// Gets a legal <see cref="PKM"/> from a random in-game encounter's data.
