@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -85,12 +86,10 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
     public int Read(Span<byte> buffer)
     {
         lock (_sync)
-        {
             return ReadInternal(buffer);
-        }
     }
 
-    public byte[] ReadBytes(ulong offset, int length, RWMethod method)
+    public void ReadBytes(ulong offset, int length, RWMethod method, Span<byte> dest)
     {
         lock (_sync)
         {
@@ -106,10 +105,15 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
 
             // give it time to push data back
             Thread.Sleep((length / 256) + 100);
-            var buffer = new byte[(length * 2) + 1];
-            var _ = ReadInternal(buffer);
-            return Decoder.ConvertHexByteStringToBytes(buffer);
+            ReadResponse(dest[..length]);
         }
+    }
+
+    public byte[] ReadBytes(ulong offset, int length, RWMethod method)
+    {
+        var result = new byte[length];
+        ReadBytes(offset, length, method, result);
+        return result;
     }
 
     public byte[] ReadAbsoluteMulti(Dictionary<ulong, int> offsets)
@@ -122,10 +126,22 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
             // give it time to push data back
             var length = offsets.Values.Sum();
             Thread.Sleep((length / 256) + 100);
-            var buffer = new byte[(length * 2) + 1];
-            var _ = ReadInternal(buffer);
-            return Decoder.ConvertHexByteStringToBytes(buffer);
+            var result = new byte[length];
+            ReadResponse(result);
+            return result;
         }
+    }
+
+    private void ReadResponse(Span<byte> result)
+    {
+        var length = result.Length;
+        var size = (length * 2) + 1;
+        var rent = ArrayPool<byte>.Shared.Rent(size);
+        var buffer = rent.AsSpan(size);
+        var _ = ReadInternal(buffer);
+        Decoder.ConvertHexByteStringToBytes(buffer, result);
+        buffer.Clear();
+        ArrayPool<byte>.Shared.Return(rent);
     }
 
     public void WriteBytes(ReadOnlySpan<byte> data, ulong offset, RWMethod method)
@@ -147,18 +163,24 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
         }
     }
 
-    public byte[] ReadLargeBytes(ulong offset, int length, RWMethod method)
+    public void ReadLargeBytes(ulong offset, int length, RWMethod method, Span<byte> dest)
     {
         const int maxlength = 344 * 30;
-        var concatlist = new List<byte[]>();
         while (length > 0)
         {
             var readlength = Math.Min(maxlength, length);
             length -= readlength;
-            concatlist.Add(ReadBytes(offset, readlength, method));
+            ReadBytes(offset, readlength, method, dest);
             offset += (ulong)readlength;
+            dest = dest[readlength..];
         }
-        return ArrayUtil.ConcatAll(concatlist.ToArray());
+    }
+
+    public byte[] ReadLargeBytes(ulong offset, int length, RWMethod method)
+    {
+        var result = new byte[length];
+        ReadLargeBytes(offset, length, method, result);
+        return result;
     }
 
     public void WriteLargeBytes(ReadOnlySpan<byte> data, ulong offset, RWMethod method)
@@ -178,21 +200,23 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
             offset += maxlength;
         }
     }
-    public static byte[] SliceSafe(ReadOnlySpan<byte> src, int offset, int length)
+
+    public static ReadOnlySpan<byte> SliceSafe(ReadOnlySpan<byte> src, int offset, int length)
     {
         var delta = src.Length - offset;
         if (delta < length)
             length = delta;
-        return src.Slice(offset, length).ToArray();
+        return src.Slice(offset, length);
     }
+
     public ulong GetHeapBase()
     {
         var cmd = SwitchCommand.GetHeapBase();
         SendInternal(cmd);
 
-        var buffer = new byte[17];
-        var _ = ReadInternal(buffer);
-        return Convert.ToUInt64(string.Concat(buffer.Select(z => (char)z)).Trim(), 16);
+        Span<byte> result = stackalloc byte[8];
+        ReadResponse(result);
+        return System.Buffers.Binary.BinaryPrimitives.ReadUInt64BigEndian(result);
     }
 
     public string GetTitleID()
@@ -200,7 +224,7 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
         var cmd = SwitchCommand.GetTitleID();
         SendInternal(cmd);
 
-        var buffer = new byte[17];
+        Span<byte> buffer = stackalloc byte[17];
         var _ = ReadInternal(buffer);
         return Encoding.ASCII.GetString(buffer).Trim();
     }
@@ -220,7 +244,7 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
         SendInternal(cmd);
 
         var data = FlexRead();
-        return Encoding.UTF8.GetString(data).Trim(['\0', '\n']);
+        return Encoding.UTF8.GetString(data).Trim('\0', '\n');
     }
 
     public bool IsProgramRunning(ulong pid)
@@ -228,7 +252,7 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
         var cmd = SwitchCommand.IsProgramRunning(pid);
         SendInternal(cmd);
 
-        var buffer = new byte[17];
+        Span<byte> buffer = stackalloc byte[17];
         var _ = ReadInternal(buffer);
         return ulong.TryParse(Encoding.ASCII.GetString(buffer).Trim(), out var value) && value == 1;
     }

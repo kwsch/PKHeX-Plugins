@@ -152,7 +152,7 @@ public class LPBDSP(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, useCac
         return sb.ReadBytesAbsolute(pkmptr + 0x20, psb.SlotSize);
     }
 
-    public override void SendSlot(PokeSysBotMini psb, byte[] data, int box, int slot)
+    public override void SendSlot(PokeSysBotMini psb, ReadOnlySpan<byte> data, int box, int slot)
     {
         if (psb.com is not ICommunicatorNX sb)
             return;
@@ -161,16 +161,15 @@ public class LPBDSP(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, useCac
         sb.WriteBytesAbsolute(data, pkmptr + 0x20);
     }
 
-    public override void SendBox(PokeSysBotMini psb, byte[] boxData, int box)
+    public override void SendBox(PokeSysBotMini psb, ReadOnlySpan<byte> boxData, int box)
     {
         if (psb.com is not ICommunicatorNX sb)
             return;
 
-        ReadOnlySpan<byte> bytes = boxData;
-        byte[][] pkmData = bytes.Split(psb.SlotSize);
+        int size = psb.SlotSize;
         var pkmptrs = GetPokemonPointers(psb, box);
         for (int i = 0; i < psb.SlotCount; i++)
-            sb.WriteBytesAbsolute(pkmData[i], pkmptrs[i] + 0x20);
+            sb.WriteBytesAbsolute(boxData.Slice(i * size, size), pkmptrs[i] + 0x20);
     }
 
     public static readonly Func<PokeSysBotMini, byte[]?> GetTrainerData = psb =>
@@ -415,7 +414,7 @@ public class LPBDSP(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, useCac
         }
     }
 
-    public override void WriteBlockFromString(PokeSysBotMini psb, string block, byte[] data, object sb)
+    public override void WriteBlockFromString(PokeSysBotMini psb, string block, ReadOnlySpan<byte> data, object sb)
     {
         if (!FunctionMap.TryGetValue(block, out (Func<PokeSysBotMini, byte[]?>, Action<PokeSysBotMini, byte[]>) value))
         {

@@ -137,14 +137,13 @@ public class LPBasic(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, useCa
 
     public override byte[] ReadSlot(PokeSysBotMini psb, int box, int slot) => psb.com.ReadBytes(psb.GetSlotOffset(box, slot), psb.SlotSize + psb.GapSize);
 
-    public override void SendSlot(PokeSysBotMini psb, byte[] data, int box, int slot) => psb.com.WriteBytes(data, psb.GetSlotOffset(box, slot));
+    public override void SendSlot(PokeSysBotMini psb, ReadOnlySpan<byte> data, int box, int slot) => psb.com.WriteBytes(data, psb.GetSlotOffset(box, slot));
 
-    public override void SendBox(PokeSysBotMini psb, byte[] boxData, int box)
+    public override void SendBox(PokeSysBotMini psb, ReadOnlySpan<byte> boxData, int box)
     {
-        ReadOnlySpan<byte> bytes = boxData;
-        byte[][] pkmData = bytes.Split(psb.SlotSize);
+        var size = psb.SlotSize;
         for (int i = 0; i < psb.SlotCount; i++)
-            SendSlot(psb, pkmData[i], box, i);
+            SendSlot(psb, boxData.Slice(i * size, size), box, i);
     }
 
     public static readonly Func<PokeSysBotMini, byte[]?> GetTrainerData = psb =>

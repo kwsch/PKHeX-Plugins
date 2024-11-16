@@ -128,13 +128,13 @@ public abstract class InjectionBase(LiveHeXVersion lv, bool useCache) : PointerC
         return [];
     }
 
-    public virtual void SendBox(PokeSysBotMini psb, byte[] boxData, int box) { }
+    public virtual void SendBox(PokeSysBotMini psb, ReadOnlySpan<byte> boxData, int box) { }
 
-    public virtual void SendSlot(PokeSysBotMini psb, byte[] data, int box, int slot) { }
+    public virtual void SendSlot(PokeSysBotMini psb, ReadOnlySpan<byte> data, int box, int slot) { }
 
     public virtual void WriteBlocksFromSAV(PokeSysBotMini psb, string block, SaveFile sav) { }
 
-    public virtual void WriteBlockFromString(PokeSysBotMini psb, string block, byte[] data, object sb)
+    public virtual void WriteBlockFromString(PokeSysBotMini psb, string block, ReadOnlySpan<byte> data, object sb)
     { }
 
     public virtual bool ReadBlockFromString(PokeSysBotMini psb, SaveFile sav, string block, out List<byte[]>? read)

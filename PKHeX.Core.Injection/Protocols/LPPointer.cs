@@ -597,7 +597,7 @@ public class LPPointer(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, use
         return psb.com.ReadBytes(slotstart, slotsize);
     }
 
-    public override void SendSlot(PokeSysBotMini psb, byte[] data, int box, int slot)
+    public override void SendSlot(PokeSysBotMini psb, ReadOnlySpan<byte> data, int box, int slot)
     {
         if (psb.com is not ICommunicatorNX sb)
             return;
@@ -611,7 +611,7 @@ public class LPPointer(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, use
         psb.com.WriteBytes(data, slotstart);
     }
 
-    public override void SendBox(PokeSysBotMini psb, byte[] boxData, int box)
+    public override void SendBox(PokeSysBotMini psb, ReadOnlySpan<byte> boxData, int box)
     {
         if (psb.com is not ICommunicatorNX sb)
             return;
