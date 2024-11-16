@@ -62,7 +62,7 @@ public static class APILegality
         template.ApplySetDetails(set);
         template.SetRecordFlags([]); // Validate TR/MS moves for the encounter
 
-        if (template.Species == (ushort)Species.Unown) // Force unown form on template
+        if (template.Species == (ushort)Species.Unown) // Force Unown form on template
             template.Form = set.Form;
 
         var abilityreq = GetRequestedAbility(template, set);
@@ -343,6 +343,21 @@ public static class APILegality
         return false;
     }
 
+    private static readonly string[] MeisterNicknames =
+    [
+        "",
+        "ポッちゃん",
+        "Foppa",
+        "Bloupi",
+        "Mossy",
+        "Pador",
+        "",
+        "",
+        "",
+        "",
+        "",
+    ];
+
     /// <summary>
     /// Grab a trainer from trainer database with mutated language
     /// </summary>
@@ -354,21 +369,7 @@ public static class APILegality
         var mutate = regen.Extra.Language;
 
         // Edge case override for Meister Magikarp
-        var nicknames = new[]
-        {
-            "",
-            "ポッちゃん",
-            "Foppa",
-            "Bloupi",
-            "Mossy",
-            "Pador",
-            "",
-            "",
-            "",
-            "",
-            "",
-        };
-        var idx = Array.IndexOf(nicknames, set.Nickname);
+        var idx = Array.IndexOf(MeisterNicknames, set.Nickname);
         if (idx > 0)
             mutate = (LanguageID)idx;
 

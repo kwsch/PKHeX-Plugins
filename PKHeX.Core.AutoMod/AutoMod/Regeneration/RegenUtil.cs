@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace PKHeX.Core.AutoMod;
 
@@ -104,14 +105,12 @@ public static class RegenUtil
             sid = (int)(repack / mil);
         }
 
-        var result = new[]
-        {
-            $"OT: {trainer.OT}",
-            $"OTGender: {(trainer.Gender == 1 ? "Female" : "Male")}",
-            $"TID: {tid}",
-            $"SID: {sid}",
-        };
-        return string.Join(Environment.NewLine, result);
+        var sb = new StringBuilder();
+        sb.AppendLine($"OT: {trainer.OT}");
+        sb.AppendLine($"OTGender: {(trainer.Gender == 1 ? "Female" : "Male")}");
+        sb.AppendLine($"TID: {tid}");
+        sb.AppendLine($"SID: {sid}");
+        return sb.ToString();
     }
 
     public static string GetSummary(StringInstructionSet set)
