@@ -1152,7 +1152,7 @@ public static class APILegality
         // EC -> PID -> Flawless IV rolls -> Non-flawless IVs -> height -> weight
         uint seed;
         Xoroshiro128Plus rng;
-        var ivs = new[] { -1, -1, -1, -1, -1, -1 };
+        Span<int> ivs = [-1, -1, -1, -1, -1, -1];
 
         if (fixedseed != null)
         {
@@ -1195,7 +1195,7 @@ public static class APILegality
 
         // RNG is fixed now, and you have the requested shiny!
 
-        for (int i = ivs.Count(z => z == 31); i < flawless; i++)
+        for (int i = ivs.Count(31); i < flawless; i++)
         {
             int index = (int)rng.NextInt(6);
             while (ivs[index] != -1)

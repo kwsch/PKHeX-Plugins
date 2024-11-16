@@ -46,8 +46,7 @@ public static class ModLogic
     {
         Span<PKM> data = sav.GetBoxData(box);
         var sep = Environment.NewLine + Environment.NewLine;
-        var returnstring = data.GetRegenSets(sep);
-        return returnstring;
+        return data.GetRegenSets(sep);
     }
 
     /// <summary>
@@ -180,7 +179,16 @@ public static class ModLogic
             pk.Heal();
             return pk;
         }
-        return sav is SAV2 && GetRandomEncounter(new SAV1(GameVersion.Y) { Language = tr.Language, OT = tr.OT, TID16 = tr.TID16 }, species, form, shiny, false, nativeOnly, out var pkm) && pkm is PK1 pk1 ? pk1.ConvertToPK2() : (PKM?)null;
+
+        // If we didn't get an encounter, we still need to consider a Gen1->Gen2 trade.
+        if (sav is not { Generation: 2 })
+            return null;
+
+        tr = new SimpleTrainerInfo(GameVersion.YW) { Language = tr.Language, OT = tr.OT, TID16 = tr.TID16 };
+        var enc = tr.GetRandomEncounter(species, form, shiny, alpha, nativeOnly, out var pkm);
+        if (enc && pkm is PK1 pk1)
+            return pk1.ConvertToPK2();
+        return null;
     }
 
     /// <summary>
