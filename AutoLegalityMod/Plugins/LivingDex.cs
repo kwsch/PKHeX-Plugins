@@ -68,7 +68,7 @@ public class LivingDex : AutoModPlugin
 
     private static bool TryAdd(SaveFile sav, IList<PKM> extra, PKM pk, ref int slot)
     {
-        if (slot >= sav.BoxSlotCount)
+        if (slot >= sav.SlotCount)
         {
             extra.Add(pk);
             return true;

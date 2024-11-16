@@ -66,7 +66,7 @@ public static class PKSMUtil
     {
         Directory.CreateDirectory(dir);
         var ctr = 0;
-        var version = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bank[8..]);
+        var version = ReadUInt32LittleEndian(bank[8..]);
         var ver = (PKSMBankVersion)(version & 0xFF);
         var pkmsize = GetBankSize(ver);
         var start = GetBankStartIndex(ver);
