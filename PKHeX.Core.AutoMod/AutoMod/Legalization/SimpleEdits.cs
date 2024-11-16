@@ -642,7 +642,7 @@ public static class SimpleEdits
             pk.MetDate = time.Start;
     }
 
-    public static bool TryApplyHardcodedSeedWild8(PK8 pk, IEncounterable enc, int[] ivs, Shiny requestedShiny)
+    public static bool TryApplyHardcodedSeedWild8(PK8 pk, IEncounterable enc, ReadOnlySpan<int> ivs, Shiny requestedShiny)
     {
         // Don't bother if there is no overworld correlation
         if (enc is not IOverworldCorrelation8 eo)
@@ -715,7 +715,7 @@ public static class SimpleEdits
         _ => false,
     };
 
-    public static void SetRecordFlags(this PKM pk, ushort[] moves)
+    public static void SetRecordFlags(this PKM pk, ReadOnlySpan<ushort> moves)
     {
         if (pk is ITechRecord tr and not PA8)
         {

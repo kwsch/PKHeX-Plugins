@@ -120,7 +120,7 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
             SendInternal(cmd);
 
             // give it time to push data back
-            var length = offsets.Values.ToArray().Sum();
+            var length = offsets.Values.Sum();
             Thread.Sleep((length / 256) + 100);
             var buffer = new byte[(length * 2) + 1];
             var _ = ReadInternal(buffer);
@@ -170,14 +170,12 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
             return;
         }
 
-        int chunk = 0;
         int byteCount = data.Length;
         for (int i = 0; i < byteCount; i += maxlength)
         {
             var ba = SliceSafe(data, i, maxlength);
             WriteBytes(ba, offset, method);
             offset += maxlength;
-            chunk++;
         }
     }
     public static byte[] SliceSafe(ReadOnlySpan<byte> src, int offset, int length)
@@ -185,10 +183,7 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
         var delta = src.Length - offset;
         if (delta < length)
             length = delta;
-
-        byte[] data = new byte[length];
-        Buffer.BlockCopy(src.ToArray(), offset, data, 0, data.Length);
-        return data;
+        return src.Slice(offset, length).ToArray();
     }
     public ulong GetHeapBase()
     {
@@ -268,7 +263,7 @@ public class SysBotMini : ICommunicatorNX, IPokeBlocks
 
                 Thread.Sleep((0x1C0 / 256) + 64);
                 available = Connection.Available;
-            } while (flexBuffer.Count == 0 || flexBuffer.Last() != (byte)'\n');
+            } while (flexBuffer.Count == 0 || flexBuffer[^1] != (byte)'\n');
 
             Connection.ReceiveTimeout = 0;
             return [.. flexBuffer];

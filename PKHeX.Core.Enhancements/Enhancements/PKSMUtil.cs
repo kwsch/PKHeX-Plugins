@@ -18,12 +18,12 @@ public static class PKSMUtil
         var version = BitConverter.GetBytes(ver + 1); // Latest bank version
         var pksmsize = GetBankSize((PKSMBankVersion)ver);
         var boxcount = (files.Length / 30) + 1;
-        var bank = new byte[8 + 4 + 4 + (boxcount * pksmsize * 30)];
+        var bank = new byte[8 + 4 + 4 + (boxcount * pksmsize * 30)].AsSpan();
         var ctr = 0;
-        var magic = "PKSMBANK"u8.ToArray(); // PKSMBANK
-        magic.CopyTo(bank, 0);
-        version.CopyTo(bank, 8);
-        BitConverter.GetBytes(boxcount).CopyTo(bank, 12); // Number of bank boxes.
+        var magic = "PKSMBANK"u8; // PKSMBANK
+        magic.CopyTo(bank);
+        version.CopyTo(bank[8..]);
+        BitConverter.GetBytes(boxcount).CopyTo(bank[12..]); // Number of bank boxes.
         foreach (var f in files)
         {
             var prefer = EntityFileExtension.GetContextFromExtension(f, EntityContext.None);
@@ -35,20 +35,21 @@ public static class PKSMUtil
                 continue;
 
             var ofs = 16 + (ctr * pksmsize);
-            BitConverter.GetBytes((int)GetPKSMFormat(pk)).CopyTo(bank, ofs);
-            pk.DecryptedBoxData.CopyTo(bank, ofs + 4);
-            byte[] temp = Enumerable.Repeat((byte)0xFF, pksmsize - pk.DecryptedBoxData.Length - 8).ToArray();
-            temp.CopyTo(bank, ofs + pk.DecryptedBoxData.Length + 4);
-            temp = Enumerable.Repeat((byte)0x00, 4).ToArray();
-            temp.CopyTo(bank, ofs + pksmsize - 4);
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(bank[ofs..], (int)GetPKSMFormat(pk));
+            var decrypted = pk.DecryptedBoxData;
+            decrypted.CopyTo(bank[(ofs + 4)..]);
+
+            var repeat = pksmsize - decrypted.Length - 8;
+            var tail = bank.Slice(ofs + decrypted.Length + 4, repeat);
+            tail.Fill(0xFF);
+            // remainder stays 00
             ctr++;
         }
         var empty = (boxcount * 30) - files.Length;
         for (int i = 0; i < empty; i++)
         {
             var ofs = 16 + (ctr * pksmsize);
-            byte[] temp = Enumerable.Repeat((byte)0xFF, pksmsize).ToArray();
-            temp.CopyTo(bank, ofs);
+            bank.Slice(ofs, pksmsize).Fill(0xFF);
             ctr++;
         }
         File.WriteAllBytes(Path.Combine(dir, "pksm_1.bnk"), bank);

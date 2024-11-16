@@ -34,7 +34,7 @@ public sealed class RegenTemplate : IBattleTemplate
 
     private readonly string ParentLines;
 
-    private RegenTemplate(ShowdownSet set, int gen = PKX.Generation, string text = "")
+    private RegenTemplate(ShowdownSet set, byte gen = PKX.Generation, string text = "")
     {
         Species = set.Species;
         Context = set.Context;
@@ -81,7 +81,7 @@ public sealed class RegenTemplate : IBattleTemplate
         set.InvalidLines.Clear();
     }
 
-    public RegenTemplate(PKM pk, int gen = PKX.Generation) : this(new ShowdownSet(pk), gen)
+    public RegenTemplate(PKM pk, byte gen = PKX.Generation) : this(new ShowdownSet(pk), gen)
     {
         this.FixGender(pk.PersonalInfo);
         if (!pk.IsNicknamed)
@@ -91,9 +91,9 @@ public sealed class RegenTemplate : IBattleTemplate
         Shiny = Regen.Extra.IsShiny;
     }
 
-    private static int[] SanitizeEVs(int[] evs, int gen)
+    private static int[] SanitizeEVs(ReadOnlySpan<int> evs, byte gen)
     {
-        var copy = (int[])evs.Clone();
+        var copy = evs.ToArray();
         int maxEV = gen >= 6 ? 252 : gen >= 3 ? 255 : 65535;
         for (int i = 0; i < evs.Length; i++)
         {

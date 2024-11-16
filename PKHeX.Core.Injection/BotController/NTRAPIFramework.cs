@@ -168,9 +168,7 @@ public sealed class NTR
                         Log(logMsg);
                     }
                     lock (_syncLock)
-                    {
                         _heartbeatSendable = 1;
-                    }
                     continue;
                 }
                 if (dataLen != 0)
@@ -321,16 +319,16 @@ public sealed class NTR
 
     private void SendHeartbeatPacket()
     {
-        if (_tcp != null)
+        if (_tcp == null)
+            return;
+
+        lock (_syncLock)
         {
-            lock (_syncLock)
-            {
-                if (_heartbeatSendable == 1)
-                {
-                    _heartbeatSendable = 0;
-                    SendPacket(0, 0, null, 0);
-                }
-            }
+            if (_heartbeatSendable != 1)
+                return;
+
+            _heartbeatSendable = 0;
+            SendPacket(0, 0, null, 0);
         }
     }
 
@@ -356,7 +354,7 @@ public sealed class NTR
         }
     }
 
-    private static string[] pnamestr =
+    private static readonly string[] pnamestr =
     [
         "kujira-1",
         "kujira-2",
@@ -394,7 +392,7 @@ public sealed class NTR
     private void HandleDataReady(object? sender, DataReadyEventArgs e)
     {
         // We move data processing to a separate thread. This way even if processing takes a long time, the netcode doesn't hang.
-        if (_waitingForData.TryGetValue(e.Seq, out DataReadyWaiting? args) && args != null)
+        if (_waitingForData.TryGetValue(e.Seq, out DataReadyWaiting? args))
         {
             Array.Copy(e.Data, args.Data, Math.Min(e.Data.Length, args.Data.Length));
 #pragma warning disable CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).

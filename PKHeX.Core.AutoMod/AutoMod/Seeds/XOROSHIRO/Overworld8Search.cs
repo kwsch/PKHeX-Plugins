@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace PKHeX.Core.AutoMod;
 
@@ -278,14 +279,12 @@ public static class Overworld8Search
         { ComputeIV32([31, 31, 31, 0, 31, 31]), 0x112AB13B },
     };
 
-    private static int GetWildSeedFromIV8(int[] fixedivs, int iv32, out uint seed)
+    private static int GetWildSeedFromIV8(ReadOnlySpan<int> fixedCountIVs, int iv32, out uint seed)
     {
-        foreach (int i in fixedivs)
+        foreach (int i in fixedCountIVs)
         {
             if (CheckValidSeed(i, iv32, out seed))
-            {
                 return i;
-            }
         }
         seed = 0;
         return -1;
@@ -310,9 +309,9 @@ public static class Overworld8Search
         return seeds.TryGetValue(iv32, out seed);
     }
 
-    private static readonly int[] FlawlessWild8 = [0, 2, 3];
+    private static ReadOnlySpan<int> FlawlessWild8 => [0, 2, 3];
 
-    public static int GetFlawlessIVCount(IEncounterable enc, int[] ivs, out uint seed)
+    public static int GetFlawlessIVCount(IEncounterable enc, ReadOnlySpan<int> ivs, out uint seed)
     {
         var iv32 = ComputeIV32Swapped(ivs);
         seed = 0;
@@ -325,7 +324,7 @@ public static class Overworld8Search
         };
     }
 
-    private static int ComputeIV32(int[] arr)
+    private static int ComputeIV32(ReadOnlySpan<int> arr)
     {
         int result = 0;
         for (int i = 0; i < arr.Length; i++)
@@ -336,7 +335,7 @@ public static class Overworld8Search
         return result;
     }
 
-    private static int ComputeIV32Swapped(int[] ivs)
+    private static int ComputeIV32Swapped(ReadOnlySpan<int> ivs)
     {
         // { IV_HP, IV_ATK, IV_DEF, IV_SPE, IV_SPA, IV_SPD } (original order)
         // { IV_HP, IV_ATK, IV_DEF, IV_SPA, IV_SPD, IV_SPE } (corrected order)
