@@ -14,7 +14,7 @@ public static class TrainerSettings
     public static readonly string TrainerPath = Path.Combine(Path.GetDirectoryName(ProcessPath) ?? string.Empty , "trainers");
     private static readonly SimpleTrainerInfo DefaultFallback8 = new(GameVersion.SW) { Generation = 8 };
     private static readonly SimpleTrainerInfo DefaultFallback7 = new(GameVersion.UM) { Generation = 7 };
-    private static readonly GameVersion[] FringeVersions =
+    private static ReadOnlySpan<GameVersion> FringeVersions =>
     [
         GameVersion.GG,
         GameVersion.BDSP,
@@ -80,15 +80,10 @@ public static class TrainerSettings
     /// <returns>Parent trainer data that originates from the <see cref="PKM.Version"/>. If none found, will return the <see cref="fallback"/>.</returns>
     public static ITrainerInfo GetSavedTrainerData(byte generation, GameVersion ver = GameVersion.Any, ITrainerInfo? fallback = null, LanguageID? lang = null)
     {
-        ITrainerInfo? trainer = null;
-        var special_version = FringeVersions.Any(z => z.Contains(ver));
-        if (!special_version)
+        bool isSpecialVersion = IsSpecialVersion(ver);
+        if (isSpecialVersion)
         {
-            trainer = Database.GetTrainerFromGen(generation, lang);
-        }
-        else
-        {
-            var super_special_version = ver switch
+            var tr = ver switch
             {
                 GameVersion.BD => GameVersion.SP,
                 GameVersion.SP => GameVersion.BD,
@@ -96,19 +91,34 @@ public static class TrainerSettings
                 GameVersion.GP => GameVersion.GE,
                 _ => GameVersion.PLA,
             };
-            trainer = Database.GetTrainer(super_special_version, lang);
+            var trainer = Database.GetTrainer(tr, lang);
+            if (trainer is not null)
+                return trainer;
+        }
+        else
+        {
+            var trainer = Database.GetTrainerFromGen(generation, lang);
+            if (trainer is not null)
+                return trainer;
         }
 
-        if (trainer != null)
-            return trainer;
-
         if (fallback == null)
-            return special_version ? DefaultFallback(ver, lang) : DefaultFallback(generation, lang);
+            return isSpecialVersion ? DefaultFallback(ver, lang) : DefaultFallback(generation, lang);
 
         if (lang == null)
             return fallback;
 
-        return lang == (LanguageID)fallback.Language ? fallback : special_version ? DefaultFallback(ver, lang) : DefaultFallback(generation, lang);
+        return lang == (LanguageID)fallback.Language ? fallback : isSpecialVersion ? DefaultFallback(ver, lang) : DefaultFallback(generation, lang);
+    }
+
+    private static bool IsSpecialVersion(GameVersion ver)
+    {
+        foreach (var fringe in FringeVersions)
+        {
+            if (fringe.Contains(ver))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>
