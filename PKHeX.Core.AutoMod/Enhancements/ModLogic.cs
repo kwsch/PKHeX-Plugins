@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+
 namespace PKHeX.Core.AutoMod
 {
     /// <summary>
@@ -163,10 +164,8 @@ namespace PKHeX.Core.AutoMod
                     return 2;
                 return 1;
             }
-            else
-            {
-                return f;
-            }
+
+            return f;
         }
         private static PKM? AddPKM(SaveFile sav, ITrainerInfo tr, ushort species, byte form, bool shiny, bool alpha, bool nativeOnly)
         {
