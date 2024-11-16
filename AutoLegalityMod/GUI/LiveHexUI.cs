@@ -517,7 +517,7 @@ public partial class LiveHeXUI : Form, ISlotViewer<PictureBox>
                 return new List<string>();
             }
 
-            var blks = value.Select(z => z.Display).Distinct().OrderBy(z => z);
+            var blks = value.Select(z => z.Display).Distinct().Order();
             return blks;
         }
 
@@ -525,14 +525,14 @@ public partial class LiveHeXUI : Form, ISlotViewer<PictureBox>
         {
             var save_blocks = LPBDSP.FunctionMap.Keys;
             var custom_blocks = LPBDSP.types.Select(t => t.Name);
-            var blks = save_blocks.Concat(custom_blocks).OrderBy(z => z);
+            var blks = save_blocks.Concat(custom_blocks).Order();
             return blks;
         }
 
         if (Remote.Bot.Injector is LPPointer)
         {
             var save_blocks = LPPointer.SCBlocks[lv].Select(z => z.Display).Distinct();
-            var blks = save_blocks.OrderBy(z => z);
+            var blks = save_blocks.Order();
             return blks;
         }
 

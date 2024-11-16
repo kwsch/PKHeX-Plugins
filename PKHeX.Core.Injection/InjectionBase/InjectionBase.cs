@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using static PKHeX.Core.Injection.LiveHeXVersion;
 
 namespace PKHeX.Core.Injection;
 
@@ -25,82 +26,18 @@ public abstract class InjectionBase(LiveHeXVersion lv, bool useCache) : PointerC
     private const string Scarlet_ID = "0100A3D008C5C000";
     private const string Violet_ID = "01008F6008C5E000";
 
-    private static readonly Dictionary<string, LiveHeXVersion[]> SupportedTitleVersions =
-        new()
-        {
-            { LetsGoPikachu_ID, [LiveHeXVersion.LGPE_v102] },
-            { LetsGoEevee_ID, [LiveHeXVersion.LGPE_v102] },
-            {
-                Sword_ID, [
-                    LiveHeXVersion.SWSH_v111,
-                    LiveHeXVersion.SWSH_v121,
-                    LiveHeXVersion.SWSH_v132,
-                ]
-            },
-            {
-                Shield_ID, [
-                    LiveHeXVersion.SWSH_v111,
-                    LiveHeXVersion.SWSH_v121,
-                    LiveHeXVersion.SWSH_v132,
-                ]
-            },
-            {
-                ShiningPearl_ID, [
-                    LiveHeXVersion.SP_v100,
-                    LiveHeXVersion.SP_v110,
-                    LiveHeXVersion.BDSP_v112,
-                    LiveHeXVersion.BDSP_v113,
-                    LiveHeXVersion.BDSP_v120,
-                    LiveHeXVersion.SP_v130,
-                ]
-            },
-            {
-                BrilliantDiamond_ID, [
-                    LiveHeXVersion.BD_v100,
-                    LiveHeXVersion.BD_v110,
-                    LiveHeXVersion.BDSP_v112,
-                    LiveHeXVersion.BDSP_v113,
-                    LiveHeXVersion.BDSP_v120,
-                    LiveHeXVersion.BD_v130,
-                ]
-            },
-            {
-                LegendsArceus_ID, [
-                    LiveHeXVersion.LA_v100,
-                    LiveHeXVersion.LA_v101,
-                    LiveHeXVersion.LA_v102,
-                    LiveHeXVersion.LA_v111,
-                ]
-            },
-            {
-                Scarlet_ID, [
-                    LiveHeXVersion.SV_v101,
-                    LiveHeXVersion.SV_v110,
-                    LiveHeXVersion.SV_v120,
-                    LiveHeXVersion.SV_v130,
-                    LiveHeXVersion.SV_v131,
-                    LiveHeXVersion.SV_v132,
-                    LiveHeXVersion.SV_v201,
-                    LiveHeXVersion.SV_v202,
-                    LiveHeXVersion.SV_v300,
-                    LiveHeXVersion.SV_v301,
-                ]
-            },
-            {
-                Violet_ID, [
-                    LiveHeXVersion.SV_v101,
-                    LiveHeXVersion.SV_v110,
-                    LiveHeXVersion.SV_v120,
-                    LiveHeXVersion.SV_v130,
-                    LiveHeXVersion.SV_v131,
-                    LiveHeXVersion.SV_v132,
-                    LiveHeXVersion.SV_v201,
-                    LiveHeXVersion.SV_v202,
-                    LiveHeXVersion.SV_v300,
-                    LiveHeXVersion.SV_v301,
-                ]
-            },
-        };
+    private static readonly Dictionary<string, LiveHeXVersion[]> SupportedTitleVersions = new()
+    {
+        { LetsGoPikachu_ID, [LGPE_v102] },
+        { LetsGoEevee_ID, [LGPE_v102] },
+        { Sword_ID,  [SWSH_v111, SWSH_v121, SWSH_v132] },
+        { Shield_ID, [SWSH_v111, SWSH_v121, SWSH_v132] },
+        { ShiningPearl_ID,     [SP_v100, SP_v110, BDSP_v112, BDSP_v113, BDSP_v120, SP_v130] },
+        { BrilliantDiamond_ID, [BD_v100, BD_v110, BDSP_v112, BDSP_v113, BDSP_v120, BD_v130] },
+        { LegendsArceus_ID, [LA_v100, LA_v101, LA_v102, LA_v111] },
+        { Scarlet_ID, [SV_v101, SV_v110, SV_v120, SV_v130, SV_v131, SV_v132, SV_v201, SV_v202, SV_v300, SV_v301] },
+        { Violet_ID,  [SV_v101, SV_v110, SV_v120, SV_v130, SV_v131, SV_v132, SV_v201, SV_v202, SV_v300, SV_v301] },
+    };
 
     public virtual Dictionary<string, string> SpecialBlocks { get; } = [];
 
@@ -112,21 +49,18 @@ public abstract class InjectionBase(LiveHeXVersion lv, bool useCache) : PointerC
         if (LPBDSP.GetVersions().Contains(version))
             return new LPBDSP(version, useCache);
 
-        if (LPPointer.GetVersions().Contains(version))
+        if (LPPointer.SupportedVersions.Contains(version))
             return new LPPointer(version, useCache);
 
-        return LPBasic.GetVersions().Contains(version) ? (InjectionBase)new LPBasic(version, useCache) : throw new NotImplementedException("Unknown LiveHeXVersion.");
+        if (!LPBasic.SupportedVersions.Contains(version))
+            throw new NotImplementedException("Unknown LiveHeXVersion.");
+
+        return new LPBasic(version, useCache);
     }
 
-    public virtual byte[] ReadBox(PokeSysBotMini psb, int box, int len, List<byte[]> allpkm)
-    {
-        return [];
-    }
+    public virtual byte[] ReadBox(PokeSysBotMini psb, int box, int len, List<byte[]> allpkm) => [];
 
-    public virtual byte[] ReadSlot(PokeSysBotMini psb, int box, int slot)
-    {
-        return [];
-    }
+    public virtual byte[] ReadSlot(PokeSysBotMini psb, int box, int slot) => [];
 
     public virtual void SendBox(PokeSysBotMini psb, ReadOnlySpan<byte> boxData, int box) { }
 
@@ -143,21 +77,20 @@ public abstract class InjectionBase(LiveHeXVersion lv, bool useCache) : PointerC
         return false;
     }
 
-    public static bool SaveCompatibleWithTitle(SaveFile sav, string titleID) =>
-        sav switch
-        {
-            SAV9SV when titleID is Scarlet_ID or Violet_ID => true,
-            SAV8LA when titleID is LegendsArceus_ID => true,
-            SAV8BS when titleID is BrilliantDiamond_ID or ShiningPearl_ID => true,
-            SAV8SWSH when titleID is Sword_ID or Shield_ID => true,
-            SAV7b when titleID is LetsGoPikachu_ID or LetsGoEevee_ID => true,
-            _ => false,
-        };
+    public static bool SaveCompatibleWithTitle(SaveFile sav, string titleID) => sav switch
+    {
+        SAV9SV when titleID is Scarlet_ID or Violet_ID => true,
+        SAV8LA when titleID is LegendsArceus_ID => true,
+        SAV8BS when titleID is BrilliantDiamond_ID or ShiningPearl_ID => true,
+        SAV8SWSH when titleID is Sword_ID or Shield_ID => true,
+        SAV7b when titleID is LetsGoPikachu_ID or LetsGoEevee_ID => true,
+        _ => false,
+    };
 
     public static LiveHeXVersion GetVersionFromTitle(string titleID, string gameVersion)
     {
         if (!SupportedTitleVersions.TryGetValue(titleID, out var versions))
-            return LiveHeXVersion.Unknown;
+            return Unknown;
 
         versions = versions.Reverse().ToArray();
         var sanitized = gameVersion.Replace(".", "");
@@ -171,7 +104,7 @@ public abstract class InjectionBase(LiveHeXVersion lv, bool useCache) : PointerC
             if (name == sanitized)
                 return version;
         }
-        return LiveHeXVersion.Unknown;
+        return Unknown;
     }
 
     public static bool CheckRAMShift(PokeSysBotMini psb, out string msg)

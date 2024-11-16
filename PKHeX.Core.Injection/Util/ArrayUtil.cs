@@ -8,6 +8,16 @@ namespace PKHeX.Core.Injection;
 /// </summary>
 public static class ArrayUtil
 {
+    public static bool Contains<T>(this ReadOnlySpan<T> arr, T value) where T : Enum
+    {
+        foreach (var v in arr)
+        {
+            if (v.Equals(value))
+                return true;
+        }
+        return false;
+    }
+
     internal static T[] ConcatAll<T>(params T[][] arr)
     {
         int len = 0;
