@@ -35,7 +35,7 @@ public static class PKSMUtil
                 continue;
 
             var ofs = 16 + (ctr * pksmsize);
-            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(bank[ofs..], (int)GetPKSMFormat(pk));
+            WriteInt32LittleEndian(bank[ofs..], (int)GetPKSMFormat(pk));
             var decrypted = pk.DecryptedBoxData;
             decrypted.CopyTo(bank[(ofs + 4)..]);
 
@@ -91,7 +91,7 @@ public static class PKSMUtil
     private static PKM? GetPKSMStoredPKM(ReadOnlySpan<byte> data)
     {
         // get format
-        var metadata = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(data);
+        var metadata = ReadUInt32LittleEndian(data);
         var format = (PKSMStorageFormat)(metadata & 0xFF);
         if (format >= PKSMStorageFormat.MAX_COUNT)
             return null;

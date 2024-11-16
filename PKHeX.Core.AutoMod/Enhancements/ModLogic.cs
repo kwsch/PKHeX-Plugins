@@ -179,6 +179,7 @@ public static class ModLogic
 
         return f;
     }
+
     private static PKM? AddPKM(ITrainerInfo sav, ITrainerInfo tr, ushort species, byte form, bool shiny, bool alpha, bool nativeOnly)
     {
         if (sav.GetRandomEncounter(species, form, shiny, alpha, nativeOnly, out var pk) && pk?.Species > 0)
@@ -412,8 +413,8 @@ public static class ModLogic
     {
         var result = new PKM[6];
         Span<int> ivs = stackalloc int[6];
-        var selectedSpecies = new HashSet<ushort>();
-        var rng = new Random();
+        Span<ushort> selectedSpecies = stackalloc ushort[6];
+        var rng = Util.Rand;
 
         int ctr = 0;
         MoveType[] types = APILegality.RandTypes;
@@ -479,8 +480,8 @@ public static class ModLogic
                     if (checknull.Status != LegalizationResult.Regenerated)
                         continue;
                     checknull.Created.ResetPartyStats();
+                    selectedSpecies[ctr] = spec;
                     result[ctr++] = checknull.Created;
-                    selectedSpecies.Add(spec);
                     continue;
                 }
             }
@@ -500,8 +501,8 @@ public static class ModLogic
                 continue;
             var pk = nullcheck.Created;
             pk.ResetPartyStats();
+            selectedSpecies[ctr] = spec;
             result[ctr++] = pk;
-            selectedSpecies.Add(spec);
         }
 
         return result;
