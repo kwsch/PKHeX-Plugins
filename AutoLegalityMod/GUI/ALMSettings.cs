@@ -8,7 +8,7 @@ namespace AutoModPlugins.GUI
 {
     public partial class ALMSettings : Form
     {
-        private PluginSettings pluginSettings;
+        private readonly PluginSettings pluginSettings;
 
         public ALMSettings(PluginSettings obj)
         {
@@ -35,32 +35,31 @@ namespace AutoModPlugins.GUI
             pluginSettings.Save();
         }
 
-        private static void EditSettingsProperties(object _settings)
+        private static void EditSettingsProperties(object settings)
         {
             var lang = WinFormsTranslator.CurrentLanguage;
             var translation = WinFormsTranslator.GetContext(lang);
-            var type_descriptor = TypeDescriptor.GetProvider(_settings).GetTypeDescriptor(_settings);
+            var type_descriptor = TypeDescriptor.GetProvider(settings).GetTypeDescriptor(settings);
             if (type_descriptor == null)
                 return;
             var ctd = new PropertyOverridingTypeDescriptor(type_descriptor);
-            foreach (var pd in TypeDescriptor.GetProperties(_settings).OfType<PropertyDescriptor>())
+            foreach (var pd in TypeDescriptor.GetProperties(settings).OfType<PropertyDescriptor>())
             {
                 var desc = "Property Description needs to be defined. Please raise this issue on GitHub or at the discord: https://discord.gg/tDMvSRv";
-                if (pd.Description != null)
+                if (pd.Description.Length != 0)
                     desc = translation.GetTranslatedText($"{pd.Name}_description", pd.Description);
 
                 var category = "Uncategorized Settings";
-
-                if (pd.Category != null)
+                if (pd.Category != "Misc")
                     category = translation.GetTranslatedText($"{pd.Name}_category", pd.Category);
 
                 if (desc == null || category == null)
                     throw new Exception("Category / Description translations are null");
 
-                PropertyDescriptor pd2 = TypeDescriptor.CreateProperty(_settings.GetType(), pd, new DescriptionAttribute(desc), new CategoryAttribute(category));
+                PropertyDescriptor pd2 = TypeDescriptor.CreateProperty(settings.GetType(), pd, new DescriptionAttribute(desc), new CategoryAttribute(category));
                 ctd.OverrideProperty(pd2);
             }
-            TypeDescriptor.AddProvider(new TypeDescriptorOverridingProvider(ctd), _settings);
+            TypeDescriptor.AddProvider(new TypeDescriptorOverridingProvider(ctd), settings);
         }
     }
 
