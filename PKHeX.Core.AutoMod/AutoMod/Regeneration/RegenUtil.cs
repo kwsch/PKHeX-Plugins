@@ -147,8 +147,7 @@ public static class RegenUtil
 
         if (tr is PokeTrainerDetails p)
         {
-            var clone = PokeTrainerDetails.Clone(p);
-            clone.Language = (int)lang;
+            var clone = new PokeTrainerDetails(p.Entity.Clone()) { Language = (int)lang };
             clone.OT = MutateOT(clone.OT, lang, ver);
             return clone;
         }

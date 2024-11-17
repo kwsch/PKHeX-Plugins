@@ -5,18 +5,16 @@ namespace PKHeX.Core.AutoMod;
 /// <summary>
 /// Wrapper for a <see cref="PKM"/> to provide details as if it were a <see cref="ITrainerInfo"/>
 /// </summary>
-public sealed class PokeTrainerDetails(PKM pk) : ITrainerInfo, IRegionOrigin
+public sealed record PokeTrainerDetails(PKM Entity) : ITrainerInfo, IRegionOrigin
 {
-    private readonly PKM pkm = pk;
-
     public ushort TID16
     {
-        get => pkm.TID16;
+        get => Entity.TID16;
         set => throw new ArgumentException("Setter for this object should never be called.");
     }
     public ushort SID16
     {
-        get => pkm.SID16;
+        get => Entity.SID16;
         set => throw new ArgumentException("Setter for this object should never be called.");
     }
     public uint ID32
@@ -28,46 +26,44 @@ public sealed class PokeTrainerDetails(PKM pk) : ITrainerInfo, IRegionOrigin
 
     public string OT
     {
-        get => pkm.OriginalTrainerName;
-        set => pkm.OriginalTrainerName = value;
+        get => Entity.OriginalTrainerName;
+        set => Entity.OriginalTrainerName = value;
     }
-    public byte Gender => pkm.OriginalTrainerGender;
-    public GameVersion Version => pkm.Version;
+    public byte Gender => Entity.OriginalTrainerGender;
+    public GameVersion Version => Entity.Version;
     public int Language
     {
-        get => pkm.Language;
-        set => pkm.Language = value;
+        get => Entity.Language;
+        set => Entity.Language = value;
     }
 
     public byte Country
     {
-        get => pkm is IGeoTrack gt ? gt.Country : (byte)49;
+        get => Entity is IGeoTrack gt ? gt.Country : (byte)49;
         set
         {
-            if (pkm is IGeoTrack gt)
+            if (Entity is IGeoTrack gt)
                 gt.Country = value;
         }
     }
     public byte Region
     {
-        get => pkm is IGeoTrack gt ? gt.Region : (byte)7;
+        get => Entity is IGeoTrack gt ? gt.Region : (byte)7;
         set
         {
-            if (pkm is IGeoTrack gt)
+            if (Entity is IGeoTrack gt)
                 gt.Region = value;
         }
     }
     public byte ConsoleRegion
     {
-        get => pkm is IGeoTrack gt ? gt.ConsoleRegion : (byte)1;
+        get => Entity is IGeoTrack gt ? gt.ConsoleRegion : (byte)1;
         set
         {
-            if (pkm is IGeoTrack gt)
+            if (Entity is IGeoTrack gt)
                 gt.ConsoleRegion = value;
         }
     }
-    public byte Generation => pkm.Generation;
-    public EntityContext Context => pkm.Context;
-
-    public static PokeTrainerDetails Clone(PokeTrainerDetails p) => new(p.pkm.Clone());
+    public byte Generation => Entity.Generation;
+    public EntityContext Context => Entity.Context;
 }

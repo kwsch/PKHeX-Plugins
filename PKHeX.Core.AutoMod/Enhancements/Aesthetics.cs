@@ -1058,8 +1058,6 @@ public static class Aesthetics
         ApplyFirstLegalBall(pk, enc, prefer);
     }
 
-    private static ReadOnlySpan<Ball> LowPriority => [Poke, LAPoke];
-
     public static Shiny GetShinyType(ReadOnlySpan<char> value)
     {
         if (Is(value, "Square")) return Shiny.AlwaysSquare;
