@@ -753,12 +753,6 @@ public static class APILegality
     }
 
     /// <summary>
-    /// Set matching colored Poké Ball based on the color API in PersonalTable
-    /// </summary>
-    /// <param name="pk">Return PKM</param>
-    public static void SetMatchingBall(this PKM pk) => BallApplicator.ApplyBallLegalByColor(pk);
-
-    /// <summary>
     /// Set forms of specific species to form 0 since they cannot have a form while boxed
     /// </summary>
     /// <param name="pk">Pokémon passed to the method</param>

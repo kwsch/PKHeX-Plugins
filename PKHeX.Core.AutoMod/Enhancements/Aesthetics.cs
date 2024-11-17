@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Linq;
-using static PKHeX.Core.AutoMod.Aesthetics.PersonalColor;
+using static PKHeX.Core.PersonalColor;
 using static PKHeX.Core.Ball;
 
 namespace PKHeX.Core.AutoMod;
 
 public static class Aesthetics
 {
+    public static PersonalColor GetShinyColor(ushort species, byte form) => ShinyMap[species];
+
     private static ReadOnlySpan<PersonalColor> ShinyMap =>
     [
         Green, // Bulbasaur
@@ -1051,13 +1053,6 @@ public static class Aesthetics
         static Ball Parse(ReadOnlySpan<char> tmp) => Enum.TryParse<Ball>(tmp, out var ball) ? ball : Ball.None;
     }
 
-    public static void ApplyShinyBall(PKM pk, IEncounterTemplate enc)
-    {
-        var color = ShinyMap[pk.Species];
-        var prefer = enc.Version == GameVersion.PLA ? GetColorsLA(color) : GetColors(color);
-        ApplyFirstLegalBall(pk, enc, prefer);
-    }
-
     public static Shiny GetShinyType(ReadOnlySpan<char> value)
     {
         if (Is(value, "Square")) return Shiny.AlwaysSquare;
@@ -1078,70 +1073,6 @@ public static class Aesthetics
         }
 
         return lang is LanguageID.Hacked or LanguageID.UNUSED_6 ? LanguageID.English : lang;
-    }
-
-    /// <summary>
-    /// Priority Match ball IDs that match the color ID in descending order
-    /// </summary>
-    private static ReadOnlySpan<Ball> GetColors(PersonalColor color) => color switch
-    {
-        Red => [Repeat, Fast, Heal, Great, Dream, Lure],
-        Blue => [Dive, Net, Great, Lure, Beast],
-        Yellow => [Level, Ultra, Repeat, Quick, Moon],
-        Green => [Safari, Friend, Nest, Dusk],
-        Black => [Luxury, Heavy, Ultra, Moon, Net, Beast],
-        Brown => [Level, Heavy],
-        Purple => [Master, Love, Heal, Dream],
-        Gray => [Heavy, Premier, Luxury],
-        White => [Premier, Timer, Luxury, Ultra],
-        _ => [Love, Heal, Dream],
-    };
-
-    private static ReadOnlySpan<Ball> GetColorsLA(PersonalColor color) => color switch
-    {
-        Red => [LAPoke],
-        Blue => [LAFeather, LAGreat, LAJet],
-        Yellow => [LAUltra],
-        Green => [LAPoke],
-        Black => [LAGigaton, LALeaden, LAHeavy, LAUltra],
-        Brown => [LAPoke],
-        Purple => [LAPoke],
-        Gray => [LAGigaton, LALeaden, LAHeavy],
-        White => [LAWing, LAJet],
-        _ => [LAPoke],
-    };
-
-    public static Ball ApplyFirstLegalBall(PKM pkm, IEncounterTemplate enc, ReadOnlySpan<Ball> balls)
-    {
-        var orig_ball = pkm.Ball;
-        ulong processed = 0;
-        foreach (var b in balls)
-        {
-            if (IsLegalWithBall(pkm, b))
-                return b;
-            processed |= 1UL << (byte)b;
-        }
-
-        for (byte b = 1; b < (byte)Strange; b++)
-        {
-            if ((processed & (1UL << b)) != 0)
-                continue;
-            if ((Ball)b is Poke or LAPoke)
-                continue;
-            if (IsLegalWithBall(pkm, (Ball)b))
-                return (Ball)b;
-        }
-        if (IsLegalWithBall(pkm, Poke))
-            return Poke;
-        if (IsLegalWithBall(pkm, LAPoke))
-            return LAPoke;
-        return (Ball)(pkm.Ball = orig_ball);
-    }
-
-    private static bool IsLegalWithBall(PKM pkm, Ball b)
-    {
-        pkm.Ball = (byte)b;
-        return new LegalityAnalysis(pkm).Valid;
     }
 
     private static bool IsDisallowed(RibbonIndex ribbon) => ribbon switch
@@ -1172,20 +1103,5 @@ public static class Aesthetics
         var randomindex = Util.Rand.Next(valid.Length);
         mark = (RibbonIndex)valid[randomindex];
         return true;
-    }
-
-    public enum PersonalColor : byte
-    {
-        Red,
-        Blue,
-        Yellow,
-        Green,
-        Black,
-
-        Brown,
-        Purple,
-        Gray,
-        White,
-        Pink,
     }
 }

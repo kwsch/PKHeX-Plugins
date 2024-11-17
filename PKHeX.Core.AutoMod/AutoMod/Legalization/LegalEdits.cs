@@ -26,44 +26,25 @@ public static class LegalEdits
     /// <param name="ball"></param>
     public static void SetSuggestedBall(this PKM pk, IEncounterTemplate enc, bool matching = true, bool force = false, Ball ball = Ball.None)
     {
-        var orig = pk.Ball;
-        if (ball == Ball.None)
-            force = false; // accept anything if no ball is specified
-
         if (enc is MysteryGift)
             return;
 
         if (ball != Ball.None)
         {
-            if (pk.LA && ReplaceBallPrefixLA)
+            if (pk.LA && ReplaceBallPrefixLA && pk is not PK8)
                 ball = GetBallLA(ball);
 
+            var orig = pk.Ball;
             pk.Ball = (byte)ball;
-        }
-        else if (matching)
-        {
-            if (!pk.IsShiny)
-                pk.SetMatchingBall();
-            else
-                Aesthetics.ApplyShinyBall(pk, enc);
-
-            if (force || new LegalityAnalysis(pk).Valid)
+            if (force || BallVerifier.VerifyBall(enc, ball, pk).IsValid())
                 return;
-        }
-
-        if (force || new LegalityAnalysis(pk).Valid)
-            return;
-
-        if (pk is { Generation: 5, MetLocation: 75 })
-        {
-            if (pk.Species == (ushort)Species.Shedinja)
-                pk.Ball = (int)Ball.Poke;
-            else
-                pk.Ball = (int)Ball.Dream;
-        }
-        else
-        {
             pk.Ball = orig;
+        }
+        if (matching)
+        {
+            bool isShiny = pk.IsShiny;
+            var color = !isShiny ? PersonalColorUtil.GetColor(pk) : Aesthetics.GetShinyColor(pk.Species, pk.Form);
+            BallApplicator.ApplyBallLegalByColor(pk, color); // TODO: use overload with enc on next NuGet release
         }
     }
 
