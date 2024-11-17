@@ -1255,7 +1255,8 @@ public static class APILegality
             }
             else if (species is (int)Species.Illumise or (int)Species.Volbeat)
             {
-                if (rng.NextUInt(2) != (int)Species.Illumise - species)
+                // 0: M, 1: F. Delta is F=0, reject if equals (mismatch).
+                if (rng.NextUInt(2) == (int)Species.Illumise - species)
                     continue;
             }
             else if (species == (int)Species.Indeedee)

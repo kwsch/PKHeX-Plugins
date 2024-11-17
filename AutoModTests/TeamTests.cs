@@ -28,7 +28,6 @@ public static class TeamTests
         {
             var legalsets = new List<RegenTemplate>();
             var illegalsets = new List<RegenTemplate>();
-            var setsTransfer = new List<ShowdownSet>();
 
             var sav = SaveUtil.GetBlankSAV(s.GetContext(), "ALMUT");
             RecentTrainerCache.SetRecentTrainer(sav);
@@ -41,14 +40,16 @@ public static class TeamTests
             {
                 // Edge case checks for transfers
                 // Test PA8 files in BD without moves
-                var noMoves = lines.Where(z => !z.StartsWith("- "));
-
-                // Giratina Origin from PLA has no item so will fail in BDSP
-                setsTransfer = ShowdownParsing.GetShowdownSets(noMoves).Where(z => z is not { Species: (ushort)Species.Giratina, Form: 1 }).ToList();
+                foreach (var set in sets)
+                    Array.Clear(set.Moves);
+                sets.RemoveAll(z => z is { Species: (ushort)Species.Giratina, Form: 1 });
             }
 
             // Filter sets based on if they are present in destination game
-            var filter = !paTransfer ? sets.Distinct(new ShowdownSetComparator()).Where(z => sav.Personal.IsPresentInGame(z.Species, z.Form)) : setsTransfer.Distinct(new ShowdownSetComparator()).Where(z => sav.Personal.IsPresentInGame(z.Species, z.Form));
+            var personal = sav.Personal;
+            var filter = sets
+                .Where(z => personal.IsPresentInGame(z.Species, z.Form))
+                .DistinctBy(z => z.Text);
 
             sets = filter.ToList();
             for (int i = 0; i < sets.Count; i++)
@@ -215,14 +216,4 @@ public static class TeamTests
     private const string UnderlevelPK7 = "Underleveled Tests/Underlevel - pk7.txt";
     private const string UnderlevelNTPK4 = "Underleveled Tests/Underlevel notransfer - pk4.txt";
     private const string UnderlevelVCPK7 = "Underleveled Tests/Underlevel VC - pk7.txt";
-}
-
-internal class ShowdownSetComparator : IEqualityComparer<ShowdownSet>
-{
-    public bool Equals(ShowdownSet? x, ShowdownSet? y)
-    {
-        return x != null && y != null && x.Text.Trim() == y.Text.Trim();
-    }
-
-    public int GetHashCode(ShowdownSet obj) => obj.Text.GetHashCode();
 }
