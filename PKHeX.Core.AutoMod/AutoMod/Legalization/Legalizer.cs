@@ -163,8 +163,7 @@ public static class Legalizer
 
     private static PKM GetEasterEggFromSet(this ITrainerInfo tr, IBattleTemplate set, PKM template)
     {
-        var gen = EasterEggs.GetGeneration(template.Species);
-        var species = (ushort)EasterEggs.GetMemeSpecies(gen, template);
+        var species = (ushort)EasterEggs.GetMemeSpecies(template.Context);
 
         template.Species = species;
         var form = template.GetAvailableForm();
@@ -176,7 +175,7 @@ public static class Legalizer
         if (legalencs && legal != null)
             template = legal;
 
-        template.SetNickname(EasterEggs.GetMemeNickname(gen, template));
+        template.SetNickname(EasterEggs.GetMemeNickname(template.Context));
         return template;
     }
 
