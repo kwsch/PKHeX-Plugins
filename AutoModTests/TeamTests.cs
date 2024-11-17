@@ -28,6 +28,7 @@ public static class TeamTests
         foreach (var s in saves)
         {
             var result = new TestResult(s);
+            results.Add(result);
             var sav = SaveUtil.GetBlankSAV(s.GetContext(), "ALMUT");
             RecentTrainerCache.SetRecentTrainer(sav);
 
@@ -156,9 +157,9 @@ public static class TeamTests
                 error.AppendLine(f.Result.Report());
             }
         }
-        var fileName = $"{Path.GetFileName(path).Replace('.', '_')}{DateTime.Now:_yyyy-MM-dd-HH-mm-ss}.log";
         if (error.Length != 0)
         {
+            var fileName = $"{Path.GetFileName(path).Replace('.', '_')}{DateTime.Now:_yyyy-MM-dd-HH-mm-ss}.log";
             var dest = Path.Combine(LogDirectory, fileName);
             File.WriteAllText(dest, error.ToString());
         }

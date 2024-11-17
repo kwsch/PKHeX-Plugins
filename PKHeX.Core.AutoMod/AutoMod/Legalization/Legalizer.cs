@@ -155,7 +155,7 @@ public static class Legalizer
         if (EnableEasterEggs)
         {
             var easteregg = tr.GetEasterEggFromSet(set, template);
-            return new AsyncLegalizationResult(easteregg, almres.Status);
+            return almres with { Created = easteregg };
         }
 
         return almres;
