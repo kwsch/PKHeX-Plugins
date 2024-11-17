@@ -42,6 +42,7 @@ public class ExportBoxToShowdown : AutoModPlugin
             WinFormsUtil.Error("Unable to export text to clipboard.", e.Message);
         }
     }
+
     public void Export2()
     {
         try

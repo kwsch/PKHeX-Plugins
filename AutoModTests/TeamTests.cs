@@ -6,6 +6,7 @@ using System.Linq;
 using FluentAssertions;
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
+using System.Text;
 using Xunit;
 using static PKHeX.Core.GameVersion;
 
@@ -21,14 +22,12 @@ public static class TeamTests
     private static string TestPath => TestUtil.GetTestFolder("ShowdownSets");
     private static string LogDirectory => Path.Combine(Directory.GetCurrentDirectory(), "logs");
 
-    private static Dictionary<GameVersion, Dictionary<string, RegenTemplate[]>> RunVerification(string file, GameVersion[] saves)
+    private static List<TestResult> RunVerification(string file, ReadOnlySpan<GameVersion> saves)
     {
-        var results = new Dictionary<GameVersion, Dictionary<string, RegenTemplate[]>>();
+        var results = new List<TestResult>(saves.Length);
         foreach (var s in saves)
         {
-            var legalsets = new List<RegenTemplate>();
-            var illegalsets = new List<RegenTemplate>();
-
+            var result = new TestResult(s);
             var sav = SaveUtil.GetBlankSAV(s.GetContext(), "ALMUT");
             RecentTrainerCache.SetRecentTrainer(sav);
 
@@ -67,11 +66,11 @@ public static class TeamTests
                     if (la.Valid)
                     {
                         Debug.WriteLine("Valid");
-                        legalsets.Add(regen);
+                        result.Legal.Add(regen);
                     }
                     else
                     {
-                        illegalsets.Add(regen);
+                        result.Failed.Add(new(regen, la));
                         Debug.WriteLine($"Invalid Set for {(Species)set.Species} in file {file} with set: {regen.Text}");
                     }
                 }
@@ -80,11 +79,6 @@ public static class TeamTests
                     Debug.WriteLine($"Exception for {(Species)set.Species} in file {file} with set: {set.Text}");
                 }
             }
-            results[s] = new Dictionary<string, RegenTemplate[]>
-            {
-                { "legal", legalsets.ToArray() },
-                { "illegal", illegalsets.ToArray() },
-            };
         }
         return results;
     }
@@ -143,29 +137,33 @@ public static class TeamTests
         var res = RunVerification(full, testversions);
         APILegality.EnableDevMode = dev;
 
-        var msg = "\n";
-        var error = string.Empty;
+        var msg = new StringBuilder();
+        var error = new StringBuilder();
         var testfailed = false;
-        foreach (var (gv, sets) in res)
+        foreach (var result in res)
         {
-            var illegalcount = sets["illegal"].Length;
+            var illegalcount = result.Failed.Count;
             if (illegalcount == 0)
-            {
                 continue;
-            }
 
             testfailed = true;
-            msg += $"GameVersion {gv} : Illegal: {illegalcount} | Legal: {sets["legal"].Length}\n";
-            error += $"\n\n=============== GameVersion: {gv} ===============\n\n";
-            error += string.Join("\n\n", sets["illegal"].Select(x => x.Text));
+            msg.AppendLine($"GameVersion {result.Version} : Illegal: {illegalcount} | Legal: {result.Legal.Count}");
+
+            error.AppendLine($"=============== GameVersion: {result.Version} ===============");
+            foreach (var f in result.Failed)
+            {
+                error.AppendLine(f.Set.Text);
+                error.AppendLine(f.Result.Report());
+            }
         }
         var fileName = $"{Path.GetFileName(path).Replace('.', '_')}{DateTime.Now:_yyyy-MM-dd-HH-mm-ss}.log";
-        if (error.Trim().Length > 0)
+        if (error.Length != 0)
         {
-            File.WriteAllText(Path.Combine(LogDirectory, fileName), error);
+            var dest = Path.Combine(LogDirectory, fileName);
+            File.WriteAllText(dest, error.ToString());
         }
 
-        testfailed.Should().BeFalse(msg);
+        testfailed.Should().BeFalse(msg.ToString());
     }
 
     // Anubis test file paths
@@ -216,4 +214,12 @@ public static class TeamTests
     private const string UnderlevelPK7 = "Underleveled Tests/Underlevel - pk7.txt";
     private const string UnderlevelNTPK4 = "Underleveled Tests/Underlevel notransfer - pk4.txt";
     private const string UnderlevelVCPK7 = "Underleveled Tests/Underlevel VC - pk7.txt";
+
+    public record TestResult(GameVersion Version)
+    {
+        public List<FailedTest> Failed = [];
+        public List<RegenTemplate> Legal = [];
+    }
+
+    public record FailedTest(RegenTemplate Set, LegalityAnalysis Result);
 }

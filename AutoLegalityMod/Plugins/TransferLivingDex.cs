@@ -20,6 +20,7 @@ public class TransferLivingDex : AutoModPlugin
         ctrl.Name = "Menu_TransferDex";
         modmenu.DropDownItems.Add(ctrl);
     }
+
     private void GenTLivingDex(object? sender, EventArgs e)
     {
         var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, $"Generate a Transfer Dex for {_settings.TransferVersion}?");

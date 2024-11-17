@@ -104,6 +104,7 @@ public class PasteImporter : AutoModPlugin
         WinFormsUtil.Alert("Text file with invalid data provided. Please provide a text file with proper Showdown data");
         return null;
     }
+
     public static int? GetFormSpecificItem(int game, int species, int form)
     {
         if (game == (int)GameVersion.PLA)
@@ -121,6 +122,7 @@ public class PasteImporter : AutoModPlugin
             _ => null,
         };
     }
+
     public static bool GetIsFormInvalid(PKM pk, ITrainerInfo tr, byte form)
     {
         var generation = tr.Generation;

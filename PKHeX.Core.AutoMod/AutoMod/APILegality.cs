@@ -169,7 +169,7 @@ public static class APILegality
             }
             // Verify the Legality of what we generated, and exit if it is valid.
             var la = new LegalityAnalysis(pk);
-            if (la.Valid && pk.Species == set.Species) // Encounter Trades that evolve may cause higher tahn expected species
+            if (la.Valid && pk.Species == set.Species) // Encounter Trades that evolve may cause higher than expected species
             {
                 satisfied = LegalizationResult.Regenerated;
                 return pk;
@@ -1468,6 +1468,7 @@ public static class APILegality
             break;
         } while (++count < 5_000_000);
     }
+
     private static bool IsMatchFromPKHeX(PKM pk, PKM request, int hiddenPower, bool shiny, byte gr, IEncounterTemplate enc, uint seed, PIDType Method)
     {
         if (pk.AbilityNumber != request.AbilityNumber && pk.Nature != request.Nature)
@@ -1750,6 +1751,7 @@ public static class APILegality
         var first = task.TimeoutAfter(new TimeSpan(0, 0, 0, Timeout))?.Result;
         return first ?? new AsyncLegalizationResult(template, LegalizationResult.Timeout);
     }
+
     public static AsyncLegalizationResult AsyncGetLegalFromTemplateTimeout(this ITrainerInfo dest, PKM template, IBattleTemplate set, bool nativeOnly = false) =>
         GetLegalFromTemplateTimeoutAsync(dest, template, set, nativeOnly).ConfigureAwait(false).GetAwaiter().GetResult();
 
