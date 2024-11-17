@@ -11,14 +11,14 @@
   <ItemGroup>
     <PackageReference Include="Costura.Fody" Version="5.7.0" PrivateAssets="all" />
     <PackageReference Include="Fody" Version="6.8.0" PrivateAssets="all" />
-    <PackageReference Include="PKHeX.Core" Version="24.11.11" ExcludeAssets="runtime" />
+    <PackageReference Include="PKHeX.Core" Version="24.11.12" ExcludeAssets="runtime" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <ProjectReference Include="..\PKHeX.Core.AutoMod\PKHeX.Core.AutoMod.csproj" />
     <ProjectReference Include="..\PKHeX.Core.Enhancements\PKHeX.Core.Enhancements.csproj" />
     <ProjectReference Include="..\PKHeX.Core.Injection\PKHeX.Core.Injection.csproj" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
-    <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
+    <PackageReference Include="System.Resources.Extensions" Version="9.0.0" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\**" />

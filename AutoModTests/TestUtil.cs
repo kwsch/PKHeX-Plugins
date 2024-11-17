@@ -20,7 +20,7 @@ public static class TestUtil
             if (Initialized)
                 return;
 
-            EncounterEvent.RefreshMGDB();
+            EncounterEvent.RefreshMGDB([]);
             RibbonStrings.ResetDictionary(GameInfo.Strings.ribbons);
             Legalizer.EnableEasterEggs = false;
             APILegality.SetAllLegalRibbons = false;

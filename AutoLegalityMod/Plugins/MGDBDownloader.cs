@@ -42,7 +42,7 @@ public class MGDBDownloader : AutoModPlugin
         var entire = prompt == DialogResult.Yes;
         EventsGallery.DownloadMGDBFromGitHub(MGDatabasePath, entire);
         WinFormsUtil.Alert("Download Finished");
-        EncounterEvent.RefreshMGDB(MGDatabasePath);
+        EncounterEvent.RefreshMGDB([MGDatabasePath]);
     }
 
     public static void DeleteDirectory(string target_dir)
