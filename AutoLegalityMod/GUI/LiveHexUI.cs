@@ -322,7 +322,7 @@ public partial class LiveHeXUI : Form, ISlotViewer<PictureBox>
 
         bool valid = pkm is not null && pkm.Species <= pkm.MaxSpeciesID && pkm.ChecksumValid &&
                      pkm is { Species: 0, EncryptionConstant: 0 }
-                         or { Species: > 0, Language: not (int)LanguageID.Hacked and not (int)LanguageID.UNUSED_6 };
+                         or { Species: not 0, Language: not (int)LanguageID.Hacked and not (int)LanguageID.UNUSED_6 };
         return !_settings.EnableDevMode && !valid && InjectionBase.CheckRAMShift(Remote.Bot, out string err) ? (LiveHeXValidation.RAMShift, err, lv) : (LiveHeXValidation.None, "", lv);
     }
 

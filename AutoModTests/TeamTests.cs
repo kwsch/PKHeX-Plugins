@@ -55,7 +55,7 @@ public static class TeamTests
             for (int i = 0; i < sets.Count; i++)
             {
                 var set = sets[i];
-                if (set.Species <= 0)
+                if (set.Species == 0)
                     continue;
 
                 try

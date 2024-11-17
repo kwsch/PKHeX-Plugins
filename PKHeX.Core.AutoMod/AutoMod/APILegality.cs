@@ -1403,7 +1403,7 @@ public static class APILegality
             return;
         do
         {
-            if (count >= 2_500_000 && pk.Species != (ushort)Species.Unown)
+            if (count >= 2_500_000 && enc.Species != (ushort)Species.Unown)
                 compromise = true;
 
             seed = Util.Rand32();
@@ -1449,15 +1449,16 @@ public static class APILegality
                 if (la.Info.PIDIV.Type is not PIDType.CXD and not PIDType.CXD_ColoStarter || !la.Info.PIDIVMatches || !pk.IsValidGenderPID(enc))
                     continue;
             }
-            if (pk.Species == (ushort)Species.Unown)
+            if (enc.Species == (ushort)Species.Unown)
             {
                 if (enc is EncounterSlot4 enc4)
                 {
-                    var pi = PersonalTable.HGSS[pk.Species];
+                    var pi = PersonalTable.HGSS[enc.Species];
+                    PK4 pk4 = (PK4)pk; // unconverted
                     if (pk.HGSS)
-                        enc4.SetFromIVsK((PK4)pk, pi, criteria, out _);
+                        enc4.SetFromIVsK(pk4, pi, criteria, out _);
                     else
-                        enc4.SetFromIVsJ((PK4)pk, pi, criteria, out _);
+                        enc4.SetFromIVsJ(pk4, pi, criteria, out _);
                 }
                 if (enc is EncounterSlot3 && pk.Form != EntityPID.GetUnownForm3(pk.PID))
                     continue;

@@ -182,7 +182,7 @@ public static class ModLogic
 
     private static PKM? AddPKM(ITrainerInfo sav, ITrainerInfo tr, ushort species, byte form, bool shiny, bool alpha, bool nativeOnly)
     {
-        if (sav.GetRandomEncounter(species, form, shiny, alpha, nativeOnly, out var pk) && pk?.Species > 0)
+        if (sav.GetRandomEncounter(species, form, shiny, alpha, nativeOnly, out var pk) && pk is { Species: not 0 })
         {
             pk.Heal();
             return pk;
@@ -390,7 +390,7 @@ public static class ModLogic
         for (int i = 0; i < data.Count; i++)
         {
             var pk = data[i];
-            if (pk.Species <= 0 || new LegalityAnalysis(pk).Valid)
+            if (pk.Species == 0 || new LegalityAnalysis(pk).Valid)
                 continue;
 
             var result = sav.Legalize(pk);
