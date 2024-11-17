@@ -9,12 +9,19 @@ namespace PKHeX.Core.Enhancements;
 public static class PKSMUtil
 {
     /// <summary>
-    /// Creates PKSM's bank.bin to individual <see cref="PKM"/> files (v1)
+    /// Creates PKSM's bank.bin to individual <see cref="PKM"/> files
     /// </summary>
     /// <param name="dir">Folder to export all dumped files to</param>
     public static int CreateBank(string dir)
     {
         var files = Directory.GetFiles(dir, "*.p??", SearchOption.TopDirectoryOnly);
+        var fileName = Path.Combine(dir, "pksm_1.bnk");
+        return CreateBank(fileName, files);
+    }
+
+    /// <inheritdoc cref="CreateBank(string)"/>
+    public static int CreateBank(string fileName, ReadOnlySpan<string> files)
+    {
         var version = Enum.GetValues<PKSMBankVersion>().Max(); // Latest bank version
         var pksmsize = GetBankSize(version);
         var boxcount = (files.Length / 30) + 1;
@@ -26,8 +33,13 @@ public static class PKSMUtil
         WriteInt32LittleEndian(bank[12..], boxcount);
         foreach (var f in files)
         {
+            var fi = new FileInfo(f);
+            if (!EntityDetection.IsSizePlausible(fi.Length))
+                continue;
+
             var prefer = EntityFileExtension.GetContextFromExtension(f, EntityContext.None);
-            var pk = EntityFormat.GetFromBytes(File.ReadAllBytes(f), prefer);
+            var file = File.ReadAllBytes(f);
+            var pk = EntityFormat.GetFromBytes(file, prefer);
             if (pk == null)
                 continue;
 
@@ -52,7 +64,7 @@ public static class PKSMUtil
             bank.Slice(ofs, pksmsize).Fill(0xFF);
             ctr++;
         }
-        File.WriteAllBytes(Path.Combine(dir, "pksm_1.bnk"), bank);
+        File.WriteAllBytes(fileName, bank);
         return ctr - empty;
     }
 
@@ -77,12 +89,13 @@ public static class PKSMUtil
             if (pk == null)
                 continue;
 
-            if (pk.Species == 0 && pk.Species >= pk.MaxSpeciesID)
+            if (pk.Species == 0 || pk.Species > pk.MaxSpeciesID)
                 continue;
 
             var strings = GameInfo.Strings;
             previews.Add(new PKMPreview(pk, strings));
-            File.WriteAllBytes(Path.Combine(dir, Util.CleanFileName(pk.FileName)), pk.DecryptedPartyData);
+            var fileName = Path.Combine(dir, Util.CleanFileName(pk.FileName));
+            File.WriteAllBytes(fileName, pk.DecryptedPartyData);
             ctr++;
         }
         return ctr;

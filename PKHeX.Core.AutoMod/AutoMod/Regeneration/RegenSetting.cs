@@ -18,36 +18,35 @@ public class RegenSetting
         var split = RegenUtil.Split(lines);
         bool any = false;
         foreach (var (key, value) in split)
-        {
-            switch (key)
-            {
-                case nameof(Ball):
-                    var ball = Aesthetics.GetBallFromString(value);
-                    if (ball == Ball.Strange)
-                        continue;
-
-                    Ball = ball;
-                    break;
-                case nameof(Shiny):
-                    ShinyType = Aesthetics.GetShinyType(value);
-                    break;
-                case nameof(Language):
-                    Language = Aesthetics.GetLanguageId(value);
-                    break;
-                case nameof(Ability):
-                    Ability = Enum.TryParse(value, out AbilityRequest ar) ? ar : AbilityRequest.Any;
-                    break;
-                case nameof(Alpha):
-                    Alpha = value == "Yes";
-                    break;
-                default:
-                    continue;
-            }
-
-            any = true;
-        }
-
+            any |= IngestSetting(key, value);
         return any;
+    }
+
+    private bool IngestSetting(ReadOnlySpan<char> key, ReadOnlySpan<char> value)
+    {
+        switch (key)
+        {
+            case nameof(Ball):
+                var ball = Aesthetics.GetBallFromString(value);
+                if (ball == Ball.Strange)
+                    return false;
+                Ball = ball;
+                return true;
+            case nameof(Shiny):
+                ShinyType = Aesthetics.GetShinyType(value);
+                return true;
+            case nameof(Language):
+                Language = Aesthetics.GetLanguageId(value);
+                return true;
+            case nameof(Ability):
+                Ability = Enum.TryParse(value, out AbilityRequest ar) ? ar : AbilityRequest.Any;
+                return true;
+            case nameof(Alpha):
+                Alpha = value is "Yes";
+                return true;
+            default:
+                return false;
+        }
     }
 
     public string GetSummary()

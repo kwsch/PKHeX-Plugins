@@ -13,7 +13,7 @@ public static class ShowdownUtil
     /// </summary>
     /// <param name="paste">paste to check</param>
     /// <returns>Returns bool</returns>
-    public static bool IsTeamBackup(string paste) => paste.StartsWith("===");
+    public static bool IsTeamBackup(string paste) => paste.StartsWith(ShowdownTeamSet.MagicMark);
 
     // TODO: Update form list with possibly invalid Calyrex forms (non battle)??
     private static string[] InvalidFormes =>

@@ -1038,21 +1038,19 @@ public static class Aesthetics
         { Pecharunt, Purple },
     };
 
-    public static Ball GetBallFromString(string ballstr)
+    public static Ball GetBallFromString(ReadOnlySpan<char> ballstr)
     {
-        ballstr = ballstr.Split(' ')[0];
-        if (ballstr == "Poké")
-        {
+        var space = ballstr.IndexOf(' ');
+        if (space != -1)
+            ballstr = ballstr[..space];
+
+        if (ballstr is "Poké")
             return Poke;
-        }
-
         if (ballstr is "Feather" or "Wing" or "Jet" or "Leaden" or "Gigaton" or "Origin")
-        {
-            ballstr = "LA" + ballstr;
-        }
+            return Parse(['L', 'A', .. ballstr]);
+        return Parse(ballstr);
 
-        var valid = Enum.TryParse(ballstr, out Ball ball);
-        return valid ? ball : Ball.None;
+        static Ball Parse(ReadOnlySpan<char> tmp) => Enum.TryParse<Ball>(tmp, out var ball) ? ball : Ball.None;
     }
 
     public static void ApplyShinyBall(PKM pk)
@@ -1078,27 +1076,18 @@ public static class Aesthetics
         }
     }
 
-    public static Shiny GetShinyType(string value)
+    public static Shiny GetShinyType(ReadOnlySpan<char> value)
     {
-        if (value.Equals("Square", StringComparison.OrdinalIgnoreCase))
-        {
-            return Shiny.AlwaysSquare;
-        }
+        if (Is(value, "Square")) return Shiny.AlwaysSquare;
+        if (Is(value, "Star")) return Shiny.AlwaysStar;
+        if (Is(value, "Yes")) return Shiny.Always;
+        if (Is(value, "No")) return Shiny.Never;
+        return Shiny.Random;
 
-        if (value.Equals("Star", StringComparison.OrdinalIgnoreCase))
-        {
-            return Shiny.AlwaysStar;
-        }
-
-        if (value.Equals("Yes", StringComparison.OrdinalIgnoreCase))
-        {
-            return Shiny.Always;
-        }
-
-        return value.Equals("No", StringComparison.OrdinalIgnoreCase) ? Shiny.Never : Shiny.Random;
+        static bool Is(ReadOnlySpan<char> a, ReadOnlySpan<char> b) => a.Equals(b, StringComparison.OrdinalIgnoreCase);
     }
 
-    public static LanguageID? GetLanguageId(string value)
+    public static LanguageID? GetLanguageId(ReadOnlySpan<char> value)
     {
         var valid = Enum.TryParse(value, out LanguageID lang);
         if (!valid)

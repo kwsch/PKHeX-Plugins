@@ -1,20 +1,43 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text;
 
 namespace PKHeX.Core.Enhancements;
 
 /// <summary>
 /// Full party worth of <see cref="ShowdownSet"/> data, and page metadata.
 /// </summary>
-public class ShowdownTeamSet(string name, List<ShowdownSet> sets, string format)
+public record ShowdownTeamSet(string TeamName, IReadOnlyList<ShowdownSet> Team, string Format)
 {
-    public readonly List<ShowdownSet> Team = sets;
-    public readonly string Format = format;
-    public readonly string TeamName = name;
+    public const string MagicMark = "===";
 
     public string Summary => $"{Format}: {TeamName}";
 
-    public static bool IsLineShowdownTeam(string line) => line.TrimStart().StartsWith("===") && line.TrimEnd().EndsWith("===");
+    public string Export(string language = GameLanguage.DefaultLanguage)
+    {
+        var sb = new StringBuilder();
+        return Export(sb, language);
+    }
+
+    public string Export(StringBuilder sb, string language = GameLanguage.DefaultLanguage)
+    {
+        sb.AppendLine(GetHeading(Format, TeamName));
+        foreach (var set in Team)
+            sb.AppendLine(set.LocalizedText(language));
+        return sb.ToString();
+    }
+
+    public static string GetHeading(ReadOnlySpan<char> format, ReadOnlySpan<char> name)
+        => $"{MagicMark} [{format}] {name} {MagicMark}";
+
+    public static bool IsLineShowdownTeam(ReadOnlySpan<char> line)
+    {
+        var trim = line.Trim(); // Just to be sure.
+        // Allow for `===*===`, and not `===` as the inner portion has Team details.
+        return trim.Length > MagicMark.Length * 2 && trim.StartsWith(MagicMark) && trim.EndsWith(MagicMark);
+    }
 
     public static List<ShowdownTeamSet> GetTeams(string paste)
     {
@@ -29,24 +52,15 @@ public class ShowdownTeamSet(string name, List<ShowdownSet> sets, string format)
             if (!IsLineShowdownTeam(line))
                 continue;
 
-            var split = line.Split("===", 0);
-            if (split.Length != 3)
-                continue;
+            if (!TryReadTeamLine(line, out var format, out var name))
+                continue; // No name
 
-            var split2 = split[1].Trim().Split(']');
-            if (split2.Length != 2)
-                continue;
-
-            var format = split2[0][1..];
-            var name = split2[1].TrimStart();
             // find end
-
             int end = i + 1;
             while (end < lines.Length)
             {
                 if (IsLineShowdownTeam(lines[end]))
                     break;
-
                 end++;
             }
 
@@ -60,5 +74,45 @@ public class ShowdownTeamSet(string name, List<ShowdownSet> sets, string format)
             i = end - 1;
         }
         return result;
+    }
+
+    private static bool TryReadTeamLine(ReadOnlySpan<char> line,
+        [NotNullWhen(true)] out string? format,
+        [NotNullWhen(true)] out string? name)
+    {
+        // ===[Gen 8] OU===
+        format = name = null;
+        var start = line.IndexOf(MagicMark);
+        if (start == -1) return false;
+        var end = line.LastIndexOf(MagicMark);
+        if (end == -1) return false;
+
+        var inner = line[(start + 3)..end].Trim();
+        if (inner.IndexOf(MagicMark) != -1)
+            return false; // Shouldn't have.
+
+        return TryGetFormatAndName(inner, out format, out name);
+    }
+
+    private static bool TryGetFormatAndName(ReadOnlySpan<char> line,
+        [NotNullWhen(true)] out string? format,
+        [NotNullWhen(true)] out string? name)
+    {
+        // [Gen 8] OU
+        format = name = null;
+        if (!line.StartsWith('['))
+            return false;
+        var formatEnd = line.IndexOf(']');
+        if (formatEnd == -1)
+            return false;
+
+        var nameStart = formatEnd + 1;
+        if (nameStart >= line.Length)
+            return false;
+        var end = line.Length - 1;
+
+        format = line[1..formatEnd].Trim().ToString();
+        name = line[nameStart..end].Trim().ToString();
+        return true;
     }
 }
