@@ -1,1042 +1,1040 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using static PKHeX.Core.AutoMod.Aesthetics.PersonalColor;
 using static PKHeX.Core.Ball;
-using static PKHeX.Core.Species;
 
 namespace PKHeX.Core.AutoMod;
 
 public static class Aesthetics
 {
-    private static readonly Dictionary<Species, PersonalColor> ShinyMap = new()
-    {
-        { Bulbasaur, Green },
-        { Ivysaur, Green },
-        { Venusaur, Green },
-        { Charmander, Yellow },
-        { Charmeleon, Yellow },
-        { Charizard, Black },
-        { Squirtle, Blue },
-        { Wartortle, Purple },
-        { Blastoise, Purple },
-        { Caterpie, Yellow },
-        { Metapod, Red },
-        { Butterfree, Purple },
-        { Weedle, Yellow },
-        { Kakuna, Green },
-        { Beedrill, Green },
-        { Pidgey, Brown },
-        { Pidgeotto, Yellow },
-        { Pidgeot, Yellow },
-        { Rattata, Green },
-        { Raticate, Red },
-        { Spearow, Green },
-        { Fearow, Green },
-        { Ekans, Green },
-        { Arbok, Yellow },
-        { Pikachu, Yellow },
-        { Raichu, Yellow },
-        { Sandshrew, Green },
-        { Sandslash, Red },
-        { NidoranF, Purple },
-        { Nidorina, Purple },
-        { Nidoqueen, Green },
-        { NidoranM, Blue },
-        { Nidorino, Blue },
-        { Nidoking, Blue },
-        { Clefairy, Pink },
-        { Clefable, Pink },
-        { Vulpix, Yellow },
-        { Ninetales, White },
-        { Jigglypuff, Pink },
-        { Wigglytuff, Pink },
-        { Zubat, Green },
-        { Golbat, Green },
-        { Oddish, Green },
-        { Gloom, Green },
-        { Vileplume, Green },
-        { Paras, Red },
-        { Parasect, Red },
-        { Venonat, Purple },
-        { Venomoth, Blue },
-        { Diglett, Brown },
-        { Dugtrio, Brown },
-        { Meowth, White },
-        { Persian, White },
-        { Psyduck, Blue },
-        { Golduck, Blue },
-        { Mankey, Green },
-        { Primeape, White },
-        { Growlithe, Yellow },
-        { Arcanine, Yellow },
-        { Poliwag, Blue },
-        { Poliwhirl, Blue },
-        { Poliwrath, Green },
-        { Abra, Yellow },
-        { Kadabra, Yellow },
-        { Alakazam, Yellow },
-        { Machop, Brown },
-        { Machoke, Green },
-        { Machamp, Green },
-        { Bellsprout, Yellow },
-        { Weepinbell, Yellow },
-        { Victreebel, Yellow },
-        { Tentacool, Blue },
-        { Tentacruel, Blue },
-        { Geodude, Yellow },
-        { Graveler, Brown },
-        { Golem, Brown },
-        { Ponyta, Blue },
-        { Rapidash, Black },
-        { Slowpoke, Pink },
-        { Slowbro, Purple },
-        { Magnemite, Gray },
-        { Magneton, Gray },
-        { Farfetchd, Pink },
-        { Doduo, Green },
-        { Dodrio, Green },
-        { Seel, White },
-        { Dewgong, White },
-        { Grimer, Green },
-        { Muk, Green },
-        { Shellder, Red },
-        { Cloyster, Blue },
-        { Gastly, Purple },
-        { Haunter, Purple },
-        { Gengar, Purple },
-        { Onix, Green },
-        { Drowzee, Pink },
-        { Hypno, Pink },
-        { Krabby, Yellow },
-        { Kingler, Green },
-        { Voltorb, Blue },
-        { Electrode, Blue },
-        { Exeggcute, Yellow },
-        { Exeggutor, Red },
-        { Cubone, Green },
-        { Marowak, Green },
-        { Hitmonlee, Green },
-        { Hitmonchan, Green },
-        { Lickitung, Yellow },
-        { Koffing, Green },
-        { Weezing, Green },
-        { Rhyhorn, Red },
-        { Rhydon, Gray },
-        { Chansey, Green },
-        { Tangela, Green },
-        { Kangaskhan, Brown },
-        { Horsea, Blue },
-        { Seadra, Blue },
-        { Goldeen, White },
-        { Seaking, Red },
-        { Staryu, Yellow },
-        { Starmie, Blue },
-        { MrMime, White },
-        { Scyther, Green },
-        { Jynx, Pink },
-        { Electabuzz, Yellow },
-        { Magmar, Red },
-        { Pinsir, Purple },
-        { Tauros, Green },
-        { Magikarp, Yellow },
-        { Gyarados, Red },
-        { Lapras, Purple },
-        { Ditto, Blue },
-        { Eevee, White },
-        { Vaporeon, Purple },
-        { Jolteon, Green },
-        { Flareon, Yellow },
-        { Porygon, Pink },
-        { Omanyte, Purple },
-        { Omastar, Purple },
-        { Kabuto, Green },
-        { Kabutops, Green },
-        { Aerodactyl, Purple },
-        { Snorlax, Blue },
-        { Articuno, Blue },
-        { Zapdos, Yellow },
-        { Moltres, Red },
-        { Dratini, Pink },
-        { Dragonair, Pink },
-        { Dragonite, Green },
-        { Mewtwo, White },
-        { Mew, Blue },
-        { Chikorita, Green },
-        { Bayleef, Red },
-        { Meganium, Green },
-        { Cyndaquil, Brown },
-        { Quilava, Brown },
-        { Typhlosion, Brown },
-        { Totodile, Blue },
-        { Croconaw, Blue },
-        { Feraligatr, Blue },
-        { Sentret, Yellow },
-        { Furret, Pink },
-        { Hoothoot, Yellow },
-        { Noctowl, Brown },
-        { Ledyba, Red },
-        { Ledian, Red },
-        { Spinarak, Blue },
-        { Ariados, Pink },
-        { Crobat, Pink },
-        { Chinchou, Blue },
-        { Lanturn, Purple },
-        { Pichu, Yellow },
-        { Cleffa, Pink },
-        { Igglybuff, Pink },
-        { Togepi, White },
-        { Togetic, White },
-        { Natu, Green },
-        { Xatu, Green },
-        { Mareep, Pink },
-        { Flaaffy, Pink },
-        { Ampharos, Pink },
-        { Bellossom, Purple },
-        { Marill, Green },
-        { Azumarill, Yellow },
-        { Sudowoodo, Brown },
-        { Politoed, Blue },
-        { Hoppip, Green },
-        { Skiploom, Pink },
-        { Jumpluff, Red },
-        { Aipom, Red },
-        { Sunkern, Yellow },
-        { Sunflora, Yellow },
-        { Yanma, Blue },
-        { Wooper, Pink },
-        { Quagsire, Pink },
-        { Espeon, Green },
-        { Umbreon, Black },
-        { Murkrow, Purple },
-        { Slowking, Purple },
-        { Misdreavus, Green },
-        { Unown, Blue },
-        { Wobbuffet, Pink },
-        { Girafarig, Yellow },
-        { Pineco, Yellow },
-        { Forretress, Yellow },
-        { Dunsparce, Yellow },
-        { Gligar, Blue },
-        { Steelix, Yellow },
-        { Snubbull, Purple },
-        { Granbull, Pink },
-        { Qwilfish, Pink },
-        { Scizor, Green },
-        { Shuckle, Blue },
-        { Heracross, Pink },
-        { Sneasel, Pink },
-        { Teddiursa, Green },
-        { Ursaring, Green },
-        { Slugma, Gray },
-        { Magcargo, Pink },
-        { Swinub, Green },
-        { Piloswine, Yellow },
-        { Corsola, Blue },
-        { Remoraid, Purple },
-        { Octillery, Brown },
-        { Delibird, Purple },
-        { Mantine, Blue },
-        { Skarmory, Brown },
-        { Houndour, Blue },
-        { Houndoom, Blue },
-        { Kingdra, Purple },
-        { Phanpy, Blue },
-        { Donphan, Red },
-        { Porygon2, Blue },
-        { Stantler, Green },
-        { Smeargle, Yellow },
-        { Tyrogue, Brown },
-        { Hitmontop, Brown },
-        { Smoochum, Pink },
-        { Elekid, Yellow },
-        { Magby, Red },
-        { Miltank, Blue },
-        { Blissey, Pink },
-        { Raikou, Yellow },
-        { Entei, Brown },
-        { Suicune, Blue },
-        { Larvitar, Green },
-        { Pupitar, Purple },
-        { Tyranitar, Brown },
-        { Lugia, White },
-        { HoOh, Yellow },
-        { Celebi, Pink },
-        { Treecko, Green },
-        { Grovyle, Green },
-        { Sceptile, Green },
-        { Torchic, Yellow },
-        { Combusken, Yellow },
-        { Blaziken, Red },
-        { Mudkip, Purple },
-        { Marshtomp, Purple },
-        { Swampert, Purple },
-        { Poochyena, Yellow },
-        { Mightyena, Yellow },
-        { Zigzagoon, Red },
-        { Linoone, Red },
-        { Wurmple, Purple },
-        { Silcoon, Yellow },
-        { Beautifly, Yellow },
-        { Cascoon, Green },
-        { Dustox, Brown },
-        { Lotad, Red },
-        { Lombre, Green },
-        { Ludicolo, Yellow },
-        { Seedot, Red },
-        { Nuzleaf, Red },
-        { Shiftry, Red },
-        { Taillow, Red },
-        { Swellow, Red },
-        { Wingull, White },
-        { Pelipper, Green },
-        { Ralts, Blue },
-        { Kirlia, White },
-        { Gardevoir, White },
-        { Surskit, Black },
-        { Masquerain, Green },
-        { Shroomish, Red },
-        { Breloom, Red },
-        { Slakoth, Pink },
-        { Vigoroth, White },
-        { Slaking, Brown },
-        { Nincada, Yellow },
-        { Ninjask, Yellow },
-        { Shedinja, Yellow },
-        { Whismur, Purple },
-        { Loudred, Purple },
-        { Exploud, Purple },
-        { Makuhita, Yellow },
-        { Hariyama, Purple },
-        { Azurill, Green },
-        { Nosepass, Yellow },
-        { Skitty, Red },
-        { Delcatty, Red },
-        { Sableye, Yellow },
-        { Mawile, Black },
-        { Aron, White },
-        { Lairon, Gray },
-        { Aggron, Gray },
-        { Meditite, Red },
-        { Medicham, Blue },
-        { Electrike, Blue },
-        { Manectric, Black },
-        { Plusle, Red },
-        { Minun, Green },
-        { Volbeat, Purple },
-        { Illumise, Blue },
-        { Roselia, Green },
-        { Gulpin, Blue },
-        { Swalot, Blue },
-        { Carvanha, Green },
-        { Sharpedo, Purple },
-        { Wailmer, Purple },
-        { Wailord, Purple },
-        { Numel, Yellow },
-        { Camerupt, Black },
-        { Torkoal, Red },
-        { Spoink, Yellow },
-        { Grumpig, Black },
-        { Spinda, Green },
-        { Trapinch, Green },
-        { Vibrava, Red },
-        { Flygon, Green },
-        { Cacnea, Red },
-        { Cacturne, Red },
-        { Swablu, Yellow },
-        { Altaria, Yellow },
-        { Zangoose, White },
-        { Seviper, Black },
-        { Lunatone, Yellow },
-        { Solrock, Red },
-        { Barboach, Blue },
-        { Whiscash, Blue },
-        { Corphish, Red },
-        { Crawdaunt, Red },
-        { Baltoy, Yellow },
-        { Claydol, Black },
-        { Lileep, Green },
-        { Cradily, Red },
-        { Anorith, Brown },
-        { Armaldo, Red },
-        { Feebas, Purple },
-        { Milotic, Blue },
-        { Castform, Purple },
-        { Kecleon, Green },
-        { Shuppet, Blue },
-        { Banette, Black },
-        { Duskull, Red },
-        { Dusclops, Red },
-        { Tropius, Green },
-        { Chimecho, Blue },
-        { Absol, Red },
-        { Wynaut, Purple },
-        { Snorunt, Blue },
-        { Glalie, White },
-        { Spheal, Purple },
-        { Sealeo, Purple },
-        { Walrein, Purple },
-        { Clamperl, Purple },
-        { Huntail, Green },
-        { Gorebyss, Yellow },
-        { Relicanth, Blue },
-        { Luvdisc, Yellow },
-        { Bagon, Green },
-        { Shelgon, Green },
-        { Salamence, Green },
-        { Beldum, Gray },
-        { Metang, Gray },
-        { Metagross, Gray },
-        { Regirock, Red },
-        { Regice, Blue },
-        { Registeel, Black },
-        { Latias, Yellow },
-        { Latios, Green },
-        { Kyogre, Purple },
-        { Groudon, Green },
-        { Rayquaza, Black },
-        { Jirachi, Yellow },
-        { Deoxys, Yellow },
-        { Turtwig, Blue },
-        { Grotle, Blue },
-        { Torterra, Green },
-        { Chimchar, Red },
-        { Monferno, Red },
-        { Infernape, Red },
-        { Piplup, Blue },
-        { Prinplup, Blue },
-        { Empoleon, Blue },
-        { Starly, Brown },
-        { Staravia, Brown },
-        { Staraptor, Brown },
-        { Bidoof, Yellow },
-        { Bibarel, Yellow },
-        { Kricketot, Yellow },
-        { Kricketune, Yellow },
-        { Shinx, Yellow },
-        { Luxio, Yellow },
-        { Luxray, Black },
-        { Budew, Green },
-        { Roserade, Green },
-        { Cranidos, Red },
-        { Rampardos, Red },
-        { Shieldon, Black },
-        { Bastiodon, Black },
-        { Burmy, Green },
-        { Wormadam, Green },
-        { Mothim, Yellow },
-        { Combee, Red },
-        { Vespiquen, Red },
-        { Pachirisu, Pink },
-        { Buizel, Yellow },
-        { Floatzel, Yellow },
-        { Cherubi, Red },
-        { Cherrim, Green },
-        { Shellos, Blue },
-        { Gastrodon, Blue },
-        { Ambipom, Pink },
-        { Drifloon, Yellow },
-        { Drifblim, Yellow },
-        { Buneary, Red },
-        { Lopunny, Red },
-        { Mismagius, Green },
-        { Honchkrow, Purple },
-        { Glameow, Purple },
-        { Purugly, Purple },
-        { Chingling, Yellow },
-        { Stunky, Red },
-        { Skuntank, Red },
-        { Bronzor, Green },
-        { Bronzong, Green },
-        { Bonsly, Brown },
-        { MimeJr, Pink },
-        { Happiny, Pink },
-        { Chatot, Black },
-        { Spiritomb, Blue },
-        { Gible, Blue },
-        { Gabite, Blue },
-        { Garchomp, Black },
-        { Munchlax, Blue },
-        { Riolu, Yellow },
-        { Lucario, Yellow },
-        { Hippopotas, Yellow },
-        { Hippowdon, Yellow },
-        { Skorupi, Red },
-        { Drapion, Red },
-        { Croagunk, Blue },
-        { Toxicroak, Blue },
-        { Carnivine, Green },
-        { Finneon, Black },
-        { Lumineon, Black },
-        { Mantyke, Blue },
-        { Snover, White },
-        { Abomasnow, White },
-        { Weavile, Pink },
-        { Magnezone, Gray },
-        { Lickilicky, Yellow },
-        { Rhyperior, Yellow },
-        { Tangrowth, Green },
-        { Electivire, Yellow },
-        { Magmortar, Red },
-        { Togekiss, White },
-        { Yanmega, Blue },
-        { Leafeon, Yellow },
-        { Glaceon, Blue },
-        { Gliscor, Blue },
-        { Mamoswine, Brown },
-        { PorygonZ, Blue },
-        { Gallade, Blue },
-        { Probopass, Yellow },
-        { Dusknoir, Black },
-        { Froslass, White },
-        { Rotom, Red },
-        { Uxie, Yellow },
-        { Mesprit, Red },
-        { Azelf, Blue },
-        { Dialga, Green },
-        { Palkia, Pink },
-        { Heatran, Red },
-        { Regigigas, Blue },
-        { Giratina, Blue },
-        { Cresselia, Purple },
-        { Phione, Blue },
-        { Manaphy, Blue },
-        { Darkrai, Black },
-        { Shaymin, Green },
-        { Arceus, Yellow },
-        { Victini, White },
-        { Snivy, Green },
-        { Servine, Green },
-        { Serperior, Green },
-        { Tepig, Yellow },
-        { Pignite, Red },
-        { Emboar, Blue },
-        { Oshawott, Blue },
-        { Dewott, Blue },
-        { Samurott, Blue },
-        { Patrat, Brown },
-        { Watchog, Red },
-        { Lillipup, Yellow },
-        { Herdier, Yellow },
-        { Stoutland, Yellow },
-        { Purrloin, Blue },
-        { Liepard, Red },
-        { Pansage, Green },
-        { Simisage, Green },
-        { Pansear, Red },
-        { Simisear, Red },
-        { Panpour, Blue },
-        { Simipour, Blue },
-        { Munna, Yellow },
-        { Musharna, Purple },
-        { Pidove, Gray },
-        { Tranquill, Green },
-        { Unfezant, Brown },
-        { Blitzle, Blue },
-        { Zebstrika, Black },
-        { Roggenrola, Purple },
-        { Boldore, Purple },
-        { Gigalith, Blue },
-        { Woobat, Green },
-        { Swoobat, Yellow },
-        { Drilbur, Red },
-        { Excadrill, Red },
-        { Audino, Purple },
-        { Timburr, Yellow },
-        { Gurdurr, Yellow },
-        { Conkeldurr, Red },
-        { Tympole, Yellow },
-        { Palpitoad, Blue },
-        { Seismitoad, Blue },
-        { Throh, Red },
-        { Sawk, Blue },
-        { Sewaddle, Green },
-        { Swadloon, Green },
-        { Leavanny, Green },
-        { Venipede, Red },
-        { Whirlipede, Purple },
-        { Scolipede, Red },
-        { Cottonee, Yellow },
-        { Whimsicott, White },
-        { Petilil, Yellow },
-        { Lilligant, Yellow },
-        { Basculin, Green },
-        { Sandile, Yellow },
-        { Krokorok, Brown },
-        { Krookodile, Brown },
-        { Darumaka, Red },
-        { Darmanitan, Red },
-        { Maractus, Green },
-        { Dwebble, Red },
-        { Crustle, Green },
-        { Scraggy, Yellow },
-        { Scrafty, Green },
-        { Sigilyph, Black },
-        { Yamask, Blue },
-        { Cofagrigus, Gray },
-        { Tirtouga, Blue },
-        { Carracosta, Blue },
-        { Archen, Red },
-        { Archeops, Yellow },
-        { Trubbish, Blue },
-        { Garbodor, Brown },
-        { Zorua, Black },
-        { Zoroark, Black },
-        { Minccino, Red },
-        { Cinccino, Brown },
-        { Gothita, Red },
-        { Gothorita, Black },
-        { Gothitelle, Black },
-        { Solosis, Green },
-        { Duosion, Green },
-        { Reuniclus, Blue },
-        { Ducklett, Pink },
-        { Swanna, White },
-        { Vanillite, White },
-        { Vanillish, White },
-        { Vanilluxe, White },
-        { Deerling, Pink },
-        { Sawsbuck, Yellow },
-        { Emolga, White },
-        { Karrablast, Green },
-        { Escavalier, Gray },
-        { Foongus, Blue },
-        { Amoonguss, Blue },
-        { Frillish, Blue },
-        { Jellicent, Blue },
-        { Alomomola, Purple },
-        { Joltik, Yellow },
-        { Galvantula, Yellow },
-        { Ferroseed, Gray },
-        { Ferrothorn, Yellow },
-        { Klink, Gray },
-        { Klang, Gray },
-        { Klinklang, Yellow },
-        { Tynamo, White },
-        { Eelektrik, Yellow },
-        { Eelektross, Green },
-        { Elgyem, Blue },
-        { Beheeyem, Red },
-        { Litwick, White },
-        { Lampent, Black },
-        { Chandelure, Red },
-        { Axew, Brown },
-        { Fraxure, Black },
-        { Haxorus, Black },
-        { Cubchoo, White },
-        { Beartic, White },
-        { Cryogonal, Blue },
-        { Shelmet, Yellow },
-        { Accelgor, Yellow },
-        { Stunfisk, Yellow },
-        { Mienfoo, Blue },
-        { Mienshao, Pink },
-        { Druddigon, Green },
-        { Golett, Gray },
-        { Golurk, Gray },
-        { Pawniard, Blue },
-        { Bisharp, Blue },
-        { Bouffalant, Red },
-        { Rufflet, Brown },
-        { Braviary, Blue },
-        { Vullaby, Red },
-        { Mandibuzz, Red },
-        { Heatmor, Red },
-        { Durant, Gray },
-        { Deino, Green },
-        { Zweilous, Green },
-        { Hydreigon, Green },
-        { Larvesta, Yellow },
-        { Volcarona, Yellow },
-        { Cobalion, Blue },
-        { Terrakion, Red },
-        { Virizion, Red },
-        { Tornadus, Green },
-        { Thundurus, Blue },
-        { Reshiram, White },
-        { Zekrom, Black },
-        { Landorus, Yellow },
-        { Kyurem, Black },
-        { Keldeo, Green },
-        { Meloetta, Green },
-        { Genesect, Red },
-        { Chespin, Red },
-        { Quilladin, Red },
-        { Chesnaught, Green },
-        { Fennekin, Gray },
-        { Braixen, Purple },
-        { Delphox, Purple },
-        { Froakie, Blue },
-        { Frogadier, Blue },
-        { Greninja, Black },
-        { Bunnelby, Gray },
-        { Diggersby, Gray },
-        { Fletchling, Red },
-        { Fletchinder, Red },
-        { Talonflame, Red },
-        { Scatterbug, White },
-        { Spewpa, Gray },
-        { Vivillon, Red },
-        { Litleo, Red },
-        { Pyroar, Red },
-        { Flabébé, White },
-        { Floette, White },
-        { Florges, Purple },
-        { Skiddo, Green },
-        { Gogoat, Green },
-        { Pancham, Black },
-        { Pangoro, Black },
-        { Furfrou, Black },
-        { Espurr, Pink },
-        { Meowstic, Yellow },
-        { Honedge, Red },
-        { Doublade, Red },
-        { Aegislash, Red },
-        { Spritzee, Purple },
-        { Aromatisse, Purple },
-        { Swirlix, Yellow },
-        { Slurpuff, Yellow },
-        { Inkay, Brown },
-        { Malamar, Brown },
-        { Binacle, Blue },
-        { Barbaracle, Blue },
-        { Skrelp, Purple },
-        { Dragalge, Purple },
-        { Clauncher, Red },
-        { Clawitzer, Red },
-        { Helioptile, Red },
-        { Heliolisk, Red },
-        { Tyrunt, Blue },
-        { Tyrantrum, Blue },
-        { Amaura, White },
-        { Aurorus, White },
-        { Sylveon, Blue },
-        { Hawlucha, Black },
-        { Dedenne, Brown },
-        { Carbink, Black },
-        { Goomy, Yellow },
-        { Sliggoo, Yellow },
-        { Goodra, Yellow },
-        { Klefki, Yellow },
-        { Phantump, Gray },
-        { Trevenant, Gray },
-        { Pumpkaboo, Purple },
-        { Gourgeist, Purple },
-        { Bergmite, Blue },
-        { Avalugg, Blue },
-        { Noibat, Blue },
-        { Noivern, Blue },
-        { Xerneas, Blue },
-        { Yveltal, Red },
-        { Zygarde, White },
-        { Diancie, Pink },
-        { Hoopa, Yellow },
-        { Volcanion, Yellow },
-        { Rowlet, Green },
-        { Dartrix, Green },
-        { Decidueye, Black },
-        { Litten, White },
-        { Torracat, White },
-        { Incineroar, White },
-        { Popplio, Blue },
-        { Brionne, Blue },
-        { Primarina, Blue },
-        { Pikipek, Black },
-        { Trumbeak, Black },
-        { Toucannon, Black },
-        { Yungoos, Brown },
-        { Gumshoos, Brown },
-        { Grubbin, Red },
-        { Charjabug, Red },
-        { Vikavolt, Gray },
-        { Crabrawler, Purple },
-        { Crabominable, White },
-        { Oricorio, Black },
-        { Cutiefly, Pink },
-        { Ribombee, Pink },
-        { Rockruff, Blue },
-        { Lycanroc, Blue },
-        { Wishiwashi, Blue },
-        { Mareanie, Red },
-        { Toxapex, Red },
-        { Mudbray, Yellow },
-        { Mudsdale, Yellow },
-        { Dewpider, Purple },
-        { Araquanid, Purple },
-        { Fomantis, Green },
-        { Lurantis, Green },
-        { Morelull, Brown },
-        { Shiinotic, Brown },
-        { Salandit, White },
-        { Salazzle, White },
-        { Stufful, Yellow },
-        { Bewear, Yellow },
-        { Bounsweet, Red },
-        { Steenee, Purple },
-        { Tsareena, Purple },
-        { Comfey, Blue },
-        { Oranguru, Pink },
-        { Passimian, Blue },
-        { Wimpod, Red },
-        { Golisopod, White },
-        { Sandygast, Black },
-        { Palossand, Black },
-        { Pyukumuku, Green },
-        { TypeNull, Brown },
-        { Silvally, Yellow },
-        { Minior, Black },
-        { Komala, Blue },
-        { Turtonator, Blue },
-        { Togedemaru, White },
-        { Mimikyu, Gray },
-        { Bruxish, Red },
-        { Drampa, Yellow },
-        { Dhelmise, Red },
-        { Jangmoo, Yellow },
-        { Hakamoo, Green },
-        { Kommoo, Green },
-        { TapuKoko, Black },
-        { TapuLele, Black },
-        { TapuBulu, Black },
-        { TapuFini, Black },
-        { Cosmog, Purple },
-        { Cosmoem, Yellow },
-        { Solgaleo, Red },
-        { Lunala, Red },
-        { Nihilego, Yellow },
-        { Buzzwole, Green },
-        { Pheromosa, Black },
-        { Xurkitree, Blue },
-        { Celesteela, White },
-        { Kartana, White },
-        { Guzzlord, White },
-        { Necrozma, Blue },
-        { Magearna, Gray },
-        { Marshadow, Black },
-        { Poipole, White },
-        { Naganadel, Yellow },
-        { Stakataka, Yellow },
-        { Blacephalon, Blue },
-        { Zeraora, White },
-        { Meltan, Gray },
-        { Melmetal, Gray },
-        { Grookey, Green },
-        { Thwackey, Yellow },
-        { Rillaboom, Brown },
-        { Scorbunny, White },
-        { Raboot, Gray },
-        { Cinderace, Gray },
-        { Sobble, Blue },
-        { Drizzile, Blue },
-        { Inteleon, Blue },
-        { Skwovet, Red },
-        { Greedent, Red },
-        { Rookidee, Yellow },
-        { Corvisquire, Gray },
-        { Corviknight, Gray },
-        { Blipbug, Blue },
-        { Dottler, Blue },
-        { Orbeetle, Blue },
-        { Nickit, Brown },
-        { Thievul, Brown },
-        { Gossifleur, Blue },
-        { Eldegoss, White },
-        { Wooloo, Black },
-        { Dubwool, Black },
-        { Chewtle, Green },
-        { Drednaw, Green },
-        { Yamper, Pink },
-        { Boltund, Yellow },
-        { Rolycoly, Black },
-        { Carkol, Black },
-        { Coalossal, Black },
-        { Applin, Green },
-        { Flapple, Green },
-        { Appletun, Green },
-        { Silicobra, Yellow },
-        { Sandaconda, Black },
-        { Cramorant, Red },
-        { Arrokuda, Blue },
-        { Barraskewda, Blue },
-        { Toxel, Red },
-        { Toxtricity, Purple },
-        { Sizzlipede, Red },
-        { Centiskorch, Red },
-        { Clobbopus, Blue },
-        { Grapploct, Red },
-        { Sinistea, Purple },
-        { Polteageist, Purple },
-        { Hatenna, White },
-        { Hattrem, White },
-        { Hatterene, White },
-        { Impidimp, Blue },
-        { Morgrem, Blue },
-        { Grimmsnarl, White },
-        { Obstagoon, Red },
-        { Perrserker, Yellow },
-        { Cursola, Pink },
-        { Sirfetchd, Yellow },
-        { MrRime, Black },
-        { Runerigus, White },
-        { Milcery, White },
-        { Alcremie, White },
-        { Falinks, Brown },
-        { Pincurchin, Black },
-        { Snom, White },
-        { Frosmoth, White },
-        { Stonjourner, Black },
-        { Eiscue, Purple },
-        { Indeedee, Black },
-        { Morpeko, White },
-        { Cufant, Yellow },
-        { Copperajah, Black },
-        { Dracozolt, Brown },
-        { Arctozolt, White },
-        { Dracovish, Brown },
-        { Arctovish, White },
-        { Duraludon, White },
-        { Dreepy, Green },
-        { Drakloak, Gray },
-        { Dragapult, Green },
-        { Zacian, Blue },
-        { Zamazenta, Red },
-        { Eternatus, Red },
-        { Kubfu, White },
-        { Urshifu, Black },
-        { Zarude, Black },
-        { Regieleki, Yellow },
-        { Regidrago, Red },
-        { Glastrier, White },
-        { Spectrier, Black },
-        { Calyrex, White },
-        { Wyrdeer, White },
-        { Kleavor, Brown },
-        { Ursaluna, Brown },
-        { Basculegion, Blue },
-        { Sneasler, Black },
-        { Overqwil, Blue },
-        { Enamorus, Red },
-        { Sprigatito, Green },
-        { Floragato, Green },
-        { Meowscarada, Green },
-        { Fuecoco, Pink },
-        { Crocalor, Pink },
-        { Skeledirge, Pink },
-        { Quaxly, Blue },
-        { Quaxwell, Blue },
-        { Quaquaval, Blue },
-        { Lechonk, Pink },
-        { Oinkologne, Pink },
-        { Dudunsparce, Yellow },
-        { Tarountula, Red },
-        { Spidops, Red },
-        { Nymble, Yellow },
-        { Lokix, Green },
-        { Rellor, Yellow },
-        { Rabsca, Red },
-        { Greavard, Yellow },
-        { Houndstone, Yellow },
-        { Flittle, Yellow },
-        { Espathra, Black },
-        { Farigiraf, Red },
-        { Wiglett, Yellow },
-        { Wugtrio, Blue },
-        { Dondozo, White },
-        { Veluza, Green },
-        { Finizen, Purple },
-        { Palafin, Purple },
-        { Smoliv, Green },
-        { Dolliv, Green },
-        { Arboliva, Green },
-        { Capsakid, Yellow },
-        { Scovillain, Yellow },
-        { Tadbulb, Yellow },
-        { Bellibolt, Green },
-        { Varoom, Yellow },
-        { Revavroom, Yellow },
-        { Orthworm, Blue },
-        { Tandemaus, White },
-        { Maushold, White },
-        { Cetoddle, Gray },
-        { Cetitan, Gray },
-        { Frigibax, Gray },
-        { Arctibax, Blue },
-        { Baxcalibur, Gray },
-        { Tatsugiri, Brown },
-        { Cyclizar, Gray },
-        { Pawmi, Red },
-        { Pawmo, Pink },
-        { Pawmot, Red },
-        { Wattrel, Yellow },
-        { Kilowattrel, Yellow },
-        { Bombirdier, White },
-        { Squawkabilly, Green },
-        { Flamigo, Pink },
-        { Klawf, Blue },
-        { Nacli, Brown },
-        { Naclstack, Brown },
-        { Garganacl, Brown },
-        { Glimmet, Blue },
-        { Glimmora, Blue },
-        { Shroodle, Black },
-        { Grafaiai, White },
-        { Fidough, Brown },
-        { Dachsbun, Brown },
-        { Maschiff, Purple },
-        { Mabosstiff, Purple },
-        { Bramblin, White },
-        { Brambleghast, White },
-        { Gimmighoul, Gray },
-        { Gholdengo, Yellow },
-        { GreatTusk, Green },
-        { BruteBonnet, Blue },
-        { WalkingWake, Blue },
-        { SandyShocks, Black },
-        { ScreamTail, Pink },
-        { FlutterMane, Green },
-        { SlitherWing, Yellow },
-        { RoaringMoon, Green },
-        { IronTreads, Gray },
-        { IronLeaves, Gray },
-        { IronMoth, Red },
-        { IronHands, Gray },
-        { IronJugulis, Gray },
-        { IronThorns, Gray },
-        { IronBundle, Gray },
-        { IronValiant, Gray },
-        { TingLu, Red },
-        { ChienPao, Red },
-        { WoChien, Red },
-        { ChiYu, Red },
-        { Koraidon, Red },
-        { Miraidon, Red },
-        { Tinkatink, Pink },
-        { Tinkatuff, Pink },
-        { Tinkaton, Pink },
-        { Charcadet, Red },
-        { Armarouge, Yellow },
-        { Ceruledge, Black },
-        { Toedscool, White },
-        { Toedscruel, Pink },
-        { Kingambit, Blue },
-        { Clodsire, Purple },
-        { Annihilape, Gray },
-        { Dipplin, Yellow },
-        { Poltchageist, Black },
-        { Sinistcha, Black },
-        { Okidogi, Black },
-        { Munkidori, Black },
-        { Fezandipiti, Black },
-        { Ogerpon, Green },
-        { Archaludon, White },
-        { Hydrapple, Green },
-        { GougingFire, Brown },
-        { RagingBolt, Yellow },
-        { IronBoulder, Gray },
-        { IronCrown, Blue },
-        { Terapagos, Blue },
-        { Pecharunt, Purple },
-    };
+    private static ReadOnlySpan<PersonalColor> ShinyMap =>
+    [
+        Green, // Bulbasaur
+        Green, // Ivysaur
+        Green, // Venusaur
+        Yellow, // Charmander
+        Yellow, // Charmeleon
+        Black, // Charizard
+        Blue, // Squirtle
+        Purple, // Wartortle
+        Purple, // Blastoise
+        Yellow, // Caterpie
+        Red, // Metapod
+        Purple, // Butterfree
+        Yellow, // Weedle
+        Green, // Kakuna
+        Green, // Beedrill
+        Brown, // Pidgey
+        Yellow, // Pidgeotto
+        Yellow, // Pidgeot
+        Green, // Rattata
+        Red, // Raticate
+        Green, // Spearow
+        Green, // Fearow
+        Green, // Ekans
+        Yellow, // Arbok
+        Yellow, // Pikachu
+        Yellow, // Raichu
+        Green, // Sandshrew
+        Red, // Sandslash
+        Purple, // NidoranF
+        Purple, // Nidorina
+        Green, // Nidoqueen
+        Blue, // NidoranM
+        Blue, // Nidorino
+        Blue, // Nidoking
+        Pink, // Clefairy
+        Pink, // Clefable
+        Yellow, // Vulpix
+        White, // Ninetales
+        Pink, // Jigglypuff
+        Pink, // Wigglytuff
+        Green, // Zubat
+        Green, // Golbat
+        Green, // Oddish
+        Green, // Gloom
+        Green, // Vileplume
+        Red, // Paras
+        Red, // Parasect
+        Purple, // Venonat
+        Blue, // Venomoth
+        Brown, // Diglett
+        Brown, // Dugtrio
+        White, // Meowth
+        White, // Persian
+        Blue, // Psyduck
+        Blue, // Golduck
+        Green, // Mankey
+        White, // Primeape
+        Yellow, // Growlithe
+        Yellow, // Arcanine
+        Blue, // Poliwag
+        Blue, // Poliwhirl
+        Green, // Poliwrath
+        Yellow, // Abra
+        Yellow, // Kadabra
+        Yellow, // Alakazam
+        Brown, // Machop
+        Green, // Machoke
+        Green, // Machamp
+        Yellow, // Bellsprout
+        Yellow, // Weepinbell
+        Yellow, // Victreebel
+        Blue, // Tentacool
+        Blue, // Tentacruel
+        Yellow, // Geodude
+        Brown, // Graveler
+        Brown, // Golem
+        Blue, // Ponyta
+        Black, // Rapidash
+        Pink, // Slowpoke
+        Purple, // Slowbro
+        Gray, // Magnemite
+        Gray, // Magneton
+        Pink, // Farfetchd
+        Green, // Doduo
+        Green, // Dodrio
+        White, // Seel
+        White, // Dewgong
+        Green, // Grimer
+        Green, // Muk
+        Red, // Shellder
+        Blue, // Cloyster
+        Purple, // Gastly
+        Purple, // Haunter
+        Purple, // Gengar
+        Green, // Onix
+        Pink, // Drowzee
+        Pink, // Hypno
+        Yellow, // Krabby
+        Green, // Kingler
+        Blue, // Voltorb
+        Blue, // Electrode
+        Yellow, // Exeggcute
+        Red, // Exeggutor
+        Green, // Cubone
+        Green, // Marowak
+        Green, // Hitmonlee
+        Green, // Hitmonchan
+        Yellow, // Lickitung
+        Green, // Koffing
+        Green, // Weezing
+        Red, // Rhyhorn
+        Gray, // Rhydon
+        Green, // Chansey
+        Green, // Tangela
+        Brown, // Kangaskhan
+        Blue, // Horsea
+        Blue, // Seadra
+        White, // Goldeen
+        Red, // Seaking
+        Yellow, // Staryu
+        Blue, // Starmie
+        White, // MrMime
+        Green, // Scyther
+        Pink, // Jynx
+        Yellow, // Electabuzz
+        Red, // Magmar
+        Purple, // Pinsir
+        Green, // Tauros
+        Yellow, // Magikarp
+        Red, // Gyarados
+        Purple, // Lapras
+        Blue, // Ditto
+        White, // Eevee
+        Purple, // Vaporeon
+        Green, // Jolteon
+        Yellow, // Flareon
+        Pink, // Porygon
+        Purple, // Omanyte
+        Purple, // Omastar
+        Green, // Kabuto
+        Green, // Kabutops
+        Purple, // Aerodactyl
+        Blue, // Snorlax
+        Blue, // Articuno
+        Yellow, // Zapdos
+        Red, // Moltres
+        Pink, // Dratini
+        Pink, // Dragonair
+        Green, // Dragonite
+        White, // Mewtwo
+        Blue, // Mew
+        Green, // Chikorita
+        Red, // Bayleef
+        Green, // Meganium
+        Brown, // Cyndaquil
+        Brown, // Quilava
+        Brown, // Typhlosion
+        Blue, // Totodile
+        Blue, // Croconaw
+        Blue, // Feraligatr
+        Yellow, // Sentret
+        Pink, // Furret
+        Yellow, // Hoothoot
+        Brown, // Noctowl
+        Red, // Ledyba
+        Red, // Ledian
+        Blue, // Spinarak
+        Pink, // Ariados
+        Pink, // Crobat
+        Blue, // Chinchou
+        Purple, // Lanturn
+        Yellow, // Pichu
+        Pink, // Cleffa
+        Pink, // Igglybuff
+        White, // Togepi
+        White, // Togetic
+        Green, // Natu
+        Green, // Xatu
+        Pink, // Mareep
+        Pink, // Flaaffy
+        Pink, // Ampharos
+        Purple, // Bellossom
+        Green, // Marill
+        Yellow, // Azumarill
+        Brown, // Sudowoodo
+        Blue, // Politoed
+        Green, // Hoppip
+        Pink, // Skiploom
+        Red, // Jumpluff
+        Red, // Aipom
+        Yellow, // Sunkern
+        Yellow, // Sunflora
+        Blue, // Yanma
+        Pink, // Wooper
+        Pink, // Quagsire
+        Green, // Espeon
+        Black, // Umbreon
+        Purple, // Murkrow
+        Purple, // Slowking
+        Green, // Misdreavus
+        Blue, // Unown
+        Pink, // Wobbuffet
+        Yellow, // Girafarig
+        Yellow, // Pineco
+        Yellow, // Forretress
+        Yellow, // Dunsparce
+        Blue, // Gligar
+        Yellow, // Steelix
+        Purple, // Snubbull
+        Pink, // Granbull
+        Pink, // Qwilfish
+        Green, // Scizor
+        Blue, // Shuckle
+        Pink, // Heracross
+        Pink, // Sneasel
+        Green, // Teddiursa
+        Green, // Ursaring
+        Gray, // Slugma
+        Pink, // Magcargo
+        Green, // Swinub
+        Yellow, // Piloswine
+        Blue, // Corsola
+        Purple, // Remoraid
+        Brown, // Octillery
+        Purple, // Delibird
+        Blue, // Mantine
+        Brown, // Skarmory
+        Blue, // Houndour
+        Blue, // Houndoom
+        Purple, // Kingdra
+        Blue, // Phanpy
+        Red, // Donphan
+        Blue, // Porygon2
+        Green, // Stantler
+        Yellow, // Smeargle
+        Brown, // Tyrogue
+        Brown, // Hitmontop
+        Pink, // Smoochum
+        Yellow, // Elekid
+        Red, // Magby
+        Blue, // Miltank
+        Pink, // Blissey
+        Yellow, // Raikou
+        Brown, // Entei
+        Blue, // Suicune
+        Green, // Larvitar
+        Purple, // Pupitar
+        Brown, // Tyranitar
+        White, // Lugia
+        Yellow, // HoOh
+        Pink, // Celebi
+        Green, // Treecko
+        Green, // Grovyle
+        Green, // Sceptile
+        Yellow, // Torchic
+        Yellow, // Combusken
+        Red, // Blaziken
+        Purple, // Mudkip
+        Purple, // Marshtomp
+        Purple, // Swampert
+        Yellow, // Poochyena
+        Yellow, // Mightyena
+        Red, // Zigzagoon
+        Red, // Linoone
+        Purple, // Wurmple
+        Yellow, // Silcoon
+        Yellow, // Beautifly
+        Green, // Cascoon
+        Brown, // Dustox
+        Red, // Lotad
+        Green, // Lombre
+        Yellow, // Ludicolo
+        Red, // Seedot
+        Red, // Nuzleaf
+        Red, // Shiftry
+        Red, // Taillow
+        Red, // Swellow
+        White, // Wingull
+        Green, // Pelipper
+        Blue, // Ralts
+        White, // Kirlia
+        White, // Gardevoir
+        Black, // Surskit
+        Green, // Masquerain
+        Red, // Shroomish
+        Red, // Breloom
+        Pink, // Slakoth
+        White, // Vigoroth
+        Brown, // Slaking
+        Yellow, // Nincada
+        Yellow, // Ninjask
+        Yellow, // Shedinja
+        Purple, // Whismur
+        Purple, // Loudred
+        Purple, // Exploud
+        Yellow, // Makuhita
+        Purple, // Hariyama
+        Green, // Azurill
+        Yellow, // Nosepass
+        Red, // Skitty
+        Red, // Delcatty
+        Yellow, // Sableye
+        Black, // Mawile
+        White, // Aron
+        Gray, // Lairon
+        Gray, // Aggron
+        Red, // Meditite
+        Blue, // Medicham
+        Blue, // Electrike
+        Black, // Manectric
+        Red, // Plusle
+        Green, // Minun
+        Purple, // Volbeat
+        Blue, // Illumise
+        Green, // Roselia
+        Blue, // Gulpin
+        Blue, // Swalot
+        Green, // Carvanha
+        Purple, // Sharpedo
+        Purple, // Wailmer
+        Purple, // Wailord
+        Yellow, // Numel
+        Black, // Camerupt
+        Red, // Torkoal
+        Yellow, // Spoink
+        Black, // Grumpig
+        Green, // Spinda
+        Green, // Trapinch
+        Red, // Vibrava
+        Green, // Flygon
+        Red, // Cacnea
+        Red, // Cacturne
+        Yellow, // Swablu
+        Yellow, // Altaria
+        White, // Zangoose
+        Black, // Seviper
+        Yellow, // Lunatone
+        Red, // Solrock
+        Blue, // Barboach
+        Blue, // Whiscash
+        Red, // Corphish
+        Red, // Crawdaunt
+        Yellow, // Baltoy
+        Black, // Claydol
+        Green, // Lileep
+        Red, // Cradily
+        Brown, // Anorith
+        Red, // Armaldo
+        Purple, // Feebas
+        Blue, // Milotic
+        Purple, // Castform
+        Green, // Kecleon
+        Blue, // Shuppet
+        Black, // Banette
+        Red, // Duskull
+        Red, // Dusclops
+        Green, // Tropius
+        Blue, // Chimecho
+        Red, // Absol
+        Purple, // Wynaut
+        Blue, // Snorunt
+        White, // Glalie
+        Purple, // Spheal
+        Purple, // Sealeo
+        Purple, // Walrein
+        Purple, // Clamperl
+        Green, // Huntail
+        Yellow, // Gorebyss
+        Blue, // Relicanth
+        Yellow, // Luvdisc
+        Green, // Bagon
+        Green, // Shelgon
+        Green, // Salamence
+        Gray, // Beldum
+        Gray, // Metang
+        Gray, // Metagross
+        Red, // Regirock
+        Blue, // Regice
+        Black, // Registeel
+        Yellow, // Latias
+        Green, // Latios
+        Purple, // Kyogre
+        Green, // Groudon
+        Black, // Rayquaza
+        Yellow, // Jirachi
+        Yellow, // Deoxys
+        Blue, // Turtwig
+        Blue, // Grotle
+        Green, // Torterra
+        Red, // Chimchar
+        Red, // Monferno
+        Red, // Infernape
+        Blue, // Piplup
+        Blue, // Prinplup
+        Blue, // Empoleon
+        Brown, // Starly
+        Brown, // Staravia
+        Brown, // Staraptor
+        Yellow, // Bidoof
+        Yellow, // Bibarel
+        Yellow, // Kricketot
+        Yellow, // Kricketune
+        Yellow, // Shinx
+        Yellow, // Luxio
+        Black, // Luxray
+        Green, // Budew
+        Green, // Roserade
+        Red, // Cranidos
+        Red, // Rampardos
+        Black, // Shieldon
+        Black, // Bastiodon
+        Green, // Burmy
+        Green, // Wormadam
+        Yellow, // Mothim
+        Red, // Combee
+        Red, // Vespiquen
+        Pink, // Pachirisu
+        Yellow, // Buizel
+        Yellow, // Floatzel
+        Red, // Cherubi
+        Green, // Cherrim
+        Blue, // Shellos
+        Blue, // Gastrodon
+        Pink, // Ambipom
+        Yellow, // Drifloon
+        Yellow, // Drifblim
+        Red, // Buneary
+        Red, // Lopunny
+        Green, // Mismagius
+        Purple, // Honchkrow
+        Purple, // Glameow
+        Purple, // Purugly
+        Yellow, // Chingling
+        Red, // Stunky
+        Red, // Skuntank
+        Green, // Bronzor
+        Green, // Bronzong
+        Brown, // Bonsly
+        Pink, // MimeJr
+        Pink, // Happiny
+        Black, // Chatot
+        Blue, // Spiritomb
+        Blue, // Gible
+        Blue, // Gabite
+        Black, // Garchomp
+        Blue, // Munchlax
+        Yellow, // Riolu
+        Yellow, // Lucario
+        Yellow, // Hippopotas
+        Yellow, // Hippowdon
+        Red, // Skorupi
+        Red, // Drapion
+        Blue, // Croagunk
+        Blue, // Toxicroak
+        Green, // Carnivine
+        Black, // Finneon
+        Black, // Lumineon
+        Blue, // Mantyke
+        White, // Snover
+        White, // Abomasnow
+        Pink, // Weavile
+        Gray, // Magnezone
+        Yellow, // Lickilicky
+        Yellow, // Rhyperior
+        Green, // Tangrowth
+        Yellow, // Electivire
+        Red, // Magmortar
+        White, // Togekiss
+        Blue, // Yanmega
+        Yellow, // Leafeon
+        Blue, // Glaceon
+        Blue, // Gliscor
+        Brown, // Mamoswine
+        Blue, // PorygonZ
+        Blue, // Gallade
+        Yellow, // Probopass
+        Black, // Dusknoir
+        White, // Froslass
+        Red, // Rotom
+        Yellow, // Uxie
+        Red, // Mesprit
+        Blue, // Azelf
+        Green, // Dialga
+        Pink, // Palkia
+        Red, // Heatran
+        Blue, // Regigigas
+        Blue, // Giratina
+        Purple, // Cresselia
+        Blue, // Phione
+        Blue, // Manaphy
+        Black, // Darkrai
+        Green, // Shaymin
+        Yellow, // Arceus
+        White, // Victini
+        Green, // Snivy
+        Green, // Servine
+        Green, // Serperior
+        Yellow, // Tepig
+        Red, // Pignite
+        Blue, // Emboar
+        Blue, // Oshawott
+        Blue, // Dewott
+        Blue, // Samurott
+        Brown, // Patrat
+        Red, // Watchog
+        Yellow, // Lillipup
+        Yellow, // Herdier
+        Yellow, // Stoutland
+        Blue, // Purrloin
+        Red, // Liepard
+        Green, // Pansage
+        Green, // Simisage
+        Red, // Pansear
+        Red, // Simisear
+        Blue, // Panpour
+        Blue, // Simipour
+        Yellow, // Munna
+        Purple, // Musharna
+        Gray, // Pidove
+        Green, // Tranquill
+        Brown, // Unfezant
+        Blue, // Blitzle
+        Black, // Zebstrika
+        Purple, // Roggenrola
+        Purple, // Boldore
+        Blue, // Gigalith
+        Green, // Woobat
+        Yellow, // Swoobat
+        Red, // Drilbur
+        Red, // Excadrill
+        Purple, // Audino
+        Yellow, // Timburr
+        Yellow, // Gurdurr
+        Red, // Conkeldurr
+        Yellow, // Tympole
+        Blue, // Palpitoad
+        Blue, // Seismitoad
+        Red, // Throh
+        Blue, // Sawk
+        Green, // Sewaddle
+        Green, // Swadloon
+        Green, // Leavanny
+        Red, // Venipede
+        Purple, // Whirlipede
+        Red, // Scolipede
+        Yellow, // Cottonee
+        White, // Whimsicott
+        Yellow, // Petilil
+        Yellow, // Lilligant
+        Green, // Basculin
+        Yellow, // Sandile
+        Brown, // Krokorok
+        Brown, // Krookodile
+        Red, // Darumaka
+        Red, // Darmanitan
+        Green, // Maractus
+        Red, // Dwebble
+        Green, // Crustle
+        Yellow, // Scraggy
+        Green, // Scrafty
+        Black, // Sigilyph
+        Blue, // Yamask
+        Gray, // Cofagrigus
+        Blue, // Tirtouga
+        Blue, // Carracosta
+        Red, // Archen
+        Yellow, // Archeops
+        Blue, // Trubbish
+        Brown, // Garbodor
+        Black, // Zorua
+        Black, // Zoroark
+        Red, // Minccino
+        Brown, // Cinccino
+        Red, // Gothita
+        Black, // Gothorita
+        Black, // Gothitelle
+        Green, // Solosis
+        Green, // Duosion
+        Blue, // Reuniclus
+        Pink, // Ducklett
+        White, // Swanna
+        White, // Vanillite
+        White, // Vanillish
+        White, // Vanilluxe
+        Pink, // Deerling
+        Yellow, // Sawsbuck
+        White, // Emolga
+        Green, // Karrablast
+        Gray, // Escavalier
+        Blue, // Foongus
+        Blue, // Amoonguss
+        Blue, // Frillish
+        Blue, // Jellicent
+        Purple, // Alomomola
+        Yellow, // Joltik
+        Yellow, // Galvantula
+        Gray, // Ferroseed
+        Yellow, // Ferrothorn
+        Gray, // Klink
+        Gray, // Klang
+        Yellow, // Klinklang
+        White, // Tynamo
+        Yellow, // Eelektrik
+        Green, // Eelektross
+        Blue, // Elgyem
+        Red, // Beheeyem
+        White, // Litwick
+        Black, // Lampent
+        Red, // Chandelure
+        Brown, // Axew
+        Black, // Fraxure
+        Black, // Haxorus
+        White, // Cubchoo
+        White, // Beartic
+        Blue, // Cryogonal
+        Yellow, // Shelmet
+        Yellow, // Accelgor
+        Yellow, // Stunfisk
+        Blue, // Mienfoo
+        Pink, // Mienshao
+        Green, // Druddigon
+        Gray, // Golett
+        Gray, // Golurk
+        Blue, // Pawniard
+        Blue, // Bisharp
+        Red, // Bouffalant
+        Brown, // Rufflet
+        Blue, // Braviary
+        Red, // Vullaby
+        Red, // Mandibuzz
+        Red, // Heatmor
+        Gray, // Durant
+        Green, // Deino
+        Green, // Zweilous
+        Green, // Hydreigon
+        Yellow, // Larvesta
+        Yellow, // Volcarona
+        Blue, // Cobalion
+        Red, // Terrakion
+        Red, // Virizion
+        Green, // Tornadus
+        Blue, // Thundurus
+        White, // Reshiram
+        Black, // Zekrom
+        Yellow, // Landorus
+        Black, // Kyurem
+        Green, // Keldeo
+        Green, // Meloetta
+        Red, // Genesect
+        Red, // Chespin
+        Red, // Quilladin
+        Green, // Chesnaught
+        Gray, // Fennekin
+        Purple, // Braixen
+        Purple, // Delphox
+        Blue, // Froakie
+        Blue, // Frogadier
+        Black, // Greninja
+        Gray, // Bunnelby
+        Gray, // Diggersby
+        Red, // Fletchling
+        Red, // Fletchinder
+        Red, // Talonflame
+        White, // Scatterbug
+        Gray, // Spewpa
+        Red, // Vivillon
+        Red, // Litleo
+        Red, // Pyroar
+        White, // Flabébé
+        White, // Floette
+        Purple, // Florges
+        Green, // Skiddo
+        Green, // Gogoat
+        Black, // Pancham
+        Black, // Pangoro
+        Black, // Furfrou
+        Pink, // Espurr
+        Yellow, // Meowstic
+        Red, // Honedge
+        Red, // Doublade
+        Red, // Aegislash
+        Purple, // Spritzee
+        Purple, // Aromatisse
+        Yellow, // Swirlix
+        Yellow, // Slurpuff
+        Brown, // Inkay
+        Brown, // Malamar
+        Blue, // Binacle
+        Blue, // Barbaracle
+        Purple, // Skrelp
+        Purple, // Dragalge
+        Red, // Clauncher
+        Red, // Clawitzer
+        Red, // Helioptile
+        Red, // Heliolisk
+        Blue, // Tyrunt
+        Blue, // Tyrantrum
+        White, // Amaura
+        White, // Aurorus
+        Blue, // Sylveon
+        Black, // Hawlucha
+        Brown, // Dedenne
+        Black, // Carbink
+        Yellow, // Goomy
+        Yellow, // Sliggoo
+        Yellow, // Goodra
+        Yellow, // Klefki
+        Gray, // Phantump
+        Gray, // Trevenant
+        Purple, // Pumpkaboo
+        Purple, // Gourgeist
+        Blue, // Bergmite
+        Blue, // Avalugg
+        Blue, // Noibat
+        Blue, // Noivern
+        Blue, // Xerneas
+        Red, // Yveltal
+        White, // Zygarde
+        Pink, // Diancie
+        Yellow, // Hoopa
+        Yellow, // Volcanion
+        Green, // Rowlet
+        Green, // Dartrix
+        Black, // Decidueye
+        White, // Litten
+        White, // Torracat
+        White, // Incineroar
+        Blue, // Popplio
+        Blue, // Brionne
+        Blue, // Primarina
+        Black, // Pikipek
+        Black, // Trumbeak
+        Black, // Toucannon
+        Brown, // Yungoos
+        Brown, // Gumshoos
+        Red, // Grubbin
+        Red, // Charjabug
+        Gray, // Vikavolt
+        Purple, // Crabrawler
+        White, // Crabominable
+        Black, // Oricorio
+        Pink, // Cutiefly
+        Pink, // Ribombee
+        Blue, // Rockruff
+        Blue, // Lycanroc
+        Blue, // Wishiwashi
+        Red, // Mareanie
+        Red, // Toxapex
+        Yellow, // Mudbray
+        Yellow, // Mudsdale
+        Purple, // Dewpider
+        Purple, // Araquanid
+        Green, // Fomantis
+        Green, // Lurantis
+        Brown, // Morelull
+        Brown, // Shiinotic
+        White, // Salandit
+        White, // Salazzle
+        Yellow, // Stufful
+        Yellow, // Bewear
+        Red, // Bounsweet
+        Purple, // Steenee
+        Purple, // Tsareena
+        Blue, // Comfey
+        Pink, // Oranguru
+        Blue, // Passimian
+        Red, // Wimpod
+        White, // Golisopod
+        Black, // Sandygast
+        Black, // Palossand
+        Green, // Pyukumuku
+        Brown, // TypeNull
+        Yellow, // Silvally
+        Black, // Minior
+        Blue, // Komala
+        Blue, // Turtonator
+        White, // Togedemaru
+        Gray, // Mimikyu
+        Red, // Bruxish
+        Yellow, // Drampa
+        Red, // Dhelmise
+        Yellow, // Jangmoo
+        Green, // Hakamoo
+        Green, // Kommoo
+        Black, // TapuKoko
+        Black, // TapuLele
+        Black, // TapuBulu
+        Black, // TapuFini
+        Purple, // Cosmog
+        Yellow, // Cosmoem
+        Red, // Solgaleo
+        Red, // Lunala
+        Yellow, // Nihilego
+        Green, // Buzzwole
+        Black, // Pheromosa
+        Blue, // Xurkitree
+        White, // Celesteela
+        White, // Kartana
+        White, // Guzzlord
+        Blue, // Necrozma
+        Gray, // Magearna
+        Black, // Marshadow
+        White, // Poipole
+        Yellow, // Naganadel
+        Yellow, // Stakataka
+        Blue, // Blacephalon
+        White, // Zeraora
+        Gray, // Meltan
+        Gray, // Melmetal
+        Green, // Grookey
+        Yellow, // Thwackey
+        Brown, // Rillaboom
+        White, // Scorbunny
+        Gray, // Raboot
+        Gray, // Cinderace
+        Blue, // Sobble
+        Blue, // Drizzile
+        Blue, // Inteleon
+        Red, // Skwovet
+        Red, // Greedent
+        Yellow, // Rookidee
+        Gray, // Corvisquire
+        Gray, // Corviknight
+        Blue, // Blipbug
+        Blue, // Dottler
+        Blue, // Orbeetle
+        Brown, // Nickit
+        Brown, // Thievul
+        Blue, // Gossifleur
+        White, // Eldegoss
+        Black, // Wooloo
+        Black, // Dubwool
+        Green, // Chewtle
+        Green, // Drednaw
+        Pink, // Yamper
+        Yellow, // Boltund
+        Black, // Rolycoly
+        Black, // Carkol
+        Black, // Coalossal
+        Green, // Applin
+        Green, // Flapple
+        Green, // Appletun
+        Yellow, // Silicobra
+        Black, // Sandaconda
+        Red, // Cramorant
+        Blue, // Arrokuda
+        Blue, // Barraskewda
+        Red, // Toxel
+        Purple, // Toxtricity
+        Red, // Sizzlipede
+        Red, // Centiskorch
+        Blue, // Clobbopus
+        Red, // Grapploct
+        Purple, // Sinistea
+        Purple, // Polteageist
+        White, // Hatenna
+        White, // Hattrem
+        White, // Hatterene
+        Blue, // Impidimp
+        Blue, // Morgrem
+        White, // Grimmsnarl
+        Red, // Obstagoon
+        Yellow, // Perrserker
+        Pink, // Cursola
+        Yellow, // Sirfetchd
+        Black, // MrRime
+        White, // Runerigus
+        White, // Milcery
+        White, // Alcremie
+        Brown, // Falinks
+        Black, // Pincurchin
+        White, // Snom
+        White, // Frosmoth
+        Black, // Stonjourner
+        Purple, // Eiscue
+        Black, // Indeedee
+        White, // Morpeko
+        Yellow, // Cufant
+        Black, // Copperajah
+        Brown, // Dracozolt
+        White, // Arctozolt
+        Brown, // Dracovish
+        White, // Arctovish
+        White, // Duraludon
+        Green, // Dreepy
+        Gray, // Drakloak
+        Green, // Dragapult
+        Blue, // Zacian
+        Red, // Zamazenta
+        Red, // Eternatus
+        White, // Kubfu
+        Black, // Urshifu
+        Black, // Zarude
+        Yellow, // Regieleki
+        Red, // Regidrago
+        White, // Glastrier
+        Black, // Spectrier
+        White, // Calyrex
+        White, // Wyrdeer
+        Brown, // Kleavor
+        Brown, // Ursaluna
+        Blue, // Basculegion
+        Black, // Sneasler
+        Blue, // Overqwil
+        Red, // Enamorus
+        Green, // Sprigatito
+        Green, // Floragato
+        Green, // Meowscarada
+        Pink, // Fuecoco
+        Pink, // Crocalor
+        Pink, // Skeledirge
+        Blue, // Quaxly
+        Blue, // Quaxwell
+        Blue, // Quaquaval
+        Pink, // Lechonk
+        Pink, // Oinkologne
+        Yellow, // Dudunsparce
+        Red, // Tarountula
+        Red, // Spidops
+        Yellow, // Nymble
+        Green, // Lokix
+        Yellow, // Rellor
+        Red, // Rabsca
+        Yellow, // Greavard
+        Yellow, // Houndstone
+        Yellow, // Flittle
+        Black, // Espathra
+        Red, // Farigiraf
+        Yellow, // Wiglett
+        Blue, // Wugtrio
+        White, // Dondozo
+        Green, // Veluza
+        Purple, // Finizen
+        Purple, // Palafin
+        Green, // Smoliv
+        Green, // Dolliv
+        Green, // Arboliva
+        Yellow, // Capsakid
+        Yellow, // Scovillain
+        Yellow, // Tadbulb
+        Green, // Bellibolt
+        Yellow, // Varoom
+        Yellow, // Revavroom
+        Blue, // Orthworm
+        White, // Tandemaus
+        White, // Maushold
+        Gray, // Cetoddle
+        Gray, // Cetitan
+        Gray, // Frigibax
+        Blue, // Arctibax
+        Gray, // Baxcalibur
+        Brown, // Tatsugiri
+        Gray, // Cyclizar
+        Red, // Pawmi
+        Pink, // Pawmo
+        Red, // Pawmot
+        Yellow, // Wattrel
+        Yellow, // Kilowattrel
+        White, // Bombirdier
+        Green, // Squawkabilly
+        Pink, // Flamigo
+        Blue, // Klawf
+        Brown, // Nacli
+        Brown, // Naclstack
+        Brown, // Garganacl
+        Blue, // Glimmet
+        Blue, // Glimmora
+        Black, // Shroodle
+        White, // Grafaiai
+        Brown, // Fidough
+        Brown, // Dachsbun
+        Purple, // Maschiff
+        Purple, // Mabosstiff
+        White, // Bramblin
+        White, // Brambleghast
+        Gray, // Gimmighoul
+        Yellow, // Gholdengo
+        Green, // GreatTusk
+        Blue, // BruteBonnet
+        Blue, // WalkingWake
+        Black, // SandyShocks
+        Pink, // ScreamTail
+        Green, // FlutterMane
+        Yellow, // SlitherWing
+        Green, // RoaringMoon
+        Gray, // IronTreads
+        Gray, // IronLeaves
+        Red, // IronMoth
+        Gray, // IronHands
+        Gray, // IronJugulis
+        Gray, // IronThorns
+        Gray, // IronBundle
+        Gray, // IronValiant
+        Red, // TingLu
+        Red, // ChienPao
+        Red, // WoChien
+        Red, // ChiYu
+        Red, // Koraidon
+        Red, // Miraidon
+        Pink, // Tinkatink
+        Pink, // Tinkatuff
+        Pink, // Tinkaton
+        Red, // Charcadet
+        Yellow, // Armarouge
+        Black, // Ceruledge
+        White, // Toedscool
+        Pink, // Toedscruel
+        Blue, // Kingambit
+        Purple, // Clodsire
+        Gray, // Annihilape
+        Yellow, // Dipplin
+        Black, // Poltchageist
+        Black, // Sinistcha
+        Black, // Okidogi
+        Black, // Munkidori
+        Black, // Fezandipiti
+        Green, // Ogerpon
+        White, // Archaludon
+        Green, // Hydrapple
+        Brown, // GougingFire
+        Yellow, // RagingBolt
+        Gray, // IronBoulder
+        Blue, // IronCrown
+        Blue, // Terapagos
+        Purple, // Pecharunt
+    ];
 
     public static Ball GetBallFromString(ReadOnlySpan<char> ballstr)
     {
@@ -1053,28 +1051,14 @@ public static class Aesthetics
         static Ball Parse(ReadOnlySpan<char> tmp) => Enum.TryParse<Ball>(tmp, out var ball) ? ball : Ball.None;
     }
 
-    public static void ApplyShinyBall(PKM pk)
+    public static void ApplyShinyBall(PKM pk, IEncounterTemplate enc)
     {
-        var color = ShinyMap[(Species)pk.Species];
-        ApplyFirstLegalBall(pk, pk.LA ? BallColorsLA[color] : BallColors[color]);
+        var color = ShinyMap[pk.Species];
+        var prefer = enc.Version == GameVersion.PLA ? GetColorsLA(color) : GetColors(color);
+        ApplyFirstLegalBall(pk, enc, prefer);
     }
 
-    private static readonly Ball[] BallList = Enum.GetValues<Ball>();
-
-    static Aesthetics()
-    {
-        var exclude = new[] { Ball.None, LAPoke, Poke };
-        var end = new[] { LAPoke, Poke };
-        var allBalls = BallList.Except(exclude).ToArray();
-        var colors = Enum.GetValues<PersonalColor>();
-        foreach (var c in colors)
-        {
-            var vals = BallColors[c];
-            var extra = allBalls.Except(vals).ToArray();
-            Util.Rand.Shuffle(extra.AsSpan());
-            BallColors[c] = [.. vals, .. extra, .. end];
-        }
-    }
+    private static ReadOnlySpan<Ball> LowPriority => [Poke, LAPoke];
 
     public static Shiny GetShinyType(ReadOnlySpan<char> value)
     {
@@ -1101,44 +1085,65 @@ public static class Aesthetics
     /// <summary>
     /// Priority Match ball IDs that match the color ID in descending order
     /// </summary>
-    private static readonly Dictionary<PersonalColor, Ball[]> BallColors = new()
+    private static ReadOnlySpan<Ball> GetColors(PersonalColor color) => color switch
     {
-        [Red] = [Repeat, Fast, Heal, Great, Dream, Lure],
-        [Blue] = [Dive, Net, Great, Lure, Beast],
-        [Yellow] = [Level, Ultra, Repeat, Quick, Moon],
-        [Green] = [Safari, Friend, Nest, Dusk],
-        [Black] = [Luxury, Heavy, Ultra, Moon, Net, Beast],
-        [Brown] = [Level, Heavy],
-        [Purple] = [Master, Love, Heal, Dream],
-        [Gray] = [Heavy, Premier, Luxury],
-        [White] = [Premier, Timer, Luxury, Ultra],
-        [Pink] = [Love, Heal, Dream],
+        Red => [Repeat, Fast, Heal, Great, Dream, Lure],
+        Blue => [Dive, Net, Great, Lure, Beast],
+        Yellow => [Level, Ultra, Repeat, Quick, Moon],
+        Green => [Safari, Friend, Nest, Dusk],
+        Black => [Luxury, Heavy, Ultra, Moon, Net, Beast],
+        Brown => [Level, Heavy],
+        Purple => [Master, Love, Heal, Dream],
+        Gray => [Heavy, Premier, Luxury],
+        White => [Premier, Timer, Luxury, Ultra],
+        _ => [Love, Heal, Dream],
     };
 
-    private static readonly Dictionary<PersonalColor, Ball[]> BallColorsLA = new()
+    private static ReadOnlySpan<Ball> GetColorsLA(PersonalColor color) => color switch
     {
-        [Red] = [LAPoke],
-        [Blue] = [LAFeather, LAGreat, LAJet],
-        [Yellow] = [LAUltra],
-        [Green] = [LAPoke],
-        [Black] = [LAGigaton, LALeaden, LAHeavy, LAUltra],
-        [Brown] = [LAPoke],
-        [Purple] = [LAPoke],
-        [Gray] = [LAGigaton, LALeaden, LAHeavy],
-        [White] = [LAWing, LAJet],
-        [Pink] = [LAPoke]
+        Red => [LAPoke],
+        Blue => [LAFeather, LAGreat, LAJet],
+        Yellow => [LAUltra],
+        Green => [LAPoke],
+        Black => [LAGigaton, LALeaden, LAHeavy, LAUltra],
+        Brown => [LAPoke],
+        Purple => [LAPoke],
+        Gray => [LAGigaton, LALeaden, LAHeavy],
+        White => [LAWing, LAJet],
+        _ => [LAPoke],
     };
 
-    public static byte ApplyFirstLegalBall(PKM pkm, IEnumerable<Ball> balls)
+    public static Ball ApplyFirstLegalBall(PKM pkm, IEncounterTemplate enc, ReadOnlySpan<Ball> balls)
     {
         var orig_ball = pkm.Ball;
+        ulong processed = 0;
         foreach (var b in balls)
         {
-            pkm.Ball = (byte)b;
-            if (new LegalityAnalysis(pkm).Valid)
-                return pkm.Ball;
+            if (IsLegalWithBall(pkm, b))
+                return b;
+            processed |= 1UL << (byte)b;
         }
-        return orig_ball;
+
+        for (byte b = 1; b < (byte)Strange; b++)
+        {
+            if ((processed & (1UL << b)) != 0)
+                continue;
+            if ((Ball)b is Poke or LAPoke)
+                continue;
+            if (IsLegalWithBall(pkm, (Ball)b))
+                return (Ball)b;
+        }
+        if (IsLegalWithBall(pkm, Poke))
+            return Poke;
+        if (IsLegalWithBall(pkm, LAPoke))
+            return LAPoke;
+        return (Ball)(pkm.Ball = orig_ball);
+    }
+
+    private static bool IsLegalWithBall(PKM pkm, Ball b)
+    {
+        pkm.Ball = (byte)b;
+        return new LegalityAnalysis(pkm).Valid;
     }
 
     private static bool IsDisallowed(RibbonIndex ribbon) => ribbon switch

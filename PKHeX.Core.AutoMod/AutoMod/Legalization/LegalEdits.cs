@@ -20,11 +20,11 @@ public static class LegalEdits
     /// Set a valid Pokeball based on a legality check's suggestions.
     /// </summary>
     /// <param name="pk">Pokémon to modify</param>
+    /// <param name="enc"></param>
     /// <param name="matching">Set matching ball</param>
     /// <param name="force"></param>
     /// <param name="ball"></param>
-    /// <param name="enc"></param>
-    public static void SetSuggestedBall(this PKM pk, bool matching = true, bool force = false, Ball ball = Ball.None, IEncounterable? enc = null)
+    public static void SetSuggestedBall(this PKM pk, IEncounterTemplate enc, bool matching = true, bool force = false, Ball ball = Ball.None)
     {
         var orig = pk.Ball;
         if (ball == Ball.None)
@@ -45,7 +45,7 @@ public static class LegalEdits
             if (!pk.IsShiny)
                 pk.SetMatchingBall();
             else
-                Aesthetics.ApplyShinyBall(pk);
+                Aesthetics.ApplyShinyBall(pk, enc);
 
             if (force || new LegalityAnalysis(pk).Valid)
                 return;
