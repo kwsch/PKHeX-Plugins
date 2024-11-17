@@ -4,7 +4,7 @@ using static PKHeX.Core.Injection.LiveHeXVersion;
 
 namespace PKHeX.Core.Injection;
 
-public class LPLGPE(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, useCache)
+public sealed class LPLGPE(LiveHeXVersion lv, bool useCache) : InjectionBase(lv, useCache)
 {
     public static ReadOnlySpan<LiveHeXVersion> SupportedVersions => [LGPE_v102];
 

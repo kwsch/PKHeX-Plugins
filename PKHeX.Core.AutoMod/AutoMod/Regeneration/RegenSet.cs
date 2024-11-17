@@ -5,7 +5,7 @@ using System.Text;
 
 namespace PKHeX.Core.AutoMod;
 
-public class RegenSet
+public sealed class RegenSet
 {
     public static readonly RegenSet Default = new([], PKX.Generation);
 

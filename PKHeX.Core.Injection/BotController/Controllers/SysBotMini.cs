@@ -15,7 +15,7 @@ public enum RWMethod
     Absolute,
 }
 
-public class SysBotMini : ICommunicatorNX, IPokeBlocks
+public sealed class SysBotMini : ICommunicatorNX, IPokeBlocks
 {
     public string IP = "192.168.1.65";
     public int Port = 6000;

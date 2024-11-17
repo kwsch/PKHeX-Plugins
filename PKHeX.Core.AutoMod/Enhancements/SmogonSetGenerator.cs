@@ -8,7 +8,7 @@ namespace PKHeX.Core.AutoMod;
 /// <summary>
 /// Parser for Smogon webpage <see cref="ShowdownSet"/> data.
 /// </summary>
-public class SmogonSetGenerator
+public sealed class SmogonSetGenerator
 {
     public readonly bool Valid;
     public readonly string URL;

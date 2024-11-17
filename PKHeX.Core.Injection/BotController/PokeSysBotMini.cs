@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace PKHeX.Core.Injection;
 
-public class PokeSysBotMini(LiveHeXVersion lv, ICommunicator communicator, bool useCache) : InjectionBase(lv, useCache)
+public sealed class PokeSysBotMini(LiveHeXVersion lv, ICommunicator communicator, bool useCache) : InjectionBase(lv, useCache)
 {
     public readonly long BoxStart = RamOffsets.GetB1S1Offset(lv);
     public readonly int SlotSize = RamOffsets.GetSlotSize(lv);

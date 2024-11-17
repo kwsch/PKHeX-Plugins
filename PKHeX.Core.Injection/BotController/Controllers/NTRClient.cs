@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace PKHeX.Core.Injection;
 
-public class NTRClient : ICommunicator
+public sealed class NTRClient : ICommunicator
 {
     private string IP = "192.168.1.106";
     private int Port = 8000;

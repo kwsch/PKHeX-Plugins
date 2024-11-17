@@ -9,7 +9,7 @@ using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace PKHeX.Core.Injection;
 
-public class UsbBotMini : ICommunicatorNX, IPokeBlocks
+public sealed class UsbBotMini : ICommunicatorNX, IPokeBlocks
 {
     private const int MaximumTransferSize = 468; // byte limitation of USB-Botbase over Android for ACNHMS, assumed same here.
 

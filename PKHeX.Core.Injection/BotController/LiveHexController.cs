@@ -2,7 +2,7 @@
 
 namespace PKHeX.Core.Injection;
 
-public class LiveHeXController
+public sealed class LiveHeXController
 {
     private readonly ISaveFileProvider SAV;
     public readonly IPKMView Editor;

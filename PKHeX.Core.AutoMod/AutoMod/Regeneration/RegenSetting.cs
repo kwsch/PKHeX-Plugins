@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace PKHeX.Core.AutoMod;
 
-public class RegenSetting
+public sealed class RegenSetting
 {
     public Ball Ball { get; set; }
     public Shiny ShinyType { get; set; } = Shiny.Never;

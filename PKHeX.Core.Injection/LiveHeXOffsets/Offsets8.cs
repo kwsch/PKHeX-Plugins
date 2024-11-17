@@ -1,6 +1,6 @@
 ﻿namespace PKHeX.Core.Injection;
 
-public class Offsets8
+public sealed class Offsets8
 {
     public uint BoxInfo;
     public uint PartyInfo;

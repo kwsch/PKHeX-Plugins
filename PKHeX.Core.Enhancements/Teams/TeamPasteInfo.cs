@@ -5,7 +5,7 @@ namespace PKHeX.Core.Enhancements;
 /// <summary>
 /// Paste Details originating from a common pasting website URL.
 /// </summary>
-public class TeamPasteInfo
+public sealed class TeamPasteInfo
 {
     public readonly bool Valid;
     public readonly PasteSource Source;
