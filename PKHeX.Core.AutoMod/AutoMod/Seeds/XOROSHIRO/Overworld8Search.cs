@@ -311,7 +311,7 @@ public static class Overworld8Search
 
     private static ReadOnlySpan<int> FlawlessWild8 => [0, 2, 3];
 
-    public static int GetFlawlessIVCount(IEncounterable enc, ReadOnlySpan<int> ivs, out uint seed)
+    public static int GetFlawlessIVCount(IEncounterTemplate enc, ReadOnlySpan<int> ivs, out uint seed)
     {
         var iv32 = ComputeIV32Swapped(ivs);
         seed = 0;

@@ -86,7 +86,7 @@ public static class SimpleEdits
     /// </summary>
     /// <param name="pk">PKM to modify</param>
     /// <param name="enc">Encounter details</param>
-    public static void SetEncryptionConstant(this PKM pk, IEncounterable enc)
+    public static void SetEncryptionConstant(this PKM pk, IEncounterTemplate enc)
     {
         if (pk.Format < 6)
             return;
@@ -129,7 +129,7 @@ public static class SimpleEdits
     /// <param name="isShiny">Shiny value that needs to be set</param>
     /// <param name="enc">Encounter details</param>
     /// <param name="shiny">Set is shiny</param>
-    public static void SetShinyBoolean(this PKM pk, bool isShiny, IEncounterable enc, Shiny shiny)
+    public static void SetShinyBoolean(this PKM pk, bool isShiny, IEncounterTemplate enc, Shiny shiny)
     {
         if (IsShinyLockedSpeciesForm(pk.Species, pk.Form))
             return;
@@ -220,7 +220,7 @@ public static class SimpleEdits
         }
     }
 
-    public static void SetRaidShiny(this PKM pk, Shiny shiny, IEncounterable enc)
+    public static void SetRaidShiny(this PKM pk, Shiny shiny, IEncounterTemplate enc)
     {
         if (pk.IsShiny)
             return;
@@ -253,7 +253,7 @@ public static class SimpleEdits
         return (uint)(((tid ^ sid ^ (pid & 0xFFFF) ^ type) << 16) | (pid & 0xFFFF));
     }
 
-    public static void ApplyHeightWeight(this PKM pk, IEncounterable enc, bool signed = true)
+    public static void ApplyHeightWeight(this PKM pk, IEncounterTemplate enc, bool signed = true)
     {
         if (enc is { Generation: < 8, Context: not EntityContext.Gen7b } && pk.Format >= 8) // height and weight don't apply prior to GG
             return;
@@ -330,7 +330,7 @@ public static class SimpleEdits
             sz3.Scale = (byte)scale;
     }
 
-    public static string? GetBatchValue(this IBattleTemplate set, string key)
+    public static string? GetBatchValue(this IBattleTemplate set, ReadOnlySpan<char> key)
     {
         if (set is not RegenTemplate { Regen: { HasBatchSettings: true } regen})
             return null;
@@ -345,7 +345,7 @@ public static class SimpleEdits
         return null;
     }
 
-    public static void SetFriendship(this PKM pk, IEncounterable enc)
+    public static void SetFriendship(this PKM pk, IEncounterTemplate enc)
     {
         if (enc.Generation <= 2)
         {
@@ -399,7 +399,7 @@ public static class SimpleEdits
             h.HandlingTrainerLanguage = prefer;
     }
 
-    public static void SetGigantamaxFactor(this PKM pk, IBattleTemplate set, IEncounterable enc)
+    public static void SetGigantamaxFactor(this PKM pk, IBattleTemplate set, IEncounterTemplate enc)
     {
         if (pk is not IGigantamax gmax || gmax.CanGigantamax == set.CanGigantamax)
             return;
@@ -497,7 +497,7 @@ public static class SimpleEdits
     /// <param name="pk">PKM to modify</param>
     /// <param name="trainer">Trainer to handle the <see cref="pk"/></param>
     /// <param name="enc">Encounter template originated from</param>
-    public static void SetHandlerAndMemory(this PKM pk, ITrainerInfo trainer, IEncounterable enc)
+    public static void SetHandlerAndMemory(this PKM pk, ITrainerInfo trainer, IEncounterTemplate enc)
     {
         if (IsUntradeableEncounter(enc))
             return;
@@ -569,7 +569,7 @@ public static class SimpleEdits
     /// </summary>
     /// <param name="pk">Pokémon file to modify</param>
     /// <param name="enc">encounter used to generate Pokémon file</param>
-    public static void SetDateLocks(this PKM pk, IEncounterable enc)
+    public static void SetDateLocks(this PKM pk, IEncounterTemplate enc)
     {
         if (enc is WC8 { IsHOMEGift: true } wc8)
             SetDateLocksWC8(pk, wc8);
@@ -582,7 +582,7 @@ public static class SimpleEdits
             pk.MetDate = time.Start;
     }
 
-    public static bool TryApplyHardcodedSeedWild8(PK8 pk, IEncounterable enc, ReadOnlySpan<int> ivs, Shiny requestedShiny)
+    public static bool TryApplyHardcodedSeedWild8(PK8 pk, IEncounterTemplate enc, ReadOnlySpan<int> ivs, Shiny requestedShiny)
     {
         // Don't bother if there is no overworld correlation
         if (enc is not IOverworldCorrelation8 eo)
@@ -684,7 +684,7 @@ public static class SimpleEdits
             master.SetMoveShopFlags(pk);
     }
 
-    public static void SetSuggestedContestStats(this PKM pk, IEncounterable enc)
+    public static void SetSuggestedContestStats(this PKM pk, IEncounterTemplate enc)
     {
         var la = new LegalityAnalysis(pk);
         pk.SetSuggestedContestStats(enc, la.Info.EvoChainsAllGens);

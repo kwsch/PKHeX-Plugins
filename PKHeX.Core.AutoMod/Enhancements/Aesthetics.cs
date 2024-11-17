@@ -1158,7 +1158,7 @@ public static class Aesthetics
         _ => false,
     };
 
-    public static bool GetRandomValidMark(this PKM pk, IBattleTemplate set, IEncounterable enc, out RibbonIndex mark)
+    public static bool GetRandomValidMark(this PKM pk, IBattleTemplate set, IEncounterTemplate enc, out RibbonIndex mark)
     {
         mark = 0; // throwaway value
         var markinstruction = set is RegenTemplate { Regen.HasBatchSettings: true } rt && rt.Regen.Batch.Instructions.Any(z => z.PropertyName.StartsWith("RibbonMark"));

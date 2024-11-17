@@ -6,7 +6,7 @@
 public enum LegalizationResult
 {
     /// <summary>
-    /// Successfully regenerated from <see cref="IEncounterable"/> data.
+    /// Successfully regenerated from <see cref="IEncounterTemplate"/> data.
     /// </summary>
     Regenerated,
 

@@ -8,29 +8,13 @@ using System.Threading;
 
 namespace PKHeX.Core.Injection;
 
-public class ReadMemRequest(bool callback = true, string? fn = null)
-{
-    public readonly string? FileName = fn;
-    public readonly bool IsCallback = callback;
-}
+public record ReadMemRequest(bool IsCallback = true, string? FileName = null);
+public record DataReadyEventArgs(uint Seq, byte[] Data);
+public record InfoReadyEventArgs(string Info);
 
-public class DataReadyWaiting(byte[] data, DataReadyWaiting.DataHandler handler, object? arguments)
+public record DataReadyWaiting(byte[] Data, DataReadyWaiting.DataHandler Handler, object? Arguments)
 {
-    public readonly byte[] Data = data;
-    public object? Arguments = arguments;
     public delegate void DataHandler(object dataArguments);
-    public readonly DataHandler Handler = handler;
-}
-
-public class DataReadyEventArgs(uint seq, byte[] data) : EventArgs
-{
-    public readonly uint Seq = seq;
-    public readonly byte[] Data = data;
-}
-
-public class InfoReadyEventArgs(string info) : EventArgs
-{
-    public readonly string Info = info;
 }
 
 public sealed class NTR

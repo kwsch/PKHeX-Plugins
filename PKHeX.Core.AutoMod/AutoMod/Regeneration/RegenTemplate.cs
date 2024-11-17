@@ -140,7 +140,7 @@ public sealed class RegenTemplate : IBattleTemplate
         return sb.ToString();
     }
 
-    private static bool IsIgnored(string s, RegenSet regen)
+    private static bool IsIgnored(ReadOnlySpan<char> s, RegenSet regen)
     {
         return regen.HasExtraSettings && s.StartsWith("Shiny: ");
     }

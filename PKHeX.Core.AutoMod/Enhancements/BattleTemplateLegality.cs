@@ -39,7 +39,10 @@ public static class BattleTemplateLegality
 
         // Species exists -- check if it has at least one move.
         // If it has no moves, and it didn't generate, that makes the mon still illegal in game (moves are set to legal ones)
-        var moves = set.Moves.Where(z => z != 0).ToArray();
+        Memory<ushort> moves = set.Moves;
+        var empty = moves.Span.IndexOf<ushort>(0);
+        if (empty != -1)
+            moves = moves[..empty];
 
         // Reusable data
         var destVer = sav.Version;
@@ -55,12 +58,12 @@ public static class BattleTemplateLegality
             if (bestCombination.Length == 0)
                 return ALL_MOVES_INVALID;
             var sb = new StringBuilder();
-            AddMovesNotPresentIn(moves, bestCombination, sb);
+            AddMovesNotPresentIn(moves.Span, bestCombination, sb);
             return string.Format(INVALID_MOVES, species_name, sb);
         }
 
         // All moves possible, get encounters
-        failed.SetMoves(moves);
+        failed.SetMoves(moves.Span);
         failed.ApplySetDetails(set);
         failed.SetRecordFlags([]);
 
@@ -141,7 +144,7 @@ public static class BattleTemplateLegality
         }
     }
 
-    private static ReadOnlySpan<ushort> GetValidMovesetWithMostPresent(IBattleTemplate set, ITrainerInfo sav, ushort[] moves, PKM blank, GameVersion[] gamelist)
+    private static ReadOnlySpan<ushort> GetValidMovesetWithMostPresent(IBattleTemplate set, ITrainerInfo sav, Memory<ushort> moves, PKM blank, GameVersion[] gamelist)
     {
         // Reset the blank template as best we can. The inner loop only modifies the moves.
         blank.ApplySetDetails(set);
@@ -151,13 +154,13 @@ public static class BattleTemplateLegality
 
         // Eager check: current moveset is valid
         if (HasAnyEncounterForMoves(set, blank, moves, gamelist))
-            return moves;
+            return moves.Span;
 
         // Okay, at least one move is invalid. Recursively permute combinations to find the moveset with most moves valid.
         moves = moves.ToArray(); // copy to not disturb the original array.
-        var count = Recurse(set, moves, blank, gamelist, [..moves]);
+        var count = Recurse(set, moves, blank, gamelist, [..moves.Span]);
         // The moves array is now the most-populated combination of moves that are valid.
-        return moves.AsSpan(0, count);
+        return moves.Span[..count];
     }
 
     private static int Recurse(IBattleTemplate set, Memory<ushort> request, PKM blank, GameVersion[] gamelist, List<ushort> moves)

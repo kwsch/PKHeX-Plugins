@@ -74,7 +74,7 @@ public static class LegalEdits
     /// <param name="set"></param>
     /// <param name="enc">Encounter matched to</param>
     /// <param name="allValid">Set all valid ribbons only</param>
-    public static void SetSuggestedRibbons(this PKM pk, IBattleTemplate set, IEncounterable enc, bool allValid)
+    public static void SetSuggestedRibbons(this PKM pk, IBattleTemplate set, IEncounterTemplate enc, bool allValid)
     {
         if (!allValid)
             return;

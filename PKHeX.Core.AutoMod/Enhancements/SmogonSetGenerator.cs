@@ -34,6 +34,16 @@ public class SmogonSetGenerator
         "National Dex AG", // Adds Megas to Generation VIII
     ];
 
+    private static bool IsIllegalFormat(ReadOnlySpan<char> format)
+    {
+        foreach (var f in IllegalFormats)
+        {
+            if (format.Equals(f, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
     public string Summary => AlertText(ShowdownSpeciesName, SetText.Count, GetTitles());
 
     public SmogonSetGenerator(PKM pk)
@@ -61,9 +71,9 @@ public class SmogonSetGenerator
         LoadSetsFromPage();
     }
 
-    private static string GetShowdownName(string species, string form)
+    private static string GetShowdownName(string species, ReadOnlySpan<char> form)
     {
-        return string.IsNullOrWhiteSpace(form) || IsInvalidForm(form) ? species : $"{species}-{form}";
+        return form.Length == 0 || IsInvalidForm(form) ? species : $"{species}-{form}";
     }
 
     private void LoadSetsFromPage()
@@ -80,7 +90,7 @@ public class SmogonSetGenerator
                 format = w[len..].Split('\"')[0];
             }
 
-            if (IllegalFormats.Any(xs => xs.Equals(format, StringComparison.OrdinalIgnoreCase)))
+            if (IsIllegalFormat(format))
                 continue;
 
             if (LetsGo != format.StartsWith("LGPE", StringComparison.OrdinalIgnoreCase))
@@ -373,7 +383,7 @@ public class SmogonSetGenerator
         return titles;
     }
 
-    private static string AlertText(string showdownSpec, int count, Dictionary<string, List<string>> titles)
+    private static string AlertText(ReadOnlySpan<char> showdownSpec, int count, Dictionary<string, List<string>> titles)
     {
         var sb = new StringBuilder();
         sb.Append(showdownSpec).Append(':');
@@ -389,19 +399,18 @@ public class SmogonSetGenerator
         return sb.ToString();
     }
 
-    public static bool IsInvalidForm(string form) => form.Contains("Mega") || InvalidFormes.Contains(form);
-
-    private static readonly string[] InvalidFormes =
-    [
-        "Primal",
-        "Busted",
-        "Crowned",
-        "Noice",
-        "Gulping",
-        "Gorging",
-        "Zen",
-        "Galar-Zen",
-        "Hangry",
-        "Complete",
-    ];
+    public static bool IsInvalidForm(ReadOnlySpan<char> form) => form switch
+    {
+        "Primal" => true,
+        "Busted" => true,
+        "Crowned" => true,
+        "Noice" => true,
+        "Gulping" => true,
+        "Gorging" => true,
+        "Zen" => true,
+        "Galar-Zen" => true,
+        "Hangry" => true,
+        "Complete" => true,
+        _ => !form.Contains("Mega", StringComparison.Ordinal),
+    };
 }

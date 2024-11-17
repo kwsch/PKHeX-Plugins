@@ -56,7 +56,6 @@ public static class InternalNetUtil
     /// <param name="data">pkm data in bytes.</param>
     /// <param name="generation">The generation for the game the Pokémon is being uploaded from.</param>
     /// <param name="Url">location to fetch from</param>
-    /// <returns></returns>
     public static async Task<HttpResponseMessage> GPSSPost(byte[] data, byte generation, string Url = "flagbrew.org")
     {
         using var client = new HttpClient();

@@ -362,7 +362,7 @@ public static class APILegality
     /// Grab a trainer from trainer database with mutated language
     /// </summary>
     /// <returns>ITrainerInfo of the trainer details</returns>
-    private static ITrainerInfo GetTrainer(RegenSet regen, IEncounterable enc, IBattleTemplate set, ITrainerInfo dest)
+    private static ITrainerInfo GetTrainer(RegenSet regen, IEncounterTemplate enc, IBattleTemplate set, ITrainerInfo dest)
     {
         var ver = enc.Version;
         var gen = enc.Generation;
@@ -412,7 +412,7 @@ public static class APILegality
     /// <param name="abilityreq">is HA requested</param>
     /// <param name="destVer">version to generate in</param>
     /// <returns>if the encounter is valid or not</returns>
-    private static bool IsEncounterValid(IBattleTemplate set, IEncounterable enc, AbilityRequest abilityreq, GameVersion destVer)
+    private static bool IsEncounterValid(IBattleTemplate set, IEncounterTemplate enc, AbilityRequest abilityreq, GameVersion destVer)
     {
         if (enc is EncounterSlot3 && enc.Species == (ushort)Species.Unown && enc.Form != set.Form)
             return false;
@@ -456,7 +456,7 @@ public static class APILegality
         return destVer.ExistsInGame(set.Species, set.Form);
     }
 
-    public static bool IsRequestedLevelValid(IBattleTemplate set, IEncounterable enc)
+    public static bool IsRequestedLevelValid(IBattleTemplate set, IEncounterTemplate enc)
     {
         if (enc.Generation <= 4)
             return true;
@@ -480,7 +480,7 @@ public static class APILegality
         return true;
     }
 
-    public static bool IsRequestedBallValid(IBattleTemplate set, IEncounterable enc)
+    public static bool IsRequestedBallValid(IBattleTemplate set, IEncounterTemplate enc)
     {
         if (set is RegenTemplate rt && enc.FixedBall != Ball.None && ForceSpecifiedBall)
         {
@@ -491,7 +491,7 @@ public static class APILegality
         return true;
     }
 
-    public static bool IsRequestedAlphaValid(IBattleTemplate set, IEncounterable enc)
+    public static bool IsRequestedAlphaValid(IBattleTemplate set, IEncounterTemplate enc)
     {
         // No Alpha setting in base showdown
         if (set is not RegenTemplate rt)
@@ -506,7 +506,7 @@ public static class APILegality
         return enc is not IAlphaReadOnly a ? !requested : a.IsAlpha == requested;
     }
 
-    public static bool IsRequestedShinyValid(IBattleTemplate set, IEncounterable enc)
+    public static bool IsRequestedShinyValid(IBattleTemplate set, IEncounterTemplate enc)
     {
         if (enc is MysteryGift { CardID: >= 9000 })
             return true;
@@ -535,8 +535,7 @@ public static class APILegality
     /// </summary>
     /// <param name="pk">pkm to check</param>
     /// <param name="enc">enc to check</param>
-    /// <returns></returns>
-    public static bool IsPIDIVSet(PKM pk, IEncounterable enc) => enc switch
+    public static bool IsPIDIVSet(PKM pk, IEncounterTemplate enc) => enc switch
     {
         // If PID and IV is handled in PreSetPIDIV, don't set it here again and return out
         ITeraRaid9 or EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND or EncounterStatic8U => true,
@@ -553,7 +552,7 @@ public static class APILegality
     /// </summary>
     /// <param name="pk">Entity to fix</param>
     /// <param name="enc">Matched encounter</param>
-    private static PKM SanityCheckLocation(this PKM pk, IEncounterable enc)
+    private static PKM SanityCheckLocation(this PKM pk, IEncounterTemplate enc)
     {
         const int SharedNest = 162; // Shared Nest for online encounter
         const int MaxLair = 244; // Dynamax Adventures
@@ -575,7 +574,7 @@ public static class APILegality
     /// <param name="enc">Encounter details matched to the Pokémon</param>
     /// <param name="regen">Regeneration information</param>
     /// <param name="criteria"></param>
-    private static void ApplySetDetails(PKM pk, IBattleTemplate set, ITrainerInfo handler, IEncounterable enc, RegenSet regen, EncounterCriteria criteria)
+    private static void ApplySetDetails(PKM pk, IBattleTemplate set, ITrainerInfo handler, IEncounterTemplate enc, RegenSet regen, EncounterCriteria criteria)
     {
         var language = regen.Extra.Language;
         var pidiv = MethodFinder.Analyze(pk);
@@ -609,7 +608,7 @@ public static class APILegality
 
         // Aesthetics
         pk.ApplyHeightWeight(enc);
-        pk.SetSuggestedBall(SetMatchingBalls, ForceSpecifiedBall, regen.Extra.Ball, enc);
+        pk.SetSuggestedBall(enc, SetMatchingBalls, ForceSpecifiedBall, regen.Extra.Ball);
         pk.ApplyMarkings(UseMarkings);
         pk.ApplyBattleVersion(handler);
     }
@@ -619,7 +618,7 @@ public static class APILegality
     /// </summary>
     /// <param name="pk">PKM to modify</param>
     /// <param name="enc"></param>
-    private static void ValidateGender(PKM pk, IEncounterable enc)
+    private static void ValidateGender(PKM pk, IEncounterTemplate enc)
     {
         bool genderValid = pk.IsGenderValid();
         if (!genderValid)
@@ -678,8 +677,6 @@ public static class APILegality
     /// <summary>
     /// Custom Marking applicator method
     /// </summary>
-    /// <param name="pk">PK input</param>
-    /// <returns></returns>
     public static Func<int, int, int> CompetitiveMarking(PKM pk)
     {
         return pk.Format < 7 ? GetSimpleMarking : GetComplexMarking;
@@ -699,7 +696,7 @@ public static class APILegality
     /// <param name="pk">passed pkm object</param>
     /// <param name="set">showdown set to base hyper training on</param>
     /// <param name="enc"></param>
-    private static void SetHyperTrainingFlags(this PKM pk, IBattleTemplate set, IEncounterable enc)
+    private static void SetHyperTrainingFlags(this PKM pk, IBattleTemplate set, IEncounterTemplate enc)
     {
         if (pk is not IHyperTrain t || pk.Species == (ushort)Species.Stakataka)
             return;
@@ -786,7 +783,7 @@ public static class APILegality
     /// <param name="pk">pkm distributed as an egg</param>
     /// <param name="enc">encounter detail</param>
     /// <param name="tr">save file</param>
-    private static void HandleEggEncounters(this PKM pk, IEncounterable enc, ITrainerInfo tr)
+    private static void HandleEggEncounters(this PKM pk, IEncounterTemplate enc, ITrainerInfo tr)
     {
         if (!pk.IsEgg)
             return; // should be checked before, but condition added for future usecases
@@ -806,7 +803,7 @@ public static class APILegality
     /// <summary>
     /// Set IV Values for the Pokémon
     /// </summary>
-    private static void SetPINGA(this PKM pk, IBattleTemplate set, PIDType method, int hpType, IEncounterable enc, EncounterCriteria criteria)
+    private static void SetPINGA(this PKM pk, IBattleTemplate set, PIDType method, int hpType, IEncounterTemplate enc, EncounterCriteria criteria)
     {
         var ivprop = enc.GetType().GetProperty("IVs");
         if (enc is not EncounterStatic4Pokewalker && enc.Generation > 2)
@@ -903,7 +900,7 @@ public static class APILegality
     /// <param name="enc">Raid encounter encounterable</param>
     /// <param name="set">Set to pass in requested IVs</param>
     /// <param name="criteria"></param>
-    private static void PreSetPIDIV(this PKM pk, IEncounterable enc, IBattleTemplate set, EncounterCriteria criteria)
+    private static void PreSetPIDIV(this PKM pk, IEncounterTemplate enc, IBattleTemplate set, EncounterCriteria criteria)
     {
         if (enc is ITeraRaid9)
         {
@@ -1032,7 +1029,7 @@ public static class APILegality
             pk.EncryptionConstant = (uint)rand.NextInt(uint.MaxValue);
             var fakeTID = (uint)rand.NextInt();
             uint pid = (uint)rand.NextInt();
-            if (((IEncounterable)enc).Shiny == Shiny.Random) // let's decide if it's shiny or not!
+            if (enc.Shiny == Shiny.Random) // let's decide if it's shiny or not!
             {
                 int i = 1;
                 bool isShiny;
@@ -1054,7 +1051,7 @@ public static class APILegality
                 }
                 ShinyUtil.ForceShinyState(isShiny, ref pid, pk.ID32, xor);
             }
-            else if (((IEncounterable)enc).Shiny == Shiny.Always)
+            else if (enc.Shiny == Shiny.Always)
             {
                 var tid = (ushort)fakeTID;
                 var sid = (ushort)(fakeTID >> 16);
@@ -1361,7 +1358,7 @@ public static class APILegality
     /// <param name="enc"></param>
     /// <param name="set"></param>
     /// <param name="criteria"></param>
-    private static void FindPIDIV(PKM pk, PIDType Method, int HPType, bool shiny, IEncounterable enc, IBattleTemplate set, EncounterCriteria criteria)
+    private static void FindPIDIV(PKM pk, PIDType Method, int HPType, bool shiny, IEncounterTemplate enc, IBattleTemplate set, EncounterCriteria criteria)
     {
         if (enc.Generation == 4 && pk.Species == (ushort)Species.Unown)
             pk.Form = set.Form;
@@ -1474,7 +1471,7 @@ public static class APILegality
             break;
         } while (++count < 5_000_000);
     }
-    private static bool IsMatchFromPKHeX(PKM pk, PKM iterPKM, int HPType, bool shiny, byte gr, IEncounterable enc, uint seed, PIDType Method)
+    private static bool IsMatchFromPKHeX(PKM pk, PKM iterPKM, int HPType, bool shiny, byte gr, IEncounterTemplate enc, uint seed, PIDType Method)
     {
         if (pk.AbilityNumber != iterPKM.AbilityNumber && pk.Nature != iterPKM.Nature)
             return false;
@@ -1615,25 +1612,9 @@ public static class APILegality
     /// <param name="pk">Pokémon</param>
     public static void SetCorrectMetLevel(this PKM pk)
     {
-        var lvl = pk.CurrentLevel;
-        if (pk.MetLevel > lvl)
-            pk.MetLevel = lvl;
-
-        if (pk.MetLocation is not (Locations.Transfer1 or Locations.Transfer2 or Locations.Transfer3 or Locations.Transfer4 or Locations.GO8))
-            return;
-
-        var level = pk.MetLevel;
-        if (lvl <= level)
-            return;
-
-        while (lvl >= pk.MetLevel)
-        {
-            var la = new LegalityAnalysis(pk);
-            if (la.Info.Moves.All(z => z.Valid))
-                return;
-            pk.MetLevel++;
-        }
-        pk.MetLevel = level; // Set back to normal if nothing legalized
+        var current = pk.CurrentLevel;
+        if (pk.MetLevel > current)
+            pk.MetLevel = current;
     }
 
     /// <summary>
@@ -1641,7 +1622,7 @@ public static class APILegality
     /// </summary>
     /// <param name="pk">Pokemon to edit</param>
     /// <param name="enc">Encounter the <see cref="pk"/> originated rom</param>
-    private static void FixEdgeCases(this PKM pk, IEncounterable enc)
+    private static void FixEdgeCases(this PKM pk, IEncounterTemplate enc)
     {
         if (pk.Nickname.Length == 0)
             pk.ClearNickname();
@@ -1710,7 +1691,7 @@ public static class APILegality
     /// <summary>
     /// Handle search criteria for very specific encounters.
     /// </summary>
-    public static EncounterCriteria SetSpecialCriteria(EncounterCriteria criteria, IEncounterable enc, IBattleTemplate set)
+    public static EncounterCriteria SetSpecialCriteria(EncounterCriteria criteria, IEncounterTemplate enc, IBattleTemplate set)
     {
         if (enc is EncounterEgg && enc.Version is not (GameVersion.BD or GameVersion.SP))
             return criteria;

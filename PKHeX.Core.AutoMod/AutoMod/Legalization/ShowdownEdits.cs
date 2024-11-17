@@ -28,7 +28,7 @@ public static class ShowdownEdits
             pk.Gender = pk.GetSaneGender();
     }
 
-    public static void SetNature(PKM pk, IBattleTemplate set, IEncounterable enc)
+    public static void SetNature(PKM pk, IBattleTemplate set, IEncounterTemplate enc)
     {
         if (pk.Nature == set.Nature || set.Nature == Nature.Random)
             return;
@@ -99,7 +99,7 @@ public static class ShowdownEdits
     /// <param name="form">Form to apply</param>
     /// <param name="enc">Encounter detail</param>
     /// <param name="lang">Language to apply</param>
-    public static void SetSpeciesLevel(this PKM pk, IBattleTemplate set, byte form, IEncounterable enc, LanguageID? lang)
+    public static void SetSpeciesLevel(this PKM pk, IBattleTemplate set, byte form, IEncounterTemplate enc, LanguageID? lang)
     {
         var currentlang = (LanguageID)pk.Language;
         pk.ApplySetGender(set);
@@ -207,7 +207,7 @@ public static class ShowdownEdits
     /// <param name="pkm">PKM to modify</param>
     /// <param name="enc">Base encounter</param>
     /// <returns>boolean indicating if the gender is valid</returns>
-    public static bool IsValidGenderPID(this PKM pkm, IEncounterable enc)
+    public static bool IsValidGenderPID(this PKM pkm, IEncounterTemplate enc)
     {
         bool genderValid = pkm.IsGenderValid();
         if (!genderValid)
@@ -253,7 +253,7 @@ public static class ShowdownEdits
     /// <param name="pk">PKM to modify</param>
     /// <param name="set">Showdown Set to refer</param>
     /// <param name="enc">Encounter to reference</param>
-    public static void SetMovesEVs(this PKM pk, IBattleTemplate set, IEncounterable enc)
+    public static void SetMovesEVs(this PKM pk, IBattleTemplate set, IEncounterTemplate enc)
     {
         // If no moves are requested, just keep the encounter moves
         if (set.Moves[0] != 0)
