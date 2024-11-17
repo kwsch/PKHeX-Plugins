@@ -168,11 +168,11 @@ public static class Legalizer
 
         template.Species = species;
         var form = template.GetAvailableForm();
-        if (form == -1)
+        if (form is not { } f)
             return template;
 
-        template.Form = (byte)form;
-        var legalencs = tr.GetRandomEncounter(template.Species, template.Form, set.Shiny, false, false, out var legal);
+        template.Form = f;
+        var legalencs = tr.GetRandomEncounter(species, f, set.Shiny, false, false, out var legal);
         if (legalencs && legal != null)
             template = legal;
 
@@ -180,13 +180,13 @@ public static class Legalizer
         return template;
     }
 
-    private static int GetAvailableForm(this PKM pk)
+    private static byte? GetAvailableForm(this PKM pk)
     {
         var species = pk.Species;
         var pi = pk.PersonalInfo;
         var formcount = pi.FormCount;
         if (formcount == 0)
-            return -1;
+            return null;
 
         if (!(pk.SWSH || pk.BDSP || pk.LA))
             return pk.Form;
@@ -205,7 +205,7 @@ public static class Legalizer
             if (pk.SWSH && IsPresentInGameSWSH(species, f))
                 return f;
         }
-        return -1;
+        return null;
     }
 
     /// <summary>
@@ -239,7 +239,7 @@ public static class Legalizer
         var emptySlots = new List<int>();
         for (int i = start; i < data.Count; i++)
         {
-            if (data[i].Species < 1)
+            if (data[i].Species == 0)
                 emptySlots.Add(i);
         }
         return emptySlots;

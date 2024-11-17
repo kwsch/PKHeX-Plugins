@@ -20,15 +20,11 @@ public enum AutoModErrorCode
 
 public static class AutoModErrorCodeExtensions
 {
-    public static string GetMessage(this AutoModErrorCode code)
+    public static string GetMessage(this AutoModErrorCode code) => code switch
     {
-        return code.IsSilent() ? string.Empty : code switch
-        {
-            AutoModErrorCode.NotEnoughSpace => "Not enough space in the box.",
-            AutoModErrorCode.InvalidLines => "Invalid lines detected.",
-            _ => string.Empty,
-        };
-    }
-
-    public static bool IsSilent(this AutoModErrorCode code) => code <= AutoModErrorCode.CODE_SILENT;
+        <= AutoModErrorCode.CODE_SILENT => string.Empty,
+        AutoModErrorCode.NotEnoughSpace => "Not enough space in the box.",
+        AutoModErrorCode.InvalidLines => "Invalid lines detected.",
+        _ => string.Empty,
+    };
 }

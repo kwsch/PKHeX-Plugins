@@ -33,7 +33,7 @@ public static class ShowdownEdits
         if (pk.Nature == set.Nature || set.Nature == Nature.Random)
             return;
 
-        var val = (Nature)Math.Min((int)Nature.Quirky, Math.Max((int)Nature.Hardy, (int)set.Nature));
+        var val = set.Nature <= Nature.Quirky ? set.Nature : Nature.Hardy;
         if (pk.Species == (ushort)Species.Toxtricity)
         {
             if (pk.Form == ToxtricityUtil.GetAmpLowKeyResult(val))
@@ -195,7 +195,7 @@ public static class ShowdownEdits
     /// Applies specified gender (if it exists. Else choose specied gender)
     /// </summary>
     /// <param name="pk">PKM to modify</param>
-    /// <param name="set">IBattleset template to grab the set gender</param>
+    /// <param name="set">Template to grab the set gender</param>
     private static void ApplySetGender(this PKM pk, IBattleTemplate set)
     {
         pk.Gender = set.Gender ?? pk.GetSaneGender();
@@ -226,7 +226,7 @@ public static class ShowdownEdits
     private static bool IsValidFixedGenderFromBiGender(PKM pkm, ushort original)
     {
         var current = pkm.Gender;
-        if (current == 2) // shedinja, genderless
+        if (current == 2) // Shedinja, genderless
             return true;
 
         var gender = EntityGender.GetFromPID(original, pkm.EncryptionConstant);
@@ -291,7 +291,7 @@ public static class ShowdownEdits
         // Under this scenario, just apply maximum EVs (65535).
         if (pk is GBPKM gb && set.EVs.All(z => z == 0))
         {
-            gb.EV_HP = gb.EV_ATK = gb.EV_DEF = gb.EV_SPC = gb.EV_SPE = gb.MaxEV;
+            gb.MaxEVs();
             return;
         }
 
