@@ -25,7 +25,7 @@ public static class TrainerSettings
     public static ushort DefaultTID16 { get; set; } = 54321; // reverse of PKHeX defaults
     public static ushort DefaultSID16 { get; set; } = 12345; // reverse of PKHeX defaults
 
-    public static ITrainerInfo DefaultFallback(int gen = 8, LanguageID? lang = null)
+    public static ITrainerInfo DefaultFallback(byte gen = 8, LanguageID? lang = null)
     {
         var fallback = gen > 7 ? DefaultFallback8 : DefaultFallback7;
         return lang == null ? fallback : (ITrainerInfo)new SimpleTrainerInfo(fallback.Version) { Language = (int)lang };
@@ -143,7 +143,7 @@ public static class TrainerSettings
     /// <returns>Parent trainer data that originates from the <see cref="PKM.Version"/>. If none found, will return the <see cref="template_save"/>.</returns>
     public static ITrainerInfo GetSavedTrainerData(PKM pk, ITrainerInfo template_save, LanguageID? lang = null)
     {
-        int origin = pk.Generation;
+        byte origin = pk.Generation;
         byte format = pk.Format;
         return format != origin ? GetSavedTrainerData(format, template_save.Version, fallback: template_save, lang: lang) : GetSavedTrainerData((byte)origin, pk.Version, template_save, lang);
     }

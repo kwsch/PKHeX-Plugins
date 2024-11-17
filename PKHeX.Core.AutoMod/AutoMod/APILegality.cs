@@ -1243,20 +1243,22 @@ public static class APILegality
         Span<uint> randomivs = stackalloc uint[6];
         while (true)
         {
-            var seed = Util.Rand32();
+            var seed = (ulong)(int)Util.Rand32(); // sign extend when casting to ulong
             var rng = new Xoroshiro128Plus8b(seed);
 
-            if ((uint)(species - (int)Species.NidoranF) < 6)
+            var nido = (uint)(species - (int)Species.NidoranF) / 3;
+            if (nido < 2)
             {
-                if ((rng.NextUInt(2) == 0) != (species >= (int)Species.NidoranM))
+                // 0: M, 1: F. nido is F=0; reject if equals (mismatch).
+                if (rng.NextUInt(2) == nido)
                     continue;
             }
-            if (species is (int)Species.Illumise or (int)Species.Volbeat)
+            else if (species is (int)Species.Illumise or (int)Species.Volbeat)
             {
                 if (rng.NextUInt(2) != (int)Species.Illumise - species)
                     continue;
             }
-            if (species == (int)Species.Indeedee)
+            else if (species == (int)Species.Indeedee)
             {
                 if (rng.NextUInt(2) != pk.Form)
                     continue;
@@ -1375,7 +1377,7 @@ public static class APILegality
             if (pk.Version == GameVersion.CXD && method != PIDType.PokeSpot)
                 method = PIDType.CXD;
 
-            if (method == PIDType.None && pk.Generation >= 3)
+            if (method == PIDType.None && enc.Generation >= 3)
                 pk.SetPIDGender(pk.Gender);
         }
         switch (method)

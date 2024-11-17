@@ -94,8 +94,7 @@ public static class SimpleEdits
         if (enc is { Species: 658, Form: 1 } || APILegality.IsPIDIVSet(pk, enc)) // Ash-Greninja or raids
             return;
 
-        int gen = pk.Generation;
-        if (gen is 3 or 4 or 5)
+        if (enc.Generation is 3 or 4 or 5)
         {
             var ec = pk.PID;
             pk.EncryptionConstant = ec;
@@ -157,7 +156,7 @@ public static class SimpleEdits
             return;
         }
 
-        if (pk.Generation > 5 || pk.VC)
+        if (enc.Generation > 5 || pk.VC)
         {
             if (enc.Shiny is Shiny.FixedValue or Shiny.Never)
                 return;
@@ -199,7 +198,7 @@ public static class SimpleEdits
         pk.SetShinySID(); // no mg = no lock
         if (isShiny && enc.Generation is 1 or 2)
             pk.SetShiny();
-        if (pk.Generation != 5)
+        if (enc.Generation != 5)
             return;
 
         while (true)

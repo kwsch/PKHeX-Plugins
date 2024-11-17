@@ -247,7 +247,7 @@ public static class ModLogic
         }
 
         var template = EntityBlank.GetBlank(tr.Generation, tr.Version);
-        var item = GetFormSpecificItem(tr.Version, blank.Species, blank.Form);
+        var item = GetFormSpecificItem(tr.Version, tr.Generation, blank.Species, blank.Form);
         if (item is not null)
             blank.HeldItem = (int)item;
 
@@ -320,12 +320,11 @@ public static class ModLogic
         return false;
     }
 
-    private static int? GetFormSpecificItem(GameVersion game, ushort species, byte form)
+    private static int? GetFormSpecificItem(GameVersion game, byte generation, ushort species, byte form)
     {
         if (game == GameVersion.PLA)
             return null;
 
-        var generation = game.GetGeneration();
         return species switch
         {
             (ushort)Arceus => generation != 4 || form < 9 ? SimpleEdits.GetArceusHeldItemFromForm(form) : SimpleEdits.GetArceusHeldItemFromForm(form - 1),
@@ -461,7 +460,7 @@ public static class ModLogic
                 form = rough.Form = rough.Gender;
             }
 
-            var item = GetFormSpecificItem(destVersion, spec, form);
+            var item = GetFormSpecificItem(destVersion, destGeneration, spec, form);
             if (item is not null)
                 rough.HeldItem = (int)item;
 

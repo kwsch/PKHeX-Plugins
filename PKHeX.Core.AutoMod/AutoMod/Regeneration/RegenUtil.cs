@@ -221,7 +221,7 @@ public static class RegenUtil
         };
     }
 
-    public static GameVersion GetGameVersionFromGen(int gen) => gen switch
+    public static GameVersion GetGameVersionFromGen(byte gen) => gen switch
     {
         1 => GameVersion.RB,
         2 => GameVersion.C,
