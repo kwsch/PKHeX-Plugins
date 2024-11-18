@@ -11,6 +11,7 @@ public static class Aesthetics
 
     private static ReadOnlySpan<PersonalColor> ShinyMap =>
     [
+        0,
         Green, // Bulbasaur
         Green, // Ivysaur
         Green, // Venusaur
