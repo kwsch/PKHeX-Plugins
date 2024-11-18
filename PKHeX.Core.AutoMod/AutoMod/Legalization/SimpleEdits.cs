@@ -338,7 +338,7 @@ public static class SimpleEdits
 
         foreach (var instruction in regen.Batch.Instructions)
         {
-            if (instruction.PropertyName != key)
+            if (!key.SequenceEqual(instruction.PropertyName))
                 continue;
 
             value = instruction.PropertyValue;
