@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using static PKHeX.Core.Species;
 
@@ -329,19 +330,21 @@ public static class SimpleEdits
             sz3.Scale = (byte)scale;
     }
 
-    public static string? GetBatchValue(this IBattleTemplate set, ReadOnlySpan<char> key)
+    public static bool TryGetBatchValue(this IBattleTemplate set, ReadOnlySpan<char> key, [NotNullWhen(true)] out string? value)
     {
+        value = null;
         if (set is not RegenTemplate { Regen: { HasBatchSettings: true } regen})
-            return null;
+            return false;
 
         foreach (var instruction in regen.Batch.Instructions)
         {
             if (instruction.PropertyName != key)
                 continue;
 
-            return instruction.PropertyValue;
+            value = instruction.PropertyValue;
+            return true;
         }
-        return null;
+        return false;
     }
 
     public static void SetFriendship(this PKM pk, IEncounterTemplate enc)
@@ -416,11 +419,8 @@ public static class SimpleEdits
             t.SetTeraType(set.TeraType);
     }
 
-    public static void HyperTrain(this PKM pk, ReadOnlySpan<int> ivs)
+    internal static void HyperTrain(this IHyperTrain t, PKM pk, ReadOnlySpan<int> ivs)
     {
-        if (pk is not IHyperTrain t || pk.CurrentLevel != 100)
-            return;
-
         t.HT_HP  = pk.IV_HP  != 31;
         t.HT_ATK = pk.IV_ATK != 31 && ivs[1] > 2;
         t.HT_DEF = pk.IV_DEF != 31;

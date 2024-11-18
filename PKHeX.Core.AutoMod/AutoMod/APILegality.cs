@@ -708,7 +708,7 @@ public static class APILegality
         if (!t.IsHyperTrainingAvailable(EvolutionChain.GetEvolutionChainsAllGens(pk, enc)))
             return;
 
-        pk.HyperTrain(set.IVs);
+        t.HyperTrain(pk, set.IVs);
 
         // Handle special cases here for ultrabeasts
         switch (pk.Species)
@@ -802,18 +802,21 @@ public static class APILegality
     /// </summary>
     private static void SetPINGA(this PKM pk, IBattleTemplate set, PIDType method, int hpType, IEncounterTemplate enc, EncounterCriteria criteria)
     {
-        var ivprop = enc.GetType().GetProperty("IVs");
         if (enc is not EncounterStatic4Pokewalker && enc.Generation > 2)
             ShowdownEdits.SetNature(pk, set, enc);
 
         // If PID and IV is handled in PreSetPIDIV, don't set it here again and return out
-        var hascurry = set.GetBatchValue(nameof(IRibbonSetMark8.RibbonMarkCurry));
-        var changeec = hascurry != null && string.Equals(hascurry, "true", StringComparison.OrdinalIgnoreCase) && AllowBatchCommands;
+        bool changeEC = false;
+        if (AllowBatchCommands)
+        {
+            if (set.TryGetBatchValue(nameof(IRibbonSetMark8.RibbonMarkCurry), out var hasCurry))
+                changeEC = string.Equals(hasCurry, "true", StringComparison.OrdinalIgnoreCase);
+        }
 
-        if (IsPIDIVSet(pk, enc) && !changeec)
+        if (IsPIDIVSet(pk, enc) && !changeEC)
             return;
 
-        if (pk.Context == EntityContext.Gen8 && changeec)
+        if (pk.Context == EntityContext.Gen8 && changeEC)
             pk.SetRandomEC(); // break correlation
 
         if (enc is MysteryGift mg)
@@ -829,21 +832,16 @@ public static class APILegality
                 return;
         }
 
-        if (ivprop != null && ivprop.PropertyType == typeof(IndividualValueSet))
-        {
-            var ivset = ivprop.GetValue(enc);
-            if (ivset != null && ((IndividualValueSet)ivset).IsSpecified)
-                return;
-        }
+        if (enc is IFixedIVSet { IVs.IsSpecified: true })
+            return;
 
         if (enc.Generation is not (3 or 4))
         {
             pk.IVs = set.IVs;
-            if (pk is IAwakened)
-            {
-                pk.SetAwakenedValues(set);
+            if (pk is not IAwakened)
                 return;
-            }
+
+            pk.SetAwakenedValues(set);
             return;
         }
 
