@@ -155,6 +155,7 @@ public static class TeamTests
             {
                 error.AppendLine(f.Set.Text);
                 error.AppendLine(f.Result.Report());
+                error.AppendLine();
             }
         }
         if (error.Length != 0)
