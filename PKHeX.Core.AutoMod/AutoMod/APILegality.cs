@@ -705,7 +705,10 @@ public static class APILegality
             return;
 
         // Game exceptions (IHyperTrain exists because of the field but game disallows hyper training)
-        if (!t.IsHyperTrainingAvailable(EvolutionChain.GetEvolutionChainsAllGens(pk, enc)))
+        var history = EvolutionChain.GetEvolutionChainsAllGens(pk, enc);
+        if (!t.IsHyperTrainingAvailable(history))
+            return;
+        if (t.GetHyperTrainMinLevel(history, pk.Context) > pk.CurrentLevel)
             return;
 
         t.HyperTrain(pk, set.IVs);
