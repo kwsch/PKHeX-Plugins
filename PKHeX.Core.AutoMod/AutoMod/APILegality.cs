@@ -594,7 +594,7 @@ public static class APILegality
 
         // Legality Fixing
         pk.SetMovesEVs(set, enc);
-        pk.SetCorrectMetLevel();
+        pk.SetCorrectMetLevel(enc);
         pk.SetGVs();
         pk.SetHyperTrainingFlags(set, enc);
         pk.SetEncryptionConstant(enc);
@@ -1597,7 +1597,7 @@ public static class APILegality
     /// Method to get the correct met level for a Pokémon. Move up the met level till all moves are legal
     /// </summary>
     /// <param name="pk">Pokémon</param>
-    public static void SetCorrectMetLevel(this PKM pk)
+    public static void SetCorrectMetLevel(this PKM pk, IEncounterTemplate enc)
     {
         var current = pk.CurrentLevel;
         var met = pk.MetLevel;
@@ -1607,11 +1607,16 @@ public static class APILegality
         if (met == current)
             return;
 
-        bool wasMetLost = pk.MetLocation is Locations.Transfer1 or Locations.Transfer2
-            or Locations.Transfer3 or Locations.Transfer4 or Locations.GO8;
+        bool wasMetLost = enc.Context switch
+        {
+            EntityContext.Gen1 or EntityContext.Gen2 => pk.MetLocation is Locations.Transfer1 or Locations.Transfer2,
+            EntityContext.Gen3 => pk.MetLocation is Locations.Transfer3 or Locations.Transfer4,
+            EntityContext.Gen4 => pk.MetLocation is Locations.Transfer4,
+            _ => enc.Version is GameVersion.GO && pk.MetLocation is Locations.GO8,
+        };
         if (!wasMetLost)
             return;
-        
+
         pk.MetLevel = current;
         var range = Math.Min(3, current - met);
         for (int i = 0; i < range; i++)
