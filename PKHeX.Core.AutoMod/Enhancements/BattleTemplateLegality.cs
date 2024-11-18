@@ -63,10 +63,6 @@ public static class BattleTemplateLegality
         }
 
         // All moves possible, get encounters
-        failed.SetMoves(moves.Span);
-        failed.ApplySetDetails(set);
-        failed.SetRecordFlags([]);
-
         var encounters = EncounterMovesetGenerator.GenerateEncounters(pk: failed, moves, gamelist).ToList();
         var initialcount = encounters.Count;
         if (set is RegenTemplate { Regen.EncounterFilters: { } x })
@@ -146,9 +142,6 @@ public static class BattleTemplateLegality
 
     private static ReadOnlySpan<ushort> GetValidMovesetWithMostPresent(IBattleTemplate set, ITrainerInfo sav, Memory<ushort> moves, PKM blank, GameVersion[] gamelist)
     {
-        // Reset the blank template as best we can. The inner loop only modifies the moves.
-        blank.ApplySetDetails(set);
-        blank.SetRecordFlags([]);
         if (sav.Generation <= 2)
             blank.EXP = 0; // no relearn moves in gen 1/2 so pass level 1 to generator
 
