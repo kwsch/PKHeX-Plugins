@@ -1599,8 +1599,29 @@ public static class APILegality
     public static void SetCorrectMetLevel(this PKM pk)
     {
         var current = pk.CurrentLevel;
-        if (pk.MetLevel > current)
+        var met = pk.MetLevel;
+        if (met > current)
             pk.MetLevel = current;
+
+        if (met == current)
+            return;
+
+        bool wasMetLost = pk.MetLocation is Locations.Transfer1 or Locations.Transfer2
+            or Locations.Transfer3 or Locations.Transfer4 or Locations.GO8;
+        if (!wasMetLost)
+            return;
+        
+        pk.MetLevel = current;
+        var range = Math.Min(3, current - met);
+        for (int i = 0; i < range; i++)
+        {
+            var la = new LegalityAnalysis(pk);
+            if (la.Info.Moves.All(z => z.Valid))
+                return;
+            pk.MetLevel--;
+        }
+
+        pk.MetLevel = met; // Set back to normal if nothing legalized
     }
 
     /// <summary>

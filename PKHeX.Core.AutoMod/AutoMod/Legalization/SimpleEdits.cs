@@ -525,23 +525,21 @@ public static class SimpleEdits
         if (pk is not IGeoTrack gt)
             return;
 
-        if (trainer is IRegionOrigin o)
+        if (trainer is not IRegionOrigin o)
         {
-            gt.ConsoleRegion = o.ConsoleRegion;
-            gt.Country = o.Country;
-            gt.Region = o.Region;
-            if (pk is PK7 pk7 && pk.Generation <= 2)
-                pk7.FixVCRegion();
-
-            if (pk.Species is (int)Vivillon or (int)Spewpa or (int)Scatterbug)
-                pk.FixVivillonRegion();
-
+            gt.ConsoleRegion = 1; // North America
+            gt.Country = 49; // USA
+            gt.Region = 7; // California
             return;
         }
 
-        gt.ConsoleRegion = 1; // North America
-        gt.Country = 49; // USA
-        gt.Region = 7; // California
+        gt.ConsoleRegion = o.ConsoleRegion;
+        gt.Country = o.Country;
+        gt.Region = o.Region;
+        if (pk is PK7 pk7 && pk.Generation <= 2)
+            pk7.FixVCRegion();
+        else if (pk.Species is (int)Vivillon or (int)Spewpa or (int)Scatterbug)
+            pk.FixVivillonRegion();
     }
 
     /// <summary>
