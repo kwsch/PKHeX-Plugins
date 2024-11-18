@@ -167,7 +167,7 @@ public static class BattleTemplateLegality
         {
             // Original order doesn't matter, skip an array copy shift when reinserting
             // This essentially cycles them like a queue
-            var move = moves[i];
+            var move = moves[0];
             moves.RemoveAt(0);
             moves.CopyTo(request.Span);
             if (HasAnyEncounterForMoves(set, blank, request, gamelist))
@@ -178,8 +178,8 @@ public static class BattleTemplateLegality
         // If above failed, recurse the same as above with more moves removed.
         for (int i = 0; i < moves.Count; i++)
         {
-            var move = moves[i];
-            moves.Remove(0);
+            var move = moves[0];
+            moves.RemoveAt(0);
             var count = Recurse(set, request, blank, gamelist, moves);
             if (count != 0) // ignore 0, the removed move might be valid in a different combination
                 return count;
