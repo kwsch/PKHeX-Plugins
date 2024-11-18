@@ -813,13 +813,22 @@ public static class APILegality
         if (AllowBatchCommands)
         {
             if (set.TryGetBatchValue(nameof(IRibbonSetMark8.RibbonMarkCurry), out var hasCurry))
-                changeEC = string.Equals(hasCurry, "true", StringComparison.OrdinalIgnoreCase);
+            {
+                bool setCurryMark = string.Equals(hasCurry, "true", StringComparison.OrdinalIgnoreCase);
+                if (setCurryMark)
+                {
+                    changeEC = enc.Context == EntityContext.Gen8; // for Gen8 encounters, we need to break the correlation
+                    // Eagerly set the mark so that verifiers can know it was curry.
+                    if (pk is IRibbonSetMark8 r8)
+                        r8.RibbonMarkCurry = true;
+                }
+            }
         }
 
         if (IsPIDIVSet(pk, enc) && !changeEC)
             return;
 
-        if (pk.Context == EntityContext.Gen8 && changeEC)
+        if (changeEC)
             pk.SetRandomEC(); // break correlation
 
         if (enc is MysteryGift mg)
@@ -830,7 +839,7 @@ public static class APILegality
             for (int i = 0; i < mgIvs.Length; i++)
                 ivs[i] = mgIvs[i] > 31 ? set.IVs[i] : mgIvs[i];
 
-            pk.IVs = ivs;
+            pk.SetIVs(ivs);
             if (enc.Generation is not (3 or 4))
                 return;
         }
@@ -840,7 +849,7 @@ public static class APILegality
 
         if (enc.Generation is not (3 or 4))
         {
-            pk.IVs = set.IVs;
+            pk.SetIVs(set.IVs);
             if (pk is not IAwakened)
                 return;
 
@@ -988,7 +997,7 @@ public static class APILegality
         }
         else if (enc is EncounterEgg && GameVersion.BDSP.Contains(enc.Version))
         {
-            pk.IVs = set.IVs;
+            pk.SetIVs(set.IVs);
             Shiny shiny;
             if (set is RegenTemplate r)
             {
