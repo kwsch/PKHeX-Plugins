@@ -79,7 +79,8 @@ public static class ShowdownEdits
         if (set.Ability == -1)
         {
             pk.RefreshAbility(pref);
-            if (pk is PK5 pk5 && preference == AbilityPermission.OnlyHidden) pk5.HiddenAbility = true;
+            if (pk is PK5 pk5 && preference == AbilityPermission.OnlyHidden)
+                pk5.HiddenAbility = true;
         }
         // Set preferred ability number if applicable
         if (pref == 2 && pi is IPersonalAbility12H h && h.AbilityH == set.Ability)

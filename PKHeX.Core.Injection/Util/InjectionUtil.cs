@@ -10,7 +10,7 @@ public static class InjectionUtil
 
     public static ulong GetPointerAddress(this ICommunicatorNX sb, string ptr, bool heapRelative = true)
     {
-        if (string.IsNullOrWhiteSpace(ptr) || ptr.IndexOfAny(['-', '/', '*']) != -1)
+        if (string.IsNullOrWhiteSpace(ptr) || ptr.AsSpan().IndexOfAny('-', '/', '*') != -1)
             return INVALID_PTR;
 
         while (ptr.Contains("]]"))
