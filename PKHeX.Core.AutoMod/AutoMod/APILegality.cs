@@ -87,6 +87,10 @@ public static class APILegality
         if (regen.EncounterFilters.Any())
             encounters = encounters.Where(enc => BatchEditing.IsFilterMatch(regen.EncounterFilters, enc));
 
+        // For sets that require a specific level, force the level maximum that the generator will yield.
+        // Most encounters generate with minimum level; only those with checked PID/IV will have non-minimum levels.
+        criteria.LevelMax = set.Level; // TODO: Crank this depending on how many level-ups. This is only useful for underleveled/low level encounters.
+
         PKM? last = null;
         var timer = Stopwatch.StartNew();
         foreach (var enc in encounters)
@@ -102,9 +106,6 @@ public static class APILegality
             // Look before we leap -- don't waste time generating invalid / incompatible junk.
             if (!IsEncounterValid(set, enc, abilityreq, destVer))
                 continue;
-
-            if (enc is IFixedNature { IsFixedNature: true })
-                criteria = criteria with { Nature = Nature.Random };
 
             criteria = SetSpecialCriteria(criteria, enc, set);
 
@@ -810,9 +811,9 @@ public static class APILegality
 
         // If PID and IV is handled in PreSetPIDIV, don't set it here again and return out
         bool changeEC = false;
-        if (AllowBatchCommands)
+        if (AllowBatchCommands && set is RegenTemplate { Regen: { HasBatchSettings: true } regen })
         {
-            if (set.TryGetBatchValue(nameof(IRibbonSetMark8.RibbonMarkCurry), out var hasCurry))
+            if (regen.TryGetBatchValue(nameof(IRibbonSetMark8.RibbonMarkCurry), out var hasCurry))
             {
                 bool setCurryMark = string.Equals(hasCurry, "true", StringComparison.OrdinalIgnoreCase);
                 if (setCurryMark)

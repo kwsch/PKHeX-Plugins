@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Linq;
-using static PKHeX.Core.PersonalColor;
+using static PKHeX.Core.RibbonIndex;
 using static PKHeX.Core.Ball;
+using static PKHeX.Core.PersonalColor;
 
 namespace PKHeX.Core.AutoMod;
 
@@ -1051,7 +1052,7 @@ public static class Aesthetics
             return Parse(['L', 'A', .. ballstr]);
         return Parse(ballstr);
 
-        static Ball Parse(ReadOnlySpan<char> tmp) => Enum.TryParse<Ball>(tmp, out var ball) ? ball : Ball.None;
+        static Ball Parse(ReadOnlySpan<char> tmp) => Enum.TryParse<Ball>(tmp, out var ball) ? ball : None;
     }
 
     public static Shiny GetShinyType(ReadOnlySpan<char> value)
@@ -1076,33 +1077,50 @@ public static class Aesthetics
         return lang is LanguageID.Hacked or LanguageID.UNUSED_6 ? LanguageID.English : lang;
     }
 
-    private static bool IsDisallowed(RibbonIndex ribbon) => ribbon switch
+    private static bool IsDisallowed(this RibbonIndex ribbon) => ribbon switch
     {
-        RibbonIndex.MarkCloudy => true,
-        RibbonIndex.MarkRainy => true,
-        RibbonIndex.MarkStormy => true,
-        RibbonIndex.MarkSnowy => true,
-        RibbonIndex.MarkBlizzard => true,
-        RibbonIndex.MarkDry => true,
-        RibbonIndex.MarkSandstorm => true,
+        MarkCloudy => true,
+        MarkRainy => true,
+        MarkStormy => true,
+        MarkSnowy => true,
+        MarkBlizzard => true,
+        MarkDry => true,
+        MarkSandstorm => true,
         _ => false,
     };
 
-    public static bool GetRandomValidMark(this PKM pk, IBattleTemplate set, IEncounterTemplate enc, out RibbonIndex mark)
+    public static bool TryGetRandomValidMark(this PKM pk, IBattleTemplate set, IEncounterTemplate enc, out RibbonIndex mark)
     {
         mark = 0; // throwaway value
-        var markinstruction = set is RegenTemplate { Regen.HasBatchSettings: true } rt && rt.Regen.Batch.Instructions.Any(z => z.PropertyName.StartsWith("RibbonMark"));
-        if (markinstruction)
+        if (IsSetForcingMark(set))
             return false;
 
-        var valid = Enumerable.Range((int)RibbonIndex.MarkLunchtime, (int)RibbonIndex.MarkSlump - (int)RibbonIndex.MarkLunchtime + 1).Where(z => !IsDisallowed((RibbonIndex)z) && MarkRules.IsEncounterMarkValid((RibbonIndex)z, pk, enc)).ToArray();
-
-        var count = valid.Length;
+        const int allMarkCount = (int)MarkSlump - (int)MarkLunchtime + 1;
+        Span<RibbonIndex> marks = stackalloc RibbonIndex[allMarkCount];
+        int count = GetAllValidMarks(pk, enc, marks);
         if (count == 0)
             return false;
 
-        var randomindex = Util.Rand.Next(valid.Length);
-        mark = (RibbonIndex)valid[randomindex];
+        var randomindex = Util.Rand.Next(count);
+        mark = marks[randomindex];
         return true;
+    }
+
+    private static bool IsSetForcingMark(IBattleTemplate set)
+    {
+        if (set is not RegenTemplate { Regen: { HasBatchSettings: true } rt })
+            return false;
+        return rt.AnyInstructionStartsWith("RibbonMark", "true");
+    }
+
+    private static int GetAllValidMarks(PKM pk, IEncounterTemplate enc, Span<RibbonIndex> possible)
+    {
+        int count = 0;
+        for (var mark = MarkLunchtime; mark <= MarkSlump; mark++)
+        {
+            if (!IsDisallowed(mark) && MarkRules.IsEncounterMarkValid(mark, pk, enc))
+                possible[count++] = mark;
+        }
+        return count;
     }
 }

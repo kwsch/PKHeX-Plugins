@@ -330,23 +330,6 @@ public static class SimpleEdits
             sz3.Scale = (byte)scale;
     }
 
-    public static bool TryGetBatchValue(this IBattleTemplate set, ReadOnlySpan<char> key, [NotNullWhen(true)] out string? value)
-    {
-        value = null;
-        if (set is not RegenTemplate { Regen: { HasBatchSettings: true } regen})
-            return false;
-
-        foreach (var instruction in regen.Batch.Instructions)
-        {
-            if (!key.SequenceEqual(instruction.PropertyName))
-                continue;
-
-            value = instruction.PropertyValue;
-            return true;
-        }
-        return false;
-    }
-
     public static void SetFriendship(this PKM pk, IEncounterTemplate enc)
     {
         if (enc.Generation <= 2)

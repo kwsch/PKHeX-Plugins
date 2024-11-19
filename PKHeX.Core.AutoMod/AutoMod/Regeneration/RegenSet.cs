@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
@@ -80,5 +81,32 @@ public sealed class RegenSet
             sb.AppendLine(RegenUtil.GetSummary(VersionFilters));
 
         return sb.ToString();
+    }
+
+    public bool AnyInstructionStartsWith(string name, string value)
+    {
+        foreach (var z in Batch.Instructions)
+        {
+            if (!z.PropertyName.StartsWith(name))
+                continue;
+            if (!z.PropertyValue.StartsWith(value))
+                continue;
+            return true;
+        }
+        return false;
+    }
+
+    public bool TryGetBatchValue(ReadOnlySpan<char> key, [NotNullWhen(true)] out string? value)
+    {
+        foreach (var instruction in Batch.Instructions)
+        {
+            if (!key.SequenceEqual(instruction.PropertyName))
+                continue;
+
+            value = instruction.PropertyValue;
+            return true;
+        }
+        value = null;
+        return false;
     }
 }

@@ -61,9 +61,9 @@ public static class LegalEdits
             return;
 
         RibbonApplicator.SetAllValidRibbons(pk);
-        if (pk is PK8 { Species: not (int)Species.Shedinja } pk8 && pk8.GetRandomValidMark(set, enc, out var mark))
+        if (pk is PK8 { Species: not (int)Species.Shedinja } pk8 && pk8.TryGetRandomValidMark(set, enc, out var mark))
             pk8.SetRibbonIndex(mark);
-        if (pk is PK9 { Species: not (int)Species.Shedinja } pk9 && pk9.GetRandomValidMark(set, enc, out var mark9))
+        if (pk is PK9 { Species: not (int)Species.Shedinja } pk9 && pk9.TryGetRandomValidMark(set, enc, out var mark9))
             pk9.SetRibbonIndex(mark9);
     }
 }
