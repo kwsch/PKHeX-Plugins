@@ -83,7 +83,6 @@ public static class APILegality
 
         var encounters = GetAllEncounters(pk: template, moves: new ReadOnlyMemory<ushort>(set.Moves), gamelist);
         var criteria = EncounterCriteria.GetCriteria(set, template.PersonalInfo);
-        criteria.ForceMinLevelRange = true;
         if (regen.EncounterFilters.Any())
             encounters = encounters.Where(enc => BatchEditing.IsFilterMatch(regen.EncounterFilters, enc));
 
@@ -462,26 +461,13 @@ public static class APILegality
 
     public static bool IsRequestedLevelValid(IBattleTemplate set, IEncounterTemplate enc)
     {
-        if (enc.Generation <= 4)
+        if (enc.LevelMin <= set.Level)
             return true;
 
-        if (enc.LevelMin > enc.LevelMax)
-            return false;
+        if (enc is IEncounterDownlevel dl && dl.GetDownleveledMin() <= set.Level)
+            return true;
 
-        if (enc.LevelMin > set.Level)
-        {
-            var isRaid = enc is EncounterStatic8N or EncounterStatic8NC or EncounterStatic8ND or EncounterStatic8U;
-            if (enc is EncounterSlot6AO s)
-            {
-                if (s.LevelMin - 4 > set.Level)
-                    return false;
-            }
-            else if (!isRaid)
-            {
-                return false;
-            }
-        }
-        return true;
+        return false;
     }
 
     public static bool IsRequestedBallValid(IBattleTemplate set, IEncounterTemplate enc)
